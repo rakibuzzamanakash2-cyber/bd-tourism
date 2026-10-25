@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Lock } from "lucide-react";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { PayForm } from "@/components/booking/pay-form";
 import { formatDateRange } from "@/lib/booking-utils";
@@ -16,7 +16,7 @@ export const metadata = {
 
 export default async function PayPage({ params }: Props) {
   const { id } = await params;
-  const session = await auth();
+  const user = await requireUser();
 
   const booking = await db.booking.findUnique({
     where: { id },
@@ -24,7 +24,7 @@ export default async function PayPage({ params }: Props) {
   });
 
   if (!booking) notFound();
-  if (booking.touristId !== session!.user.id) notFound();
+  if (booking.touristId !== user.id) notFound();
   if (booking.status !== "PAYMENT_PENDING") {
     redirect(`/dashboard/bookings/${booking.id}`);
   }

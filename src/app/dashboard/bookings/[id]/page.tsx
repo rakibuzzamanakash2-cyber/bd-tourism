@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ const statusConfig: Record<
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const session = await auth();
+  const user = await requireUser();
 
   const booking = await db.booking.findUnique({
     where: { id },
@@ -81,7 +81,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   if (!booking) notFound();
 
   // Security — only the owner can view their booking
-  if (booking.touristId !== session!.user.id) notFound();
+  if (booking.touristId !== user.id) notFound();
 
   const status = statusConfig[booking.status] ?? statusConfig.DRAFT;
   const priceUSD = Number(booking.totalAmountUSD);

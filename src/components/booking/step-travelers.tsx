@@ -1,14 +1,13 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
-import type { TourPackage } from "@prisma/client";
-import type { WizardData } from "./booking-wizard";
+import type { WizardData, WizardPackage } from "./booking-wizard";
 import { StepActions } from "./booking-wizard";
 
 type Props = {
   data: WizardData;
   setData: (d: WizardData) => void;
-  pkg: TourPackage;
+  pkg: WizardPackage;
   onNext: () => void;
   onPrev: () => void;
 };

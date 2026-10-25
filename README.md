@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BD-Tourism
 
-## Getting Started
+A tourism marketplace for Bangladesh. International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
-First, run the development server:
+**Status:** Phase 1 (destinations, tour packages) and Phase 2 (bookings, payments) are built. Guides, homestay hosts and permit tracking are planned for later phases.
+
+## Features
+
+- Destination and tour package pages, with region and permit information
+- Sign up / sign in with email and password or Google, plus password reset by email
+- 4-step booking wizard (dates → travelers → details → review) with permit-aware pricing
+- Online payment through SSLCommerz, verified server-side through the IPN webhook
+- Email receipts through Resend
+- Traveler dashboard: bookings, booking details, saved trips, profile
+
+## Tech stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 + shadcn/ui · PostgreSQL + Prisma 7 · NextAuth v5 · SSLCommerz · Resend
+
+## Run it locally
+
+You need **Node.js 20+** and **PostgreSQL** (pgAdmin is fine).
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Create your env file, then fill in DATABASE_URL and AUTH_SECRET at least
+cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
+
+# 3. Create the database tables and load the sample data
+npx prisma migrate dev
+npx prisma db seed
+npx tsx prisma/link-itinerary.ts
+
+# 4. Start the app → http://localhost:3000
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create an empty database called `bd_tourism` in pgAdmin first (or change the name in `DATABASE_URL`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Useful commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Production build (also type-checks) |
+| `npm run start` | Run the production build |
+| `npm run lint` | Check code style |
+| `npx prisma studio` | Browse the database in your browser |
 
-## Learn More
+## Environment variables
 
-To learn more about Next.js, take a look at the following resources:
+All variables are listed and explained in [`.env.example`](.env.example). Locally, only `DATABASE_URL` and `AUTH_SECRET` are required. Without SSLCommerz keys the Pay button shows a "not configured" message, and without a Resend key emails are skipped (password-reset links are printed in the terminal instead).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+prisma/                 schema, migrations, seed data
+src/app/(marketing)/    public pages (home, destinations, packages, about, terms…)
+src/app/(auth)/         login, signup, forgot / reset password
+src/app/book/           booking wizard
+src/app/dashboard/      traveler dashboard (sign-in required)
+src/app/api/            NextAuth, payment callbacks, SSLCommerz webhook
+src/components/         UI components
+src/lib/                database client, server actions, payments, email
+```

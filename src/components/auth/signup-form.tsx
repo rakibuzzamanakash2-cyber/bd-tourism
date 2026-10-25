@@ -28,6 +28,7 @@ export function SignupForm() {
         <Input
           id="name"
           name="name"
+          defaultValue={state?.values?.name}
           type="text"
           autoComplete="name"
           required
@@ -48,6 +49,7 @@ export function SignupForm() {
         <Input
           id="email"
           name="email"
+          defaultValue={state?.values?.email}
           type="email"
           autoComplete="email"
           required

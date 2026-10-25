@@ -59,6 +59,61 @@ export async function sendPaymentReceipt(
 }
 
 // ============================================================
+// PASSWORD RESET
+// ============================================================
+export async function sendPasswordResetEmail(data: {
+  to: string;
+  name: string;
+  resetUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[email] RESEND_API_KEY not set — skipping reset email");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+
+  try {
+    const result = await resend.emails.send({
+      from,
+      to: data.to,
+      subject: "Reset your password",
+      html: `<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0; padding:32px 16px; background-color:#FAF8F1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color:#1A1D1B;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px; margin:0 auto; background:#FFFFFF; border-radius:8px;">
+    <tr>
+      <td style="padding:40px 32px;">
+        <h1 style="margin:0 0 16px; font-family: Georgia, 'Times New Roman', serif; font-size:28px; font-weight:400;">Reset your password</h1>
+        <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#3B4340;">
+          Hi ${escapeHtml(data.name)}, we got a request to reset the password for your Bangladesh Tourism account. This link works once and expires in 1 hour.
+        </p>
+        <p style="margin:0 0 24px;">
+          <a href="${data.resetUrl}" style="display:inline-block; background:#1B3D2F; color:#FAF8F1; text-decoration:none; padding:14px 28px; border-radius:9999px; font-size:14px; font-weight:500;">Choose a new password</a>
+        </p>
+        <p style="margin:0; font-size:13px; line-height:1.6; color:#6B7570;">
+          If you didn&rsquo;t ask for this, you can ignore this email &mdash; your password won&rsquo;t change.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    if (result.error) {
+      console.error("[email] Resend error:", result.error);
+      return { success: false, error: result.error.message || "Failed to send email" };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error("[email] Exception:", err);
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+// ============================================================
 // HTML EMAIL TEMPLATE
 // Uses inline styles because email clients ignore <style> and external CSS.
 // Table-based layout for compatibility with older clients (Outlook).

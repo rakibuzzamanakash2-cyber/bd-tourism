@@ -7,7 +7,13 @@ export const metadata = {
   description: "Sign in to your Bangladesh Tourism account.",
 };
 
-export default function LoginPage() {
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function LoginPage({ searchParams }: Props) {
+  const { reset } = await searchParams;
+
   return (
     <div>
       <p className="eyebrow mb-4 text-forest-700">Sign in</p>
@@ -23,6 +29,15 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
+
+      {reset === "1" && (
+        <div
+          role="status"
+          className="mt-6 rounded-md border border-forest-700/20 bg-forest-100 px-4 py-3 text-sm text-forest-900"
+        >
+          Your password has been updated. Sign in with your new password.
+        </div>
+      )}
 
       <div className="mt-10">
         <GoogleButton label="Continue with Google" />
