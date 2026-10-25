@@ -47,6 +47,7 @@ model User {
   savedDestinations SavedDestination[]
   savedPackages     SavedPackage[]
   contactMessages   ContactMessage[]
+  auditLogs         AuditLog[]
 }
 
 model TouristProfile {
@@ -243,6 +244,9 @@ model Booking {
   // Refund owed under the cancellation policy (paid out by an admin)
   refundAmountUSD    Decimal?  @db.Decimal(10, 2)
 
+  // Private notes for the DeltaWay team (never shown to the tourist)
+  adminNotes String? @db.Text
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -379,4 +383,27 @@ model WaitlistEntry {
   notifiedAt DateTime?
 
   @@unique([email, kind])
+}
+
+// ============================================================
+// ADMIN ACTIVITY LOG
+// Every change an admin makes (status, refund, role…) is recorded here,
+// so it's always clear who did what and when.
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  // e.g. "booking.status", "booking.refund_paid", "user.role"
+  action     String
+  // e.g. "Booking", "User", "ContactMessage"
+  targetType String
+  targetId   String
+  // Before/after values and any extra context
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
 }

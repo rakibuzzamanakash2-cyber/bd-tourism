@@ -18,6 +18,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     role?: UserRole;
+    /** When the role was last re-read from the database (ms since epoch) */
+    roleCheckedAt?: number;
   }
 }
 

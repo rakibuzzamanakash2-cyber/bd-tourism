@@ -139,3 +139,19 @@ export function serviceFeeFromDetails(specialRequests: string | null): number {
     return 0;
   }
 }
+
+// ============================================================
+// ADMIN STATUS CHANGES
+// Which status an admin can move a booking to from each status.
+// Cancelling, recording a manual payment and refunds have their own actions.
+// ============================================================
+export const ADMIN_STATUS_TRANSITIONS: Record<string, readonly string[]> = {
+  PAID: ["CONFIRMED", "DISPUTED"],
+  CONFIRMED: ["IN_PROGRESS", "DISPUTED"],
+  IN_PROGRESS: ["COMPLETED", "DISPUTED"],
+  COMPLETED: ["DISPUTED"],
+  DISPUTED: ["CONFIRMED", "IN_PROGRESS", "COMPLETED"],
+};
+
+/** Statuses an admin can cancel from (tourists have a narrower list). */
+export const ADMIN_CANCELLABLE_STATUSES = ["PAYMENT_PENDING", "PAID", "CONFIRMED", "IN_PROGRESS", "DISPUTED"] as const;
