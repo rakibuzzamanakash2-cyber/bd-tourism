@@ -2,7 +2,7 @@
 
 *Bangladesh, guided.* A tourism marketplace for Bangladesh (repository: `bd-tourism`). International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
-**Status:** Phase 1 (destinations, tour packages) and Phase 2 (bookings, payments) are built. Guides, homestay hosts and permit tracking are planned for later phases.
+**Status:** tours, bookings, payments, permits and the admin panel are built. Guide and homestay-host applications come next.
 
 ## Features
 
@@ -54,7 +54,14 @@ Create an empty database called `bd_tourism` in pgAdmin first (or change the nam
 
 ## Admin panel
 
-Sign up on the site, then run `npm run make-admin -- your@email.com` and open **/admin**. From there the team can confirm bookings, record bKash/bank/cash payments, cancel with a refund, record refunds, read contact messages, export the homestay waitlist and manage user roles. Every admin action is kept in an activity log.
+Sign up on the site, then run `npm run make-admin -- your@email.com` and open **/admin**. From there the team can:
+
+- confirm bookings, record bKash/bank/cash payments, cancel with a refund and record refunds
+- track restricted-area permits (travelers see the status and get emails)
+- add and edit tours (day-by-day itinerary), destinations (with photo gallery), regions and types
+- read contact messages, export the homestay waitlist and manage user roles
+
+Photos can be pasted as links from Unsplash, Pexels or Wikimedia Commons, or uploaded once the Cloudinary keys are set. Every admin action is kept in an activity log.
 
 ## Environment variables
 

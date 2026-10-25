@@ -12,6 +12,7 @@ import {
   serviceFeeFromDetails,
 } from "@/lib/booking-utils";
 import { CancelBookingButton } from "@/components/booking/cancel-booking";
+import { PERMIT_STATUS } from "@/lib/permit-labels";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 
 type PageProps = {
@@ -82,6 +83,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             },
           },
         },
+      },
+      permits: {
+        include: { region: { select: { name: true } } },
+        orderBy: { createdAt: "asc" },
       },
     },
   });
@@ -225,6 +230,46 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   </li>
                 ))}
               </ol>
+            </section>
+          )}
+
+          {/* Permits */}
+          {booking.permits.length > 0 && booking.status !== "CANCELLED" && (
+            <section>
+              <p className="eyebrow mb-3 text-forest-700">Permits</p>
+              <h2 className="font-display text-2xl">Restricted-area permits.</h2>
+              <ul className="mt-6 divide-y divide-forest-900/10 rounded-lg border border-forest-900/10">
+                {booking.permits.map((p) => {
+                  const info = PERMIT_STATUS[p.status];
+                  return (
+                    <li key={p.id} className="p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium text-ink">{p.region.name}</p>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full border px-3 py-0.5 text-xs uppercase tracking-wider",
+                            info.tone === "green" && "border-forest-700/40 bg-forest-100 text-forest-800",
+                            info.tone === "amber" && "border-clay-600/40 bg-clay-500/10 text-clay-700",
+                            info.tone === "grey" && "border-ink-mute/30 bg-paper text-ink-soft",
+                            info.tone === "red" && "border-clay-700/40 bg-clay-600/15 text-clay-700",
+                          )}
+                        >
+                          {info.label}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-ink-soft">{info.traveler}</p>
+                      {p.noteToTraveler && (
+                        <p className="mt-3 rounded-md bg-paper-warm px-3 py-2 text-sm text-ink">
+                          <span className="font-medium">Note from our team:</span> {p.noteToTraveler}
+                        </p>
+                      )}
+                      {p.referenceNumber && p.status === "APPROVED" && (
+                        <p className="mt-2 text-xs text-ink-mute">Permit reference: {p.referenceNumber}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </section>
           )}
 

@@ -111,6 +111,7 @@ model Region {
   permitFeeBDT Int? // per-person government fee if restricted
 
   destinations Destination[]
+  permits      Permit[]
 }
 
 model Category {
@@ -252,6 +253,7 @@ model Booking {
 
   payment Payment?
   review  Review?
+  permits Permit[]
 
   @@index([touristId, status])
   @@index([status])
@@ -406,4 +408,38 @@ model AuditLog {
 
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+// ============================================================
+// PERMITS
+// One per restricted region on a paid booking (the Hill Tracts and the
+// Sundarbans are handled by different offices, so each gets its own).
+// ============================================================
+
+enum PermitStatus {
+  NOT_STARTED
+  DOCUMENTS_NEEDED
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Permit {
+  id              String       @id @default(cuid())
+  bookingId       String
+  booking         Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  regionId        String
+  region          Region       @relation(fields: [regionId], references: [id])
+  status          PermitStatus @default(NOT_STARTED)
+  // Number from the DC office / Forest Department, once submitted
+  referenceNumber String?
+  // Shown to the traveler, e.g. which document is missing
+  noteToTraveler  String?      @db.Text
+  submittedAt     DateTime?
+  decidedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([bookingId, regionId])
+  @@index([status])
 }

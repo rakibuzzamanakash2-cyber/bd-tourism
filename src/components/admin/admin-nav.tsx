@@ -5,9 +5,13 @@ import { usePathname } from "next/navigation";
 import {
   CalendarCheck,
   CreditCard,
+  FileCheck,
   Inbox,
   LayoutDashboard,
   ListChecks,
+  Map,
+  MapPin,
+  Route,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,8 +19,12 @@ import { cn } from "@/lib/utils";
 const items = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
+  { href: "/admin/permits", label: "Permits", icon: FileCheck },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/messages", label: "Messages", icon: Inbox },
+  { href: "/admin/tours", label: "Tours", icon: Route },
+  { href: "/admin/destinations", label: "Destinations", icon: MapPin },
+  { href: "/admin/regions", label: "Regions & types", icon: Map },
   { href: "/admin/waitlist", label: "Waitlist", icon: ListChecks },
   { href: "/admin/users", label: "Users", icon: Users },
 ];

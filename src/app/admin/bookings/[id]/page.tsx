@@ -9,7 +9,7 @@ import {
   StatusButtons,
 } from "@/components/admin/booking-actions";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/admin/ui";
-import { dateTime, describeAction, money, paymentMethod } from "@/lib/admin-format";
+import { dateTime, describeAction, humanize, money, paymentMethod } from "@/lib/admin-format";
 import {
   ADMIN_CANCELLABLE_STATUSES,
   ADMIN_STATUS_TRANSITIONS,
@@ -18,6 +18,8 @@ import {
   serviceFeeFromDetails,
 } from "@/lib/booking-utils";
 import { db } from "@/lib/db";
+import { ensurePermitsForBooking } from "@/lib/permits";
+import { PermitEditor } from "@/components/admin/permit-panel";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata = { title: "Booking" };
@@ -35,7 +37,10 @@ export default async function AdminBookingDetailPage({ params }: Props) {
   await requireAdmin();
   const { id } = await params;
 
-  const [booking, history] = await Promise.all([
+  // Older paid bookings get their permit records the first time they're opened
+  await ensurePermitsForBooking(id);
+
+  const [booking, history, permits] = await Promise.all([
     db.booking.findUnique({
       where: { id },
       include: {
@@ -48,6 +53,11 @@ export default async function AdminBookingDetailPage({ params }: Props) {
       where: { targetType: "Booking", targetId: id },
       include: { actor: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
+    }),
+    db.permit.findMany({
+      where: { bookingId: id },
+      include: { region: { select: { name: true, permitFeeBDT: true } } },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
   if (!booking) notFound();
@@ -154,10 +164,32 @@ export default async function AdminBookingDetailPage({ params }: Props) {
 
           {restricted.length > 0 && (
             <Section title="Permits">
-              <p className="text-sm text-ink-soft">
-                Visits {restricted.map((r) => r.name).join(", ")}. Permit processing fee charged:{" "}
-                {money(details.permitContext?.serviceFeeUSD ?? 0)}. Permit tracking arrives in the next admin update.
+              <p className="mb-4 text-sm text-ink-soft">
+                Visits {restricted.map((r) => r.name).join(", ")}. Processing fee charged:{" "}
+                {money(details.permitContext?.serviceFeeUSD ?? 0)}.
               </p>
+              {permits.length === 0 ? (
+                <p className="text-sm text-ink-mute">Permit records are created once the booking is paid.</p>
+              ) : (
+                <div className="space-y-3">
+                  {permits.map((pm) => (
+                    <PermitEditor
+                      key={pm.id}
+                      travelerCount={booking.travelerCount}
+                      permit={{
+                        id: pm.id,
+                        regionName: pm.region.name,
+                        feeBDT: pm.region.permitFeeBDT,
+                        status: pm.status,
+                        referenceNumber: pm.referenceNumber ?? "",
+                        noteToTraveler: pm.noteToTraveler ?? "",
+                        submittedAt: pm.submittedAt ? dateTime(pm.submittedAt) : null,
+                        decidedAt: pm.decidedAt ? dateTime(pm.decidedAt) : null,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </Section>
           )}
 
@@ -195,7 +227,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
               {[...history].reverse().map((h) => (
                 <li key={h.id} className="text-ink-soft">
                   {dateTime(h.createdAt)} · {h.actor?.name ?? h.actor?.email ?? "System"} {describeAction(h.action)}
-                  {h.details && typeof h.details === "object" && "to" in h.details && ` → ${String(h.details.to)}`}
+                  {h.details && typeof h.details === "object" && "to" in h.details && ` → ${humanize(String(h.details.to))}`}
                 </li>
               ))}
             </ul>
