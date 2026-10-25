@@ -10,7 +10,7 @@ export default function BecomeAHostPage() {
     <ContentPage
       eyebrow="Host tourists"
       title="Open your home, share your life."
-      intro="Live Like a Local homestays let travelers experience Bangladesh the way it's actually lived. Host sign-up opens soon — register your interest and we'll reach out."
+      intro="Live Like a Local homestays let travelers experience Bangladesh the way it's actually lived. Apply online: we review every application, then visit your home."
       sections={[
         {
           heading: "What hosting involves",
@@ -30,9 +30,9 @@ export default function BecomeAHostPage() {
         },
       ]}
       cta={{
-        label: "Register your interest",
-        href: "/contact",
-        note: "Tell us where you live and a little about your home, and we'll contact you when host sign-up opens.",
+        label: "Apply now",
+        href: "/apply/host",
+        note: "About 10 minutes, in English or Bangla. You can save and finish later. · বাংলায়ও আবেদন করা যায়।",
       }}
     />
   );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 
+// Kept for anything still calling the old URL; the schedule now uses /api/cron/daily.
 // Called by Vercel Cron (see vercel.json). Vercel sends
 // "Authorization: Bearer <CRON_SECRET>" when CRON_SECRET is set in the project.
 export async function GET(req: NextRequest) {

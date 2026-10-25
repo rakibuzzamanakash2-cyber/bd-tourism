@@ -21,6 +21,7 @@ export const RATE_LIMITS = {
   savedUser: { limit: 120, windowSeconds: 10 * 60 },
   cancelUser: { limit: 10, windowSeconds: 60 * 60 },
   paymentUser: { limit: 10, windowSeconds: 10 * 60 },
+  uploadUser: { limit: 40, windowSeconds: 60 * 60 },
 } satisfies Record<string, Rule>;
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterSeconds: number };

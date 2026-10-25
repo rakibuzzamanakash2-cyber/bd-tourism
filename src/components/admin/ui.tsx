@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { BookingStatus, ContactStatus, PaymentStatus, PermitStatus, UserRole } from "@prisma/client";
 import { PERMIT_STATUS } from "@/lib/permit-labels";
+import { APPLICATION_STATUS_LABEL } from "@/lib/applications";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -291,4 +292,18 @@ export const RoleBadge = ({ role }: { role: UserRole }) => (
 
 export const PermitStatusBadge = ({ status }: { status: PermitStatus }) => (
   <span className={cn(badge, tones[PERMIT_STATUS[status].tone])}>{PERMIT_STATUS[status].label}</span>
+);
+
+const applicationTone: Record<string, keyof typeof tones> = {
+  DRAFT: "grey",
+  SUBMITTED: "amber",
+  UNDER_REVIEW: "amber",
+  INTERVIEW: "amber",
+  HOME_VISIT: "amber",
+  CHANGES_REQUESTED: "grey",
+  APPROVED: "green",
+  REJECTED: "red",
+};
+export const ApplicationStatusBadge = ({ status }: { status: string }) => (
+  <span className={cn(badge, tones[applicationTone[status] ?? "grey"])}>{APPLICATION_STATUS_LABEL[status] ?? status}</span>
 );
