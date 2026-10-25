@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminPageHeader, BookingStatusBadge, StatCard, Table, Td } from "@/components/admin/ui";
 import { describeAction, money, shortDate, timeAgo } from "@/lib/admin-format";
 import { db } from "@/lib/db";
+import { needsGuideWhere } from "@/lib/guide-shared";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata = { title: "Overview" };
@@ -25,6 +26,7 @@ export default async function AdminOverviewPage() {
     users,
     permitsToDo,
     applicationsToReview,
+    needGuide,
     upcoming,
     recent,
     activity,
@@ -47,6 +49,7 @@ export default async function AdminOverviewPage() {
       where: { status: { in: ["NOT_STARTED", "DOCUMENTS_NEEDED"] }, booking: { status: { not: "CANCELLED" } } },
     }),
     db.partnerApplication.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW", "INTERVIEW", "HOME_VISIT"] } } }),
+    db.booking.count({ where: needsGuideWhere(now) }),
     db.booking.findMany({
       where: {
         status: { in: ["PAID", "CONFIRMED", "IN_PROGRESS"] },
@@ -73,7 +76,7 @@ export default async function AdminOverviewPage() {
       <AdminPageHeader title="Overview" description="What needs attention today, and how things are going." />
 
       <h2 className="mb-3 font-sans text-xs uppercase tracking-wider text-ink-mute">Needs attention</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Paid, to confirm"
           value={toConfirm}
@@ -108,6 +111,13 @@ export default async function AdminOverviewPage() {
           hint="Guides and hosts to review"
           href="/admin/applications"
           tone={applicationsToReview > 0 ? "attention" : "default"}
+        />
+        <StatCard
+          label="Need a guide"
+          value={needGuide}
+          hint="Paid trips with no guide yet"
+          href="/admin/bookings?needsGuide=1"
+          tone={needGuide > 0 ? "attention" : "default"}
         />
         <StatCard
           label="Awaiting payment"

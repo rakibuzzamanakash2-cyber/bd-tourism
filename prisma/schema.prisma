@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-
 }
 
 // ============================================================
@@ -44,12 +43,14 @@ model User {
   bookings Booking[] @relation("BookingTourist")
   reviews  Review[]
 
-  savedDestinations SavedDestination[]
-  savedPackages     SavedPackage[]
-  contactMessages   ContactMessage[]
-  auditLogs         AuditLog[]
-  applications      PartnerApplication[]
-  invitesCreated    ApplicationInvite[]
+  savedDestinations    SavedDestination[]
+  savedPackages        SavedPackage[]
+  contactMessages      ContactMessage[]
+  auditLogs            AuditLog[]
+  applications         PartnerApplication[]
+  invitesCreated       ApplicationInvite[]
+  guideProfile         GuideProfile?
+  guideAssignmentsMade GuideAssignment[]    @relation("AssignedBy")
 }
 
 model TouristProfile {
@@ -57,7 +58,7 @@ model TouristProfile {
   userId           String   @unique
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   nationality      String?
-  passportNumber   String?  // encrypt at application layer before storing
+  passportNumber   String? // encrypt at application layer before storing
   phoneNumber      String?
   emergencyContact String?
   dietaryPrefs     String?
@@ -114,12 +115,13 @@ model Region {
 
   destinations Destination[]
   permits      Permit[]
+  guides       GuideProfile[] @relation("GuideRegions")
 }
 
 model Category {
-  id   String @id @default(cuid())
-  name String @unique // "Beaches", "Hills", "Historical", "Wildlife", "Cultural"
-  slug String @unique
+  id   String  @id @default(cuid())
+  name String  @unique // "Beaches", "Hills", "Historical", "Wildlife", "Cultural"
+  slug String  @unique
   icon String?
 
   destinations Destination[] @relation("DestinationCategories")
@@ -250,12 +252,17 @@ model Booking {
   // Private notes for the DeltaWay team (never shown to the tourist)
   adminNotes String? @db.Text
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   payment Payment?
   review  Review?
   permits Permit[]
+
+  // Guide the tourist asked for when booking (a wish, not an assignment)
+  requestedGuideId String?
+  requestedGuide   GuideProfile?     @relation("RequestedGuide", fields: [requestedGuideId], references: [id], onDelete: SetNull)
+  guideAssignments GuideAssignment[]
 
   @@index([touristId, status])
   @@index([status])
@@ -492,7 +499,7 @@ model PartnerApplication {
   idDocument      Json?
   licenceDocument Json?
   // Applicant chose to show their ID on WhatsApp instead of uploading
-  shareIdLater    Boolean           @default(false)
+  shareIdLater    Boolean  @default(false)
 
   inviteId String?            @unique
   invite   ApplicationInvite? @relation(fields: [inviteId], references: [id], onDelete: SetNull)
@@ -523,9 +530,98 @@ model ApplicationInvite {
   note        String?
   createdById String?
   createdBy   User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  // Language the invite message and form open in ("en" | "bn")
+  language    String          @default("bn")
   expiresAt   DateTime
+  // First time the link was opened, and when it was last emailed
+  openedAt    DateTime?
+  emailedAt   DateTime?
   usedAt      DateTime?
   createdAt   DateTime        @default(now())
 
   application PartnerApplication?
+}
+
+// ============================================================
+// Guides
+// ============================================================
+// A guide's public profile. Created when their application is approved.
+model GuideProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug            String   @unique
+  displayName     String
+  photoUrl        String?
+  bio             String   @db.Text
+  languages       String[]
+  regions         Region[] @relation("GuideRegions")
+  yearsExperience Int      @default(0)
+  dayRateBDT      Int
+  licenceNumber   String?
+  // Private: only the team, and the tourist close to the trip, see it
+  phone           String
+  // Language for their emails and dashboard ("en" | "bn")
+  language        String   @default("en")
+  // isActive: the team can pause a guide. isListed: the guide can hide their public profile.
+  isActive        Boolean  @default(true)
+  isListed        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  blockedDates      GuideBlockedDate[]
+  assignments       GuideAssignment[]
+  requestedBookings Booking[]          @relation("RequestedGuide")
+
+  @@index([isActive, isListed])
+}
+
+// Days a guide has marked as not available
+model GuideBlockedDate {
+  id      String       @id @default(cuid())
+  guideId String
+  guide   GuideProfile @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  date    DateTime     @db.Date
+
+  @@unique([guideId, date])
+}
+
+enum AssignmentStatus {
+  PENDING // waiting for the guide to accept
+  ACCEPTED
+  DECLINED
+  CANCELLED // by the team, or because the booking was cancelled
+}
+
+enum PayoutStatus {
+  UNPAID
+  PAID
+}
+
+// A guide asked to lead a booking. A booking has at most one PENDING or
+// ACCEPTED assignment at a time (checked in code); older ones stay as history.
+model GuideAssignment {
+  id              String           @id @default(cuid())
+  bookingId       String
+  booking         Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  guideId         String
+  guide           GuideProfile     @relation(fields: [guideId], references: [id], onDelete: Restrict)
+  status          AssignmentStatus @default(PENDING)
+  // What the guide is paid for this trip
+  feeBDT          Int
+  noteToGuide     String?          @db.Text
+  declineReason   String?          @db.Text
+  respondedAt     DateTime?
+  payoutStatus    PayoutStatus     @default(UNPAID)
+  paidAt          DateTime?
+  payoutReference String?
+  // Team was told the guide hasn't answered yet
+  reminderSentAt  DateTime?
+  assignedById    String?
+  assignedBy      User?            @relation("AssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([bookingId])
+  @@index([guideId, status])
 }

@@ -13,7 +13,9 @@ type Props = {
   name: string;
   label: string;
   defaultValue?: string;
-  folder: "destinations" | "tours" | "gallery";
+  folder: "destinations" | "tours" | "gallery" | "guides";
+  /** Who asks for the upload signature. Defaults to the admin action. */
+  sign?: () => ReturnType<typeof getUploadSignature>;
   uploadsEnabled: boolean;
   required?: boolean;
   /** Called with the new URL (for forms that manage state themselves) */
@@ -21,7 +23,7 @@ type Props = {
 };
 
 /** Photo picker: upload to Cloudinary (when configured) or paste a link. */
-export function ImageField({ name, label, defaultValue = "", folder, uploadsEnabled, required, onChange }: Props) {
+export function ImageField({ name, label, defaultValue = "", folder, uploadsEnabled, required, onChange, sign }: Props) {
   const [url, setUrl] = useState(defaultValue);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,9 +41,9 @@ export function ImageField({ name, label, defaultValue = "", folder, uploadsEnab
     setUploading(true);
     setError(null);
     try {
-      const signed = await getUploadSignature(folder);
+      const signed = sign ? await sign() : await getUploadSignature(folder);
       if (!signed.ok) throw new Error(signed.error);
-      const uploaded = await uploadToCloudinary(file, signed.signature);
+      const uploaded = await uploadToCloudinary(file, signed.signature, !sign);
       update(uploaded.secureUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed. Try again or paste a link.");

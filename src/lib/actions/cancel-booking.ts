@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { releaseGuidesForBooking } from "@/lib/guides";
 import { env } from "@/lib/env";
 import { notifyTeam, sendEmail, simpleEmail } from "@/lib/email";
 import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
@@ -66,6 +67,7 @@ export async function cancelBookingAction(input: z.input<typeof schema>): Promis
   if (count === 0) {
     return { success: false, error: "This booking just changed. Please refresh and try again." };
   }
+  await releaseGuidesForBooking(booking.id, parsed.data.reason || "Cancelled by the traveler");
 
   const title = booking.package?.title ?? "Custom trip";
   const dates = formatDateRange(booking.startDate, booking.endDate);

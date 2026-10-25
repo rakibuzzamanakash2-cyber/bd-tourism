@@ -8,7 +8,10 @@ import {
   RefundPaidForm,
   StatusButtons,
 } from "@/components/admin/booking-actions";
-import { BookingStatusBadge, PaymentStatusBadge } from "@/components/admin/ui";
+import { AssignmentStatusBadge, BookingStatusBadge, PaymentStatusBadge } from "@/components/admin/ui";
+import { AssignGuidePanel, CancelAssignmentButton, MarkGuidePaidForm, type GuideCandidate } from "@/components/admin/guide-actions";
+import { GUIDE_ASSIGNABLE_BOOKING, bdt, tripDays } from "@/lib/guide-shared";
+import { bookingRegionIds, guideConflicts } from "@/lib/guides";
 import { dateTime, describeAction, humanize, money, paymentMethod } from "@/lib/admin-format";
 import {
   ADMIN_CANCELLABLE_STATUSES,
@@ -44,7 +47,12 @@ export default async function AdminBookingDetailPage({ params }: Props) {
     db.booking.findUnique({
       where: { id },
       include: {
-        package: { select: { title: true, slug: true, durationDays: true } },
+        package: { select: { id: true, title: true, slug: true, durationDays: true, includesGuide: true } },
+        requestedGuide: { select: { id: true, slug: true, displayName: true } },
+        guideAssignments: {
+          include: { guide: { select: { id: true, displayName: true, slug: true, phone: true } }, assignedBy: { select: { name: true, email: true } } },
+          orderBy: { createdAt: "desc" },
+        },
         tourist: { select: { id: true, name: true, email: true, createdAt: true, touristProfile: true } },
         payment: true,
       },
@@ -83,6 +91,49 @@ export default async function AdminBookingDetailPage({ params }: Props) {
   const canCancel = (ADMIN_CANCELLABLE_STATUSES as readonly string[]).includes(booking.status);
   const restricted = details.permitContext?.restrictedRegions ?? [];
   const raw = (booking.payment?.providerRaw ?? null) as Record<string, unknown> | null;
+
+  // ---- Guide
+  const liveAssignment = booking.guideAssignments.find((a) => a.status === "PENDING" || a.status === "ACCEPTED");
+  const pastAssignments = booking.guideAssignments.filter((a) => a !== liveAssignment);
+  const canAssign = !liveAssignment && (GUIDE_ASSIGNABLE_BOOKING as readonly string[]).includes(booking.status);
+  const days = tripDays(booking.startDate, booking.endDate);
+  let candidates: GuideCandidate[] = [];
+  if (canAssign) {
+    const [regionIds, guides] = await Promise.all([
+      bookingRegionIds(booking.packageId),
+      db.guideProfile.findMany({
+        where: { isActive: true, user: { role: "GUIDE" } },
+        include: { regions: { select: { id: true } } },
+        orderBy: { displayName: "asc" },
+        take: 50,
+      }),
+    ]);
+    const declined = new Set(pastAssignments.filter((a) => a.status === "DECLINED").map((a) => a.guideId));
+    candidates = await Promise.all(
+      guides.map(async (g) => {
+        const c = await guideConflicts(g.id, booking.startDate, booking.endDate, booking.id);
+        const conflict = declined.has(g.id)
+          ? "Already declined this trip"
+          : c.trips.length
+            ? `On another trip: ${c.trips.map((t) => t.bookingCode).join(", ")}`
+            : c.blockedDays.length
+              ? `Marked not available: ${c.blockedDays.join(", ")}`
+              : null;
+        return {
+          id: g.id,
+          name: g.displayName,
+          dayRateBDT: g.dayRateBDT,
+          languages: g.languages,
+          coversRegion: regionIds.length === 0 || g.regions.some((r) => regionIds.includes(r.id)),
+          requested: g.id === booking.requestedGuideId,
+          conflict,
+        };
+      }),
+    );
+    // Requested first, then free guides who cover the area, then the rest
+    const score = (c: GuideCandidate) => (c.requested ? 0 : 1) * 4 + (c.conflict ? 2 : 0) + (c.coversRegion ? 0 : 1);
+    candidates.sort((a, b) => score(a) - score(b) || a.name.localeCompare(b.name));
+  }
 
   return (
     <div>
@@ -248,6 +299,60 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                 <p className="text-sm text-ink-mute">No actions for a {booking.status.toLowerCase()} booking.</p>
               )}
             </div>
+          </Section>
+          <Section title="Guide">
+            {booking.requestedGuide && (
+              <p className="mb-3 rounded-md bg-paper-warm px-3 py-2 text-xs">
+                Traveler asked for{" "}
+                <Link href={`/admin/guides/${booking.requestedGuide.id}`} className="font-medium underline underline-offset-4">
+                  {booking.requestedGuide.displayName}
+                </Link>
+              </p>
+            )}
+            {!booking.package?.includesGuide && <p className="mb-3 text-xs text-ink-mute">This tour doesn&rsquo;t include a guide, but you can still add one.</p>}
+            {liveAssignment ? (
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/admin/guides/${liveAssignment.guide.id}`} className="font-medium underline-offset-4 hover:underline">
+                    {liveAssignment.guide.displayName}
+                  </Link>
+                  <AssignmentStatusBadge status={liveAssignment.status} />
+                </div>
+                <p className="text-xs text-ink-mute">
+                  Fee {bdt(liveAssignment.feeBDT)} · asked {dateTime(liveAssignment.createdAt)}
+                  {liveAssignment.respondedAt && ` · answered ${dateTime(liveAssignment.respondedAt)}`}
+                  <br />
+                  {liveAssignment.guide.phone}
+                </p>
+                {liveAssignment.noteToGuide && <p className="whitespace-pre-wrap rounded-md bg-paper-warm p-2 text-xs">{liveAssignment.noteToGuide}</p>}
+                {liveAssignment.status === "ACCEPTED" &&
+                  (liveAssignment.payoutStatus === "PAID" ? (
+                    <p className="text-xs text-forest-800">
+                      Paid {dateTime(liveAssignment.paidAt)}
+                      {liveAssignment.payoutReference && ` · ${liveAssignment.payoutReference}`}
+                    </p>
+                  ) : (
+                    <MarkGuidePaidForm assignmentId={liveAssignment.id} feeBDT={liveAssignment.feeBDT} />
+                  ))}
+                {liveAssignment.payoutStatus !== "PAID" && <CancelAssignmentButton assignmentId={liveAssignment.id} />}
+              </div>
+            ) : canAssign ? (
+              <AssignGuidePanel bookingId={booking.id} days={days} candidates={candidates} />
+            ) : (
+              <p className="text-sm text-ink-mute">
+                {booking.status === "CANCELLED" ? "Booking cancelled." : "You can assign a guide once the booking is paid."}
+              </p>
+            )}
+            {pastAssignments.length > 0 && (
+              <ul className="mt-4 space-y-1 border-t border-forest-900/10 pt-3 text-xs text-ink-soft">
+                {pastAssignments.map((a) => (
+                  <li key={a.id}>
+                    {a.guide.displayName}: {a.status.toLowerCase()}
+                    {a.declineReason && ` (${a.declineReason})`}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Section>
           <Section title="Team notes">
             <NotesForm bookingId={booking.id} initial={booking.adminNotes ?? ""} />

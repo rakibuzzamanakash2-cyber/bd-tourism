@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarCheck,
   ClipboardList,
+  Compass,
   CreditCard,
   FileCheck,
   Inbox,
@@ -24,6 +25,7 @@ const items = [
   { href: "/admin/permits", label: "Permits", icon: FileCheck },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/applications", label: "Applications", icon: ClipboardList },
+  { href: "/admin/guides", label: "Guides", icon: Compass },
   { href: "/admin/messages", label: "Messages", icon: Inbox },
   { href: "/admin/tours", label: "Tours", icon: Route },
   { href: "/admin/destinations", label: "Destinations", icon: MapPin },

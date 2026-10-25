@@ -60,13 +60,12 @@ type Props = {
   lang: Lang;
   step: number; // 1-based
   maxStep: number;
-  inviteToken?: string;
   uploadsEnabled: boolean;
   regions: { id: string; name: string }[];
   initial: WizardValues;
 };
 
-export function ApplicationWizard({ kind, lang, step, maxStep, inviteToken, uploadsEnabled, regions, initial }: Props) {
+export function ApplicationWizard({ kind, lang, step, maxStep, uploadsEnabled, regions, initial }: Props) {
   const t = applyText[lang];
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -76,7 +75,7 @@ export function ApplicationWizard({ kind, lang, step, maxStep, inviteToken, uplo
   const steps = STEPS[kind] as readonly StepId[];
   const current = steps[step - 1];
   const base = `/apply/${kindParam(kind)}`;
-  const href = (n: number) => `${base}?step=${n}${lang === "bn" ? "&lang=bn" : ""}${inviteToken ? `&invite=${inviteToken}` : ""}`;
+  const href = (n: number) => `${base}?step=${n}${lang === "bn" ? "&lang=bn" : ""}`;
 
   const set = <K extends keyof WizardValues>(k: K, val: WizardValues[K]) => setV((x) => ({ ...x, [k]: val }));
   const toggle = (k: "regionIds" | "languages" | "facilities", item: string) =>
@@ -104,7 +103,7 @@ export function ApplicationWizard({ kind, lang, step, maxStep, inviteToken, uplo
 
   function save(then: "next" | "later") {
     start(async () => {
-      const r = await saveApplicationStepAction({ kind, step: current, data: dataFor(current), language: lang, inviteToken });
+      const r = await saveApplicationStepAction({ kind, step: current, data: dataFor(current), language: lang });
       if (!r.ok) {
         setErrors(r.fieldErrors ?? {});
         toast.error(r.error === "fixErrors" ? t.fixErrors : r.error === "signin" ? "Please sign in again." : t.errors.generic);

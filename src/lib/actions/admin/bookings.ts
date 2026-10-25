@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { BookingStatus } from "@prisma/client";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { releaseGuidesForBooking } from "@/lib/guides";
 import { env } from "@/lib/env";
 import { sendEmail, simpleEmail } from "@/lib/email";
 import { getAdminOrNull } from "@/lib/session";
@@ -165,6 +166,7 @@ export async function adminCancelBooking(input: z.input<typeof cancelSchema>): P
     },
   });
   if (count === 0) return { ok: false, error: "The booking changed meanwhile. Refresh and try again." };
+  await releaseGuidesForBooking(bookingId, reason);
 
   await audit({
     actorId: admin.id,

@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { inputClass } from "@/components/admin/form";
 import {
   adminCreateInvite,
+  adminEmailInvite,
+  adminRenewInvite,
   adminRevokeInvite,
   adminSaveApplicationNotes,
   adminSetApplicationStatus,
@@ -191,7 +193,7 @@ export function WhatsAppLinkButton({ href, label = "Send on WhatsApp" }: { href:
 export function InviteForm() {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [created, setCreated] = useState<{ link: string; whatsapp: string | null } | null>(null);
+  const [created, setCreated] = useState<{ link: string; message: string; whatsapp: string | null; emailed: boolean } | null>(null);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -200,13 +202,16 @@ export function InviteForm() {
     start(async () => {
       const r = await adminCreateInvite({
         kind: fd.get("kind") as "GUIDE" | "HOST",
+        language: fd.get("language") as "en" | "bn",
         name: String(fd.get("name") ?? ""),
         phone: String(fd.get("phone") ?? ""),
         email: String(fd.get("email") ?? ""),
         note: String(fd.get("note") ?? ""),
+        sendEmail: fd.get("sendEmail") === "on",
       });
       if (!r.ok) return void toast.error(r.error);
-      setCreated({ link: r.link, whatsapp: r.whatsapp });
+      setCreated({ link: r.link, message: r.message, whatsapp: r.whatsapp, emailed: r.emailed });
+      if (fd.get("sendEmail") === "on" && !r.emailed) toast.error("Invite created, but the email couldn't be sent. Send it on WhatsApp instead.");
       form.reset();
       router.refresh();
     });
@@ -223,6 +228,13 @@ export function InviteForm() {
           </select>
         </label>
         <label className="text-xs text-ink-mute">
+          Message and form language
+          <select name="language" className={`${inputClass} mt-1`} defaultValue="bn">
+            <option value="bn">Bangla</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label className="text-xs text-ink-mute">
           Name
           <input name="name" className={`${inputClass} mt-1`} placeholder="Pre-fills their form" />
         </label>
@@ -233,6 +245,9 @@ export function InviteForm() {
         <label className="text-xs text-ink-mute">
           Email (optional)
           <input name="email" type="email" className={`${inputClass} mt-1`} />
+        </label>
+        <label className="flex items-center gap-2 self-end pb-2 text-sm text-ink-soft">
+          <input type="checkbox" name="sendEmail" className="size-4" /> Also send it by email
         </label>
         <label className="text-xs text-ink-mute sm:col-span-2">
           Note for the team (optional)
@@ -246,36 +261,47 @@ export function InviteForm() {
       </form>
       {created && (
         <div role="status" className="space-y-3 rounded-lg border border-forest-700/20 bg-forest-100 p-5">
-          <p className="text-sm font-medium text-forest-900">Invite ready (valid for 14 days)</p>
-          <p className="break-all font-mono text-xs">{created.link}</p>
+          <p className="text-sm font-medium text-forest-900">
+            Invite ready (valid for 14 days){created.emailed ? " and emailed" : ""}
+          </p>
+          <p className="break-all font-mono text-xs" data-testid="invite-link">{created.link}</p>
           <div className="flex flex-wrap gap-2">
             {created.whatsapp && <WhatsAppLinkButton href={created.whatsapp} />}
             <CopyButton text={created.link} />
+            <CopyButton text={created.message} label="Copy message" />
           </div>
+          {!created.whatsapp && <p className="text-xs text-ink-soft">No phone number saved: copy the message and send it on WhatsApp, Messenger or SMS.</p>}
         </div>
       )}
     </div>
   );
 }
 
-export function RevokeInviteButton({ id }: { id: string }) {
+function SmallAction({ label, confirmText, run }: { label: string; confirmText?: string; run: () => Promise<{ ok: boolean; error?: string; message?: string }> }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
     <button
       type="button"
       disabled={pending}
-      className="text-xs text-clay-700 underline underline-offset-4"
+      className="text-xs text-forest-800 underline underline-offset-4 disabled:opacity-50"
       onClick={() =>
-        window.confirm("Cancel this invite? The link will stop working.") &&
+        (!confirmText || window.confirm(confirmText)) &&
         start(async () => {
-          const r = await adminRevokeInvite(id);
-          if (!r.ok) return void toast.error(r.error);
+          const r = await run();
+          if (!r.ok) return void toast.error(r.error ?? "Something went wrong");
+          if (r.message) toast.success(r.message);
           router.refresh();
         })
       }
     >
-      Cancel
+      {label}
     </button>
   );
 }
+
+export const RevokeInviteButton = ({ id }: { id: string }) => (
+  <SmallAction label="Cancel" confirmText="Cancel this invite? The link will stop working." run={() => adminRevokeInvite(id)} />
+);
+export const RenewInviteButton = ({ id }: { id: string }) => <SmallAction label="Renew 14 days" run={() => adminRenewInvite(id)} />;
+export const EmailInviteButton = ({ id }: { id: string }) => <SmallAction label="Email it" run={() => adminEmailInvite(id)} />;

@@ -7,6 +7,7 @@ const columns = [
     links: [
       { href: "/destinations", label: "Destinations" },
       { href: "/packages", label: "Tours" },
+      { href: "/guides", label: "Local guides" },
       { href: "/experiences", label: "Homestays" },
       { href: "/permits", label: "Restricted areas" },
     ],

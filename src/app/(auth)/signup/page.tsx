@@ -3,6 +3,8 @@ import { SignupForm } from "@/components/auth/signup-form";
 import { GoogleButton } from "@/components/auth/google-button";
 import { features } from "@/lib/env";
 import { safeCallbackUrl } from "@/lib/utils";
+import { InviteBanner } from "@/components/auth/invite-banner";
+import { applyPathFor, currentInvite } from "@/lib/invites";
 
 export const metadata = {
   title: "Create an account",
@@ -15,7 +17,11 @@ type Props = {
 };
 
 export default async function SignupPage({ searchParams }: Props) {
-  const callbackUrl = safeCallbackUrl((await searchParams).callbackUrl);
+  // Arrived from an invite link: say so, fill in what we know, and make
+  // sure they land on the form afterwards
+  const invite = await currentInvite();
+  const asked = safeCallbackUrl((await searchParams).callbackUrl);
+  const callbackUrl = invite && asked === "/" ? applyPathFor(invite.kind, invite.language) : asked;
   const withCallback = (path: string) =>
     callbackUrl === "/" ? path : `${path}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
@@ -35,6 +41,8 @@ export default async function SignupPage({ searchParams }: Props) {
         </Link>
       </p>
 
+      {invite && <InviteBanner kind={invite.kind} google={features.google} />}
+
       {features.google ? (
         <>
           <div className="mt-10">
@@ -53,7 +61,7 @@ export default async function SignupPage({ searchParams }: Props) {
         <div className="mt-10" />
       )}
 
-      <SignupForm callbackUrl={callbackUrl} />
+      <SignupForm callbackUrl={callbackUrl} defaults={invite ? { name: invite.name ?? undefined, email: invite.email ?? undefined } : undefined} />
 
       <p className="mt-6 text-xs leading-relaxed text-ink-mute">
         By signing up you agree to our{" "}

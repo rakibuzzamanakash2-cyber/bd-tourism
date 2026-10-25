@@ -9,11 +9,10 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { sendEmail, simpleEmail } from "@/lib/email";
 import { getAdminOrNull } from "@/lib/session";
+import { createGuideProfileFromApplication } from "@/lib/guides";
 import { APPLICATION_TRANSITIONS, CHECKLIST, normalizeBdPhone } from "@/lib/applications";
-import { inviteLink, inviteWhatsapp } from "@/lib/invites";
+import { INVITE_DAYS, inviteEmail, inviteLink, inviteMessage, inviteState, inviteWhatsapp, siteOrigin } from "@/lib/invites";
 import type { AdminActionResult } from "@/lib/actions/admin/bookings";
-
-const INVITE_DAYS = 14;
 
 function refresh(id?: string) {
   revalidatePath("/admin/applications");
@@ -93,6 +92,9 @@ export async function adminSetApplicationStatus(input: z.input<typeof statusSche
   });
   if (count === 0) return { ok: false, error: "The application changed meanwhile. Refresh and try again." };
   if (newRole) await db.user.update({ where: { id: app.userId }, data: { role: newRole } });
+  // Approved guides get their public profile straight away (they can edit it)
+  const profile = to === "APPROVED" && app.kind === "GUIDE" ? await createGuideProfileFromApplication(app.userId) : null;
+  if (profile) revalidatePath("/guides");
 
   await audit({
     actorId: admin.id,
@@ -164,13 +166,26 @@ export async function adminSaveApplicationNotes(input: { id: string; notes: stri
 // ============================================================
 const inviteSchema = z.object({
   kind: z.enum(["GUIDE", "HOST"]),
+  language: z.enum(["en", "bn"]).default("bn"),
   name: z.string().trim().max(120).optional().default(""),
   phone: z.string().trim().max(30).optional().default(""),
   email: z.string().trim().max(200).optional().default(""),
   note: z.string().trim().max(500).optional().default(""),
+  sendEmail: z.boolean().optional().default(false),
 });
 
-export type InviteResult = { ok: true; link: string; whatsapp: string | null } | { ok: false; error: string };
+export type InviteResult =
+  | { ok: true; link: string; message: string; whatsapp: string | null; emailed: boolean }
+  | { ok: false; error: string };
+
+async function emailInvite(invite: { id: string; kind: "GUIDE" | "HOST"; name: string | null; email: string | null; language: string; token: string }) {
+  if (!invite.email) return false;
+  const link = inviteLink(await siteOrigin(), invite.token);
+  const e = inviteEmail(invite.kind, invite.name, link, invite.language === "en" ? "en" : "bn");
+  const sent = await sendEmail({ to: invite.email, subject: e.subject, html: simpleEmail(e.heading, e.lines, { label: e.cta, url: link }) });
+  if (sent.success) await db.applicationInvite.update({ where: { id: invite.id }, data: { emailedAt: new Date() } });
+  return sent.success;
+}
 
 export async function adminCreateInvite(input: z.input<typeof inviteSchema>): Promise<InviteResult> {
   const admin = await getAdminOrNull();
@@ -181,30 +196,60 @@ export async function adminCreateInvite(input: z.input<typeof inviteSchema>): Pr
   const phone = i.phone ? normalizeBdPhone(i.phone) : null;
   if (i.phone && !phone) return { ok: false, error: "That doesn't look like a Bangladeshi mobile number." };
   if (i.email && !z.string().email().safeParse(i.email).success) return { ok: false, error: "That email doesn't look right." };
+  if (i.sendEmail && !i.email) return { ok: false, error: "Add their email to send the invite by email." };
 
-  const token = randomBytes(18).toString("base64url");
   const invite = await db.applicationInvite.create({
     data: {
       kind: i.kind,
-      token,
+      token: randomBytes(18).toString("base64url"),
+      language: i.language,
       name: i.name || null,
       phone,
-      email: i.email || null,
+      email: i.email.toLowerCase() || null,
       note: i.note || null,
       createdById: admin.id,
       expiresAt: new Date(Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000),
     },
   });
   await audit({ actorId: admin.id, action: "application.invite", targetType: "ApplicationInvite", targetId: invite.id, details: { kind: i.kind, name: i.name || null } });
+  const emailed = i.sendEmail ? await emailInvite(invite) : false;
   revalidatePath("/admin/applications/invites");
-  const link = inviteLink(i.kind, token);
-  return { ok: true, link, whatsapp: phone ? inviteWhatsapp(phone, i.kind, i.name, link) : null };
+
+  const link = inviteLink(await siteOrigin(), invite.token);
+  const message = inviteMessage(i.kind, invite.name, link, i.language);
+  return { ok: true, link, message, whatsapp: phone ? inviteWhatsapp(phone, message) : null, emailed };
+}
+
+export async function adminEmailInvite(id: string): Promise<AdminActionResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Not allowed." };
+  const invite = await db.applicationInvite.findUnique({ where: { id } });
+  if (!invite) return { ok: false, error: "Invite not found." };
+  if (inviteState(invite) !== "valid") return { ok: false, error: "Renew the invite first." };
+  if (!invite.email) return { ok: false, error: "This invite has no email address." };
+  const sent = await emailInvite(invite);
+  revalidatePath("/admin/applications/invites");
+  return sent ? { ok: true, message: `Emailed to ${invite.email}.` } : { ok: false, error: "The email couldn't be sent. Is RESEND_API_KEY set?" };
+}
+
+/** Give an expired (or nearly expired) invite another 14 days. Same link. */
+export async function adminRenewInvite(id: string): Promise<AdminActionResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Not allowed." };
+  const { count } = await db.applicationInvite.updateMany({
+    where: { id, usedAt: null },
+    data: { expiresAt: new Date(Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000) },
+  });
+  if (!count) return { ok: false, error: "This invite was already used." };
+  await audit({ actorId: admin.id, action: "application.invite_renew", targetType: "ApplicationInvite", targetId: id });
+  revalidatePath("/admin/applications/invites");
+  return { ok: true, message: `Renewed for ${INVITE_DAYS} days. The same link works again.` };
 }
 
 export async function adminRevokeInvite(id: string): Promise<AdminActionResult> {
   const admin = await getAdminOrNull();
   if (!admin) return { ok: false, error: "Not allowed." };
-  await db.applicationInvite.update({ where: { id }, data: { expiresAt: new Date() } });
+  await db.applicationInvite.updateMany({ where: { id, usedAt: null }, data: { expiresAt: new Date() } });
   await audit({ actorId: admin.id, action: "application.invite_revoke", targetType: "ApplicationInvite", targetId: id });
   revalidatePath("/admin/applications/invites");
   return { ok: true, message: "Invite cancelled." };

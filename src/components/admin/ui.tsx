@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { BookingStatus, ContactStatus, PaymentStatus, PermitStatus, UserRole } from "@prisma/client";
 import { PERMIT_STATUS } from "@/lib/permit-labels";
 import { APPLICATION_STATUS_LABEL } from "@/lib/applications";
+import { ASSIGNMENT_STATUS_LABEL } from "@/lib/guide-shared";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -306,4 +307,9 @@ const applicationTone: Record<string, keyof typeof tones> = {
 };
 export const ApplicationStatusBadge = ({ status }: { status: string }) => (
   <span className={cn(badge, tones[applicationTone[status] ?? "grey"])}>{APPLICATION_STATUS_LABEL[status] ?? status}</span>
+);
+
+const assignmentTone: Record<string, keyof typeof tones> = { PENDING: "amber", ACCEPTED: "green", DECLINED: "red", CANCELLED: "grey" };
+export const AssignmentStatusBadge = ({ status }: { status: string }) => (
+  <span className={cn(badge, tones[assignmentTone[status] ?? "grey"])}>{ASSIGNMENT_STATUS_LABEL[status] ?? status}</span>
 );
