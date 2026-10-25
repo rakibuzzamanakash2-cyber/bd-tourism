@@ -50,6 +50,11 @@ Create an empty database called `bd_tourism` in pgAdmin first (or change the nam
 | `npm run db:migrate` | Create a new migration after changing `prisma/schema.prisma` |
 | `npm run db:seed` | Load the sample destinations and tours |
 | `npm run db:studio` | Browse the database in your browser |
+| `npm run make-admin -- you@example.com` | Give an account admin access (add `--remove` to take it away) |
+
+## Admin panel
+
+Sign up on the site, then run `npm run make-admin -- your@email.com` and open **/admin**. From there the team can confirm bookings, record bKash/bank/cash payments, cancel with a refund, record refunds, read contact messages, export the homestay waitlist and manage user roles. Every admin action is kept in an activity log.
 
 ## Environment variables
 

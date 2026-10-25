@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { LogOut, Menu, User } from "lucide-react";
+import { LogOut, Menu, ShieldCheck, User } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -92,6 +92,15 @@ function UserMenu() {
             <User className="size-4" />
             Dashboard
           </Link>
+          {session.user.role === "ADMIN" && (
+            <Link
+              href="/admin"
+              className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-forest-100 focus:bg-forest-100"
+            >
+              <ShieldCheck className="size-4" />
+              Admin
+            </Link>
+          )}
           <DropdownMenuSeparator />
           <form action={signOutAction}>
             <button
@@ -214,6 +223,7 @@ export function SiteHeader() {
                       { href: "/dashboard/bookings", label: "My bookings" },
                       { href: "/dashboard/saved", label: "Saved" },
                       { href: "/dashboard/profile", label: "Profile" },
+                      ...(session.user.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
                     ].map((item) => (
                       <Link
                         key={item.href}

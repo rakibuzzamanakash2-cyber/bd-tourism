@@ -14,6 +14,8 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
+const ROLE_REFRESH_MS = 5 * 60 * 1000;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
@@ -88,6 +90,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.id = dbUser.id;
           token.role = dbUser.role;
         }
+        token.roleCheckedAt = Date.now();
+      }
+
+      // The role lives in the login token, so re-read it from the database
+      // every few minutes. Promoting or demoting someone then takes effect
+      // without them signing out and back in.
+      const checkedAt = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
+      if (typeof token.id === "string" && Date.now() - checkedAt > ROLE_REFRESH_MS) {
+        const fresh = await db.user.findUnique({
+          where: { id: token.id },
+          select: { role: true },
+        });
+        token.role = fresh?.role ?? "TOURIST";
+        token.roleCheckedAt = Date.now();
       }
       return token;
     },
