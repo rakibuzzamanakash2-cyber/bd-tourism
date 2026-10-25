@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { TourPackage } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,13 +9,13 @@ import {
   formatDateRange,
   MIN_BOOKING_LEAD_DAYS,
 } from "@/lib/booking-utils";
-import type { WizardData } from "./booking-wizard";
+import type { WizardData, WizardPackage } from "./booking-wizard";
 import { StepActions } from "./booking-wizard";
 
 type Props = {
   data: WizardData;
   setData: (d: WizardData) => void;
-  pkg: TourPackage;
+  pkg: WizardPackage;
   onNext: () => void;
 };
 
