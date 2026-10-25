@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loginAction, type AuthState } from "@/lib/actions/auth";
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(
     loginAction,
     null,
@@ -16,6 +16,7 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
       {state?.error && (
         <div className="rounded-md border border-clay-600/30 bg-clay-500/10 px-4 py-3 text-sm text-clay-700">
           {state.error}

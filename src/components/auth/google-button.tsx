@@ -2,11 +2,13 @@ import { signInWithGoogleAction } from "@/lib/actions/auth";
 
 type Props = {
   label?: string;
+  callbackUrl?: string;
 };
 
-export function GoogleButton({ label = "Continue with Google" }: Props) {
+export function GoogleButton({ label = "Continue with Google", callbackUrl = "/" }: Props) {
   return (
     <form action={signInWithGoogleAction}>
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <button
         type="submit"
         className="flex w-full items-center justify-center gap-3 rounded-full border border-forest-900/15 bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-forest-900/40 hover:bg-paper-warm"

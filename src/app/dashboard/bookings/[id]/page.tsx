@@ -5,7 +5,14 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatDateRange } from "@/lib/booking-utils";
+import {
+  CANCELLABLE_STATUSES,
+  calculateRefund,
+  formatDateRange,
+  serviceFeeFromDetails,
+} from "@/lib/booking-utils";
+import { CancelBookingButton } from "@/components/booking/cancel-booking";
+import { expireUnpaidBookings } from "@/lib/booking-expiry";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -49,7 +56,7 @@ const statusConfig: Record<
   CANCELLED: {
     label: "Cancelled",
     className: "border-ink-mute/30 bg-paper text-ink-mute",
-    description: "This booking was cancelled.",
+    description: "This booking is cancelled.",
   },
   DISPUTED: {
     label: "Disputed",
@@ -61,6 +68,7 @@ const statusConfig: Record<
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
   const user = await requireUser();
+  await expireUnpaidBookings(user.id);
 
   const booking = await db.booking.findUnique({
     where: { id },
@@ -84,6 +92,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
   if (booking.touristId !== user.id) notFound();
 
   const status = statusConfig[booking.status] ?? statusConfig.DRAFT;
+
+  // Refund the tourist would get if they cancelled now (null = can't cancel)
+  const cancelQuote = (CANCELLABLE_STATUSES as readonly string[]).includes(booking.status)
+    ? calculateRefund({
+        totalUSD: Number(booking.totalAmountUSD),
+        serviceFeeUSD: serviceFeeFromDetails(booking.specialRequests),
+        startDate: booking.startDate,
+        paid: booking.status !== "PAYMENT_PENDING",
+      })
+    : null;
   const priceUSD = Number(booking.totalAmountUSD);
   const pricePerPerson = booking.package
     ? Number(booking.package.basePriceUSD)
@@ -148,6 +166,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <p className="mt-4 max-w-md leading-relaxed text-ink">
               {status.description}
             </p>
+            {booking.status === "CANCELLED" && (
+              <div className="mt-4 space-y-1 text-sm text-ink-soft">
+                {booking.cancellationReason && <p>Reason: {booking.cancellationReason}</p>}
+                {booking.refundAmountUSD !== null && (
+                  <p className="font-medium text-ink">
+                    {Number(booking.refundAmountUSD) > 0
+                      ? `Refund due: $${Number(booking.refundAmountUSD).toFixed(2)}, sent within 7–10 working days.`
+                      : "No refund is due under the cancellation policy."}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           {booking.status === "PAYMENT_PENDING" && (
             <Link
@@ -261,6 +291,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
               Within 14 days: 50% refund. Within 48 hours: no refund. Permit
               fees are non-refundable once processed.
             </p>
+            {cancelQuote && (
+              <CancelBookingButton
+                bookingId={booking.id}
+                bookingCode={booking.bookingCode}
+                totalUSD={priceUSD}
+                quote={cancelQuote}
+              />
+            )}
           </div>
         </aside>
       </div>

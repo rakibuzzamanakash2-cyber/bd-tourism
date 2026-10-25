@@ -7,6 +7,7 @@ import { cn, countWord } from "@/lib/utils";
 
 import { DestinationCard } from "@/components/destinations/destination-card";
 import { PackageCard } from "@/components/packages/package-card";
+import { getSavedState } from "@/lib/saved";
 
 // ============================================================
 // HERO
@@ -106,12 +107,15 @@ function Facts() {
 // FEATURED DESTINATIONS
 // ============================================================
 async function FeaturedDestinations() {
-  const destinations = await db.destination.findMany({
-    where: { isFeatured: true, isPublished: true },
-    include: { region: true },
-    take: 6,
-    orderBy: { createdAt: "asc" },
-  });
+  const [destinations, savedState] = await Promise.all([
+    db.destination.findMany({
+      where: { isFeatured: true, isPublished: true },
+      include: { region: true },
+      take: 6,
+      orderBy: { createdAt: "asc" },
+    }),
+    getSavedState(),
+  ]);
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
@@ -133,7 +137,13 @@ async function FeaturedDestinations() {
 
       <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
         {destinations.map((d, i) => (
-          <DestinationCard key={d.id} destination={d} priority={i < 3} />
+          <DestinationCard
+            key={d.id}
+            destination={d}
+            priority={i < 3}
+            saved={savedState.destinationIds.has(d.id)}
+            signedIn={savedState.signedIn}
+          />
         ))}
       </div>
     </section>
@@ -199,11 +209,14 @@ function WhyUs() {
 // FEATURED PACKAGES
 // ============================================================
 async function FeaturedPackages() {
-  const packages = await db.tourPackage.findMany({
-    where: { isPublished: true },
-    take: 3,
-    orderBy: { durationDays: "asc" },
-  });
+  const [packages, savedState] = await Promise.all([
+    db.tourPackage.findMany({
+      where: { isPublished: true },
+      take: 3,
+      orderBy: { durationDays: "asc" },
+    }),
+    getSavedState(),
+  ]);
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
@@ -226,7 +239,13 @@ async function FeaturedPackages() {
 
       <div className="grid gap-10 md:grid-cols-3">
         {packages.map((p, i) => (
-          <PackageCard key={p.id} package={p} priority={i < 3} />
+          <PackageCard
+            key={p.id}
+            package={p}
+            priority={i < 3}
+            saved={savedState.packageIds.has(p.id)}
+            signedIn={savedState.signedIn}
+          />
         ))}
       </div>
     </section>

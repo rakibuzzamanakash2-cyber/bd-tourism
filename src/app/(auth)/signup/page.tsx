@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SignupForm } from "@/components/auth/signup-form";
 import { GoogleButton } from "@/components/auth/google-button";
 import { features } from "@/lib/env";
+import { safeCallbackUrl } from "@/lib/utils";
 
 export const metadata = {
   title: "Create an account",
@@ -9,7 +10,15 @@ export const metadata = {
     "Create your DeltaWay account to book tours, homestays, and permit-included trips.",
 };
 
-export default function SignupPage() {
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function SignupPage({ searchParams }: Props) {
+  const callbackUrl = safeCallbackUrl((await searchParams).callbackUrl);
+  const withCallback = (path: string) =>
+    callbackUrl === "/" ? path : `${path}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
   return (
     <div>
       <p className="eyebrow mb-4 text-forest-700">Get started</p>
@@ -19,7 +28,7 @@ export default function SignupPage() {
       <p className="mt-3 text-ink-soft">
         Already have one?{" "}
         <Link
-          href="/login"
+          href={withCallback("/login")}
           className="font-medium text-forest-800 underline underline-offset-4 hover:text-forest-700"
         >
           Sign in
@@ -29,7 +38,7 @@ export default function SignupPage() {
       {features.google ? (
         <>
           <div className="mt-10">
-            <GoogleButton label="Sign up with Google" />
+            <GoogleButton label="Sign up with Google" callbackUrl={callbackUrl} />
           </div>
 
           <div className="my-8 flex items-center gap-4">
@@ -44,7 +53,7 @@ export default function SignupPage() {
         <div className="mt-10" />
       )}
 
-      <SignupForm />
+      <SignupForm callbackUrl={callbackUrl} />
 
       <p className="mt-6 text-xs leading-relaxed text-ink-mute">
         By signing up you agree to our{" "}

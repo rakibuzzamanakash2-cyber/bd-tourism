@@ -6,6 +6,8 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SaveButton } from "@/components/saved/save-button";
+import { getSavedState } from "@/lib/saved";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -45,14 +47,17 @@ export default async function DestinationDetailPage({ params }: PageProps) {
 
   if (!destination || !destination.isPublished) notFound();
 
-  const relatedPackages = await db.tourPackage.findMany({
-    where: {
-      isPublished: true,
-      itinerary: { some: { destinationId: destination.id } },
-    },
-    take: 3,
-    orderBy: { durationDays: "asc" },
-  });
+  const [relatedPackages, savedState] = await Promise.all([
+    db.tourPackage.findMany({
+      where: {
+        isPublished: true,
+        itinerary: { some: { destinationId: destination.id } },
+      },
+      take: 3,
+      orderBy: { durationDays: "asc" },
+    }),
+    getSavedState(),
+  ]);
 
   const mapsUrl =
     destination.latitude && destination.longitude
@@ -171,7 +176,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
               )}
 
               <Link
-                href="/contact"
+                href={`/contact?subject=${encodeURIComponent(`Visiting ${destination.name}`)}`}
                 className={cn(
                   buttonVariants(),
                   "mt-6 w-full rounded-full bg-forest-900 text-paper hover:bg-forest-800",
@@ -179,6 +184,16 @@ export default async function DestinationDetailPage({ params }: PageProps) {
               >
                 Ask us about visiting
               </Link>
+              <div className="mt-4 text-center">
+                <SaveButton
+                  kind="destination"
+                  id={destination.id}
+                  name={destination.name}
+                  initialSaved={savedState.destinationIds.has(destination.id)}
+                  signedIn={savedState.signedIn}
+                  variant="inline"
+                />
+              </div>
             </div>
           </aside>
         </div>

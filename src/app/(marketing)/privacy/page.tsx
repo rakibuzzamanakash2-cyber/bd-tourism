@@ -1,4 +1,5 @@
 import { ContentPage } from "@/components/layout/content-page";
+import { site } from "@/lib/site";
 
 export const metadata = {
   title: "Privacy Policy",
@@ -60,7 +61,7 @@ export default function PrivacyPage() {
         {
           heading: "Your choices",
           paragraphs: [
-            "You can view and edit your profile from your dashboard. For a copy of your data, or to delete your account, email hello@bangladeshtourism.co.",
+            `You can view and edit your profile from your dashboard. For a copy of your data, or to delete your account, email ${site.email}.`,
           ],
         },
       ]}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { GoogleButton } from "@/components/auth/google-button";
 import { features } from "@/lib/env";
+import { safeCallbackUrl } from "@/lib/utils";
 
 export const metadata = {
   title: "Sign in",
@@ -13,7 +14,10 @@ type Props = {
 };
 
 export default async function LoginPage({ searchParams }: Props) {
-  const { reset } = await searchParams;
+  const { reset, callbackUrl: rawCallback } = await searchParams;
+  const callbackUrl = safeCallbackUrl(rawCallback);
+  const withCallback = (path: string) =>
+    callbackUrl === "/" ? path : `${path}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   return (
     <div>
@@ -24,7 +28,7 @@ export default async function LoginPage({ searchParams }: Props) {
       <p className="mt-3 text-ink-soft">
         Don&rsquo;t have an account?{" "}
         <Link
-          href="/signup"
+          href={withCallback("/signup")}
           className="font-medium text-forest-800 underline underline-offset-4 hover:text-forest-700"
         >
           Sign up
@@ -43,7 +47,7 @@ export default async function LoginPage({ searchParams }: Props) {
       {features.google ? (
         <>
           <div className="mt-10">
-            <GoogleButton label="Continue with Google" />
+            <GoogleButton label="Continue with Google" callbackUrl={callbackUrl} />
           </div>
 
           <div className="my-8 flex items-center gap-4">
@@ -58,7 +62,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <div className="mt-10" />
       )}
 
-      <LoginForm />
+      <LoginForm callbackUrl={callbackUrl} />
     </div>
   );
 }

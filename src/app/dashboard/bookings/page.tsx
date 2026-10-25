@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { expireUnpaidBookings } from "@/lib/booking-expiry";
 
 export const metadata = {
   title: "Bookings",
@@ -31,6 +32,7 @@ const statusLabels: Record<string, string> = {
 
 export default async function BookingsPage() {
   const user = await requireUser();
+  await expireUnpaidBookings(user.id);
 
   const bookings = await db.booking.findMany({
     where: { touristId: user.id },

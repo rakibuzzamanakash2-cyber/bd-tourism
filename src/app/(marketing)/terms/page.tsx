@@ -1,4 +1,5 @@
 import { ContentPage } from "@/components/layout/content-page";
+import { site } from "@/lib/site";
 
 export const metadata = {
   title: "Terms",
@@ -58,7 +59,7 @@ export default function TermsPage() {
         {
           heading: "Contact",
           paragraphs: [
-            "Questions about these terms: hello@bangladeshtourism.co. These terms are governed by the laws of Bangladesh.",
+            `Questions about these terms: ${site.email}. These terms are governed by the laws of Bangladesh.`,
           ],
         },
       ]}

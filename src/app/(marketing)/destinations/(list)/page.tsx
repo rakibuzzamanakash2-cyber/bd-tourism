@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { cn, countWord } from "@/lib/utils";
 import { DestinationCard } from "@/components/destinations/destination-card";
+import { getSavedState } from "@/lib/saved";
 
 type SearchParams = Promise<{
   region?: string;
@@ -22,7 +23,7 @@ export default async function DestinationsPage({
   const params = await searchParams;
   const { region: regionSlug, category: categorySlug } = params;
 
-  const [regions, categories, destinations] = await Promise.all([
+  const [regions, categories, destinations, savedState] = await Promise.all([
     db.region.findMany({ orderBy: { name: "asc" } }),
     db.category.findMany({ orderBy: { name: "asc" } }),
     db.destination.findMany({
@@ -34,6 +35,7 @@ export default async function DestinationsPage({
       include: { region: true, categories: true },
       orderBy: [{ isFeatured: "desc" }, { name: "asc" }],
     }),
+    getSavedState(),
   ]);
 
   const currentRegion = regions.find((r) => r.slug === regionSlug);
@@ -130,7 +132,12 @@ export default async function DestinationsPage({
             </div>
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
               {destinations.map((d) => (
-                <DestinationCard key={d.id} destination={d} />
+                <DestinationCard
+                  key={d.id}
+                  destination={d}
+                  saved={savedState.destinationIds.has(d.id)}
+                  signedIn={savedState.signedIn}
+                />
               ))}
             </div>
           </>
