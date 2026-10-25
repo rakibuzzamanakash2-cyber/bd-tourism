@@ -50,6 +50,17 @@ export function describeAction(action: string): string {
     "booking.notes": "updated booking notes",
     "contact.status": "updated a message",
     "user.role": "changed a user's role",
+    "permit.update": "updated a permit",
+    "content.destination.create": "added a destination",
+    "content.destination.update": "edited a destination",
+    "content.gallery.add": "added a gallery photo",
+    "content.gallery.remove": "removed a gallery photo",
+    "content.tour.create": "added a tour",
+    "content.tour.update": "edited a tour",
+    "content.region.create": "added a region",
+    "content.region.update": "edited a region",
+    "content.category.create": "added a destination type",
+    "content.category.update": "renamed a destination type",
   };
   return map[action] ?? action;
 }
@@ -73,4 +84,14 @@ export function paymentMethod(provider: string): string {
   const [kind, method] = provider.split(":");
   if (kind === "manual" && method) return `${METHOD_LABELS[method] ?? method} (recorded manually)`;
   return METHOD_LABELS[provider] ?? provider;
+}
+
+/** Whole days from now until `date` (negative once it has passed). */
+export function daysUntil(date: Date): number {
+  return Math.ceil((date.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
+/** "DOCUMENTS_NEEDED" → "documents needed" */
+export function humanize(code: string): string {
+  return code.replace(/_/g, " ").toLowerCase();
 }

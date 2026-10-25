@@ -5,6 +5,7 @@ import { notifyTeam, sendPaymentReceipt } from "@/lib/email";
 import { EXPIRED_BOOKING_REASON, formatDateRange } from "@/lib/booking-utils";
 import type { Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
+import { ensurePermitsForBooking } from "@/lib/permits";
 
 // SSLCommerz sends form-encoded POST to this endpoint after payment.
 export async function POST(req: NextRequest) {
@@ -119,6 +120,10 @@ export async function POST(req: NextRequest) {
         data: bookingUpdate,
       }),
     ]);
+
+    if (!wasCancelled || wasExpired) {
+      await ensurePermitsForBooking(payment.bookingId);
+    }
 
     if (wasCancelled && !wasExpired) {
       await notifyTeam({

@@ -46,6 +46,11 @@ const schema = z.object({
   ADMIN_EMAIL: optional,
   // Shared secret Vercel Cron sends to /api/cron/* routes
   CRON_SECRET: optional,
+
+  // Photo uploads in the admin panel (cloudinary.com → Settings → API Keys)
+  CLOUDINARY_CLOUD_NAME: optional,
+  CLOUDINARY_API_KEY: optional,
+  CLOUDINARY_API_SECRET: optional,
 });
 
 const parsed = schema.safeParse(process.env);
@@ -64,4 +69,5 @@ export const features = {
   google: Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET),
   payments: Boolean(env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_STORE_PASSWORD),
   email: Boolean(env.RESEND_API_KEY),
+  uploads: Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET),
 };

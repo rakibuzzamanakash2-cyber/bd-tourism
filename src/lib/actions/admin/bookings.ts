@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { sendEmail, simpleEmail } from "@/lib/email";
 import { getAdminOrNull } from "@/lib/session";
+import { ensurePermitsForBooking } from "@/lib/permits";
 import {
   ADMIN_CANCELLABLE_STATUSES,
   ADMIN_STATUS_TRANSITIONS,
@@ -121,6 +122,7 @@ export async function adminMarkBookingPaid(input: z.input<typeof manualPaymentSc
     db.booking.update({ where: { id: bookingId }, data: { status: "PAID" } }),
   ]);
 
+  await ensurePermitsForBooking(bookingId);
   await audit({ actorId: admin.id, action: "booking.mark_paid", targetType: "Booking", targetId: bookingId, details: raw });
   refresh(bookingId);
   return { ok: true, message: "Payment recorded. The booking is now Paid." };

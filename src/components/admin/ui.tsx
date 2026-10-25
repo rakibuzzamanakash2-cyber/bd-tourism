@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { BookingStatus, ContactStatus, PaymentStatus, UserRole } from "@prisma/client";
+import type { BookingStatus, ContactStatus, PaymentStatus, PermitStatus, UserRole } from "@prisma/client";
+import { PERMIT_STATUS } from "@/lib/permit-labels";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -229,6 +230,7 @@ const tones = {
   amber: "border-clay-600/30 bg-clay-500/10 text-clay-700",
   grey: "border-ink-mute/30 bg-paper text-ink-mute",
   dark: "border-forest-900/20 bg-forest-900/10 text-forest-900",
+  red: "border-clay-700/40 bg-clay-600/15 text-clay-700",
 };
 
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
@@ -285,4 +287,8 @@ export const ContactStatusBadge = ({ status }: { status: ContactStatus }) => (
 
 export const RoleBadge = ({ role }: { role: UserRole }) => (
   <span className={cn(badge, role === "ADMIN" ? tones.dark : tones.grey)}>{role.charAt(0) + role.slice(1).toLowerCase()}</span>
+);
+
+export const PermitStatusBadge = ({ status }: { status: PermitStatus }) => (
+  <span className={cn(badge, tones[PERMIT_STATUS[status].tone])}>{PERMIT_STATUS[status].label}</span>
 );

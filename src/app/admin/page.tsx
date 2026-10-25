@@ -23,6 +23,7 @@ export default async function AdminOverviewPage() {
     newMessages,
     waitlist,
     users,
+    permitsToDo,
     upcoming,
     recent,
     activity,
@@ -41,6 +42,9 @@ export default async function AdminOverviewPage() {
     db.contactMessage.count({ where: { status: "NEW" } }),
     db.waitlistEntry.count(),
     db.user.count(),
+    db.permit.count({
+      where: { status: { in: ["NOT_STARTED", "DOCUMENTS_NEEDED"] }, booking: { status: { not: "CANCELLED" } } },
+    }),
     db.booking.findMany({
       where: {
         status: { in: ["PAID", "CONFIRMED", "IN_PROGRESS"] },
@@ -67,7 +71,7 @@ export default async function AdminOverviewPage() {
       <AdminPageHeader title="Overview" description="What needs attention today, and how things are going." />
 
       <h2 className="mb-3 font-sans text-xs uppercase tracking-wider text-ink-mute">Needs attention</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard
           label="Paid, to confirm"
           value={toConfirm}
@@ -88,6 +92,13 @@ export default async function AdminOverviewPage() {
           hint="From the contact form"
           href="/admin/messages?status=NEW"
           tone={newMessages > 0 ? "attention" : "default"}
+        />
+        <StatCard
+          label="Permits to process"
+          value={permitsToDo}
+          hint="Not started or waiting on documents"
+          href="/admin/permits"
+          tone={permitsToDo > 0 ? "attention" : "default"}
         />
         <StatCard
           label="Awaiting payment"

@@ -1,17 +1,12 @@
 import type { NextConfig } from "next";
+import { IMAGE_HOSTS } from "./src/lib/image-hosts";
 
 const isDev = process.env.NODE_ENV !== "production";
 
-// Where images may come from. next/image fetches remote photos on the server
-// and serves them from our own domain, so these hosts are mainly for that
-// optimizer; Google profile pictures are loaded directly by the browser.
-const imageHosts = [
-  "images.unsplash.com",
-  "images.pexels.com",
-  "upload.wikimedia.org",
-  "res.cloudinary.com",
-  "lh3.googleusercontent.com",
-];
+// Where images may come from (see src/lib/image-hosts.ts). next/image fetches
+// remote photos on the server and serves them from our own domain; Google
+// profile pictures are loaded directly by the browser.
+const imageHosts = [...IMAGE_HOSTS];
 
 // Content-Security-Policy: what the browser is allowed to load or submit to.
 // 'unsafe-inline' for scripts/styles is needed by Next.js's inline bootstrap
@@ -22,7 +17,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${imageHosts.map((h) => `https://${h}`).join(" ")}`,
   "font-src 'self'",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  // api.cloudinary.com: admin photo uploads go straight from the browser
+  `connect-src 'self' https://api.cloudinary.com${isDev ? " ws: wss:" : ""}`,
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
