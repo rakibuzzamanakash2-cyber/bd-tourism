@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { GoogleButton } from "@/components/auth/google-button";
+import { features } from "@/lib/env";
 
 export const metadata = {
   title: "Sign in",
-  description: "Sign in to your Bangladesh Tourism account.",
+  description: "Sign in to your DeltaWay account.",
 };
 
 type Props = {
@@ -39,17 +40,23 @@ export default async function LoginPage({ searchParams }: Props) {
         </div>
       )}
 
-      <div className="mt-10">
-        <GoogleButton label="Continue with Google" />
-      </div>
+      {features.google ? (
+        <>
+          <div className="mt-10">
+            <GoogleButton label="Continue with Google" />
+          </div>
 
-      <div className="my-8 flex items-center gap-4">
-        <div className="h-px flex-1 bg-forest-900/10" />
-        <span className="text-xs uppercase tracking-widest text-ink-mute">
-          or
-        </span>
-        <div className="h-px flex-1 bg-forest-900/10" />
-      </div>
+          <div className="my-8 flex items-center gap-4">
+            <div className="h-px flex-1 bg-forest-900/10" />
+            <span className="text-xs uppercase tracking-widest text-ink-mute">
+              or
+            </span>
+            <div className="h-px flex-1 bg-forest-900/10" />
+          </div>
+        </>
+      ) : (
+        <div className="mt-10" />
+      )}
 
       <LoginForm />
     </div>

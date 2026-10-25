@@ -2,7 +2,7 @@ import { ContentPage } from "@/components/layout/content-page";
 
 export const metadata = {
   title: "Terms",
-  description: "The terms that apply when you book a tour through Bangladesh Tourism.",
+  description: "The terms that apply when you book a tour through DeltaWay.",
 };
 
 // NOTE: plain-language starter terms. Have a lawyer review before taking real payments.

@@ -4,6 +4,7 @@ import { validatePayment } from "@/lib/sslcommerz";
 import { sendPaymentReceipt } from "@/lib/email";
 import { formatDateRange } from "@/lib/booking-utils";
 import type { Prisma } from "@prisma/client";
+import { env } from "@/lib/env";
 
 // SSLCommerz sends form-encoded POST to this endpoint after payment.
 export async function POST(req: NextRequest) {
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      const baseUrl = env.NEXT_PUBLIC_APP_URL;
       const bookingUrl = `${baseUrl}/dashboard/bookings/${payment.bookingId}`;
 
       await sendPaymentReceipt({

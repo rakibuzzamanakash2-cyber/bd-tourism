@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/auth";
+import { RATE_LIMITS, clientIp, rateLimit, tooManyMessage } from "@/lib/rate-limit";
 
 // ============================================================
 // SCHEMAS
@@ -63,6 +64,11 @@ export async function signupAction(
   }
 
   const { name, email, password } = parsed.data;
+
+  const limited = await rateLimit(`signup:ip:${await clientIp()}`, RATE_LIMITS.signupIp);
+  if (!limited.ok) {
+    return { error: tooManyMessage(limited.retryAfterSeconds), values: typedValues(formData) };
+  }
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
@@ -124,6 +130,18 @@ export async function loginAction(
       if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
     }
     return { fieldErrors, values: typedValues(formData) };
+  }
+
+  // Slow down password guessing: per email address and per IP address
+  const email = parsed.data.email.toLowerCase();
+  for (const check of [
+    rateLimit(`login:email:${email}`, RATE_LIMITS.loginEmail),
+    rateLimit(`login:ip:${await clientIp()}`, RATE_LIMITS.loginIp),
+  ]) {
+    const result = await check;
+    if (!result.ok) {
+      return { error: tooManyMessage(result.retryAfterSeconds), values: typedValues(formData) };
+    }
   }
 
   try {

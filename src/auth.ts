@@ -5,6 +5,8 @@ import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { env, features } from "@/lib/env";
+import { RATE_LIMITS, ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 import type { UserRole } from "@prisma/client";
 
 const credentialsSchema = z.object({
@@ -19,17 +21,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    }),
+    // "Continue with Google" is only offered when its keys are configured
+    ...(features.google
+      ? [
+          Google({
+            clientId: env.AUTH_GOOGLE_ID,
+            clientSecret: env.AUTH_GOOGLE_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
     Credentials({
       credentials: {
         email: {},
         password: {},
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        // Our login form has its own friendlier limits; this catches scripts
+        // posting straight to /api/auth/callback/credentials.
+        const limited = await rateLimit(
+          `authorize:ip:${ipFromHeaders(request.headers)}`,
+          RATE_LIMITS.authorizeIp,
+        );
+        if (!limited.ok) return null;
+
         const parsed = credentialsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 

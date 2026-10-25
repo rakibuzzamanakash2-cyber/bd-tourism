@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { cn } from "@/lib/utils";
+import { cn, countWord } from "@/lib/utils";
 import { DestinationCard } from "@/components/destinations/destination-card";
 
 type SearchParams = Promise<{
@@ -52,7 +52,7 @@ export default async function DestinationsPage({
               ? currentRegion.name
               : currentCategory
                 ? currentCategory.name
-                : "Ten places, one country."}
+                : `${countWord(destinations.length)} ${destinations.length === 1 ? "place" : "places"}, one country.`}
           </h1>
           {currentRegion?.description && (
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">

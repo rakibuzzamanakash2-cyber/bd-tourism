@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
 import { initiatePayment } from "@/lib/sslcommerz";
 
 export type InitiatePaymentResult =
@@ -14,6 +15,11 @@ export async function initiatePaymentAction(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "You must be signed in to pay." };
+  }
+
+  const limited = await rateLimit(`payment:user:${session.user.id}`, RATE_LIMITS.paymentUser);
+  if (!limited.ok) {
+    return { success: false, error: tooManyMessage(limited.retryAfterSeconds) };
   }
 
   const booking = await db.booking.findUnique({

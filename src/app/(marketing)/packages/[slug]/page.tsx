@@ -17,9 +17,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const pkg = await db.tourPackage.findUnique({
     where: { slug },
-    select: { title: true, summary: true, featuredImage: true },
+    select: { title: true, summary: true, featuredImage: true, isPublished: true },
   });
-  if (!pkg) return {};
+  if (!pkg || !pkg.isPublished) return {};
   return {
     title: pkg.title,
     description: pkg.summary,
@@ -44,7 +44,7 @@ export default async function PackageDetailPage({ params }: PageProps) {
     },
   });
 
-  if (!pkg) notFound();
+  if (!pkg || !pkg.isPublished) notFound();
 
   const priceUSD = Number(pkg.basePriceUSD);
 

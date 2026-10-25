@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 
 import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, countWord } from "@/lib/utils";
 
 import { DestinationCard } from "@/components/destinations/destination-card";
 import { PackageCard } from "@/components/packages/package-card";
@@ -119,7 +119,8 @@ async function FeaturedDestinations() {
         <div>
           <p className="eyebrow mb-3 text-forest-700">A short list</p>
           <h2 className="max-w-2xl font-display text-4xl sm:text-5xl md:text-6xl">
-            Six places to start with.
+            {countWord(destinations.length)}{" "}
+            {destinations.length === 1 ? "place" : "places"} to start with.
           </h2>
         </div>
         <Link

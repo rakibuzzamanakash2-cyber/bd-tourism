@@ -74,11 +74,14 @@ export function StepDetails({
       if (!t.name.trim() || t.name.length < 2) {
         newErrors[`t${i}.name`] = "Name required";
       }
-      if (!t.passportNumber.trim()) {
-        newErrors[`t${i}.passport`] = "Passport number required";
-      }
-      if (!t.nationality.trim()) {
-        newErrors[`t${i}.nationality`] = "Nationality required";
+      // Passport details are only required when the tour needs a permit
+      if (isRestricted) {
+        if (!t.passportNumber.trim()) {
+          newErrors[`t${i}.passport`] = "Passport number required for permit";
+        }
+        if (!t.nationality.trim()) {
+          newErrors[`t${i}.nationality`] = "Nationality required for permit";
+        }
       }
     });
 
@@ -189,7 +192,7 @@ export function StepDetails({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field
                       label="Passport number"
-                      required
+                      required={isRestricted}
                       value={t.passportNumber}
                       onChange={(v) =>
                         updateAdditional(i, "passportNumber", v)
@@ -198,7 +201,7 @@ export function StepDetails({
                     />
                     <Field
                       label="Nationality"
-                      required
+                      required={isRestricted}
                       placeholder="e.g. British"
                       value={t.nationality}
                       onChange={(v) => updateAdditional(i, "nationality", v)}

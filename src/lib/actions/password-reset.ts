@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { RATE_LIMITS, clientIp, rateLimit, tooManyMessage } from "@/lib/rate-limit";
+import { env } from "@/lib/env";
 
 // Reset links stay valid for one hour.
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
@@ -50,6 +52,14 @@ export async function requestPasswordResetAction(
   }
   const { email } = parsed.data;
 
+  const ipLimit = await rateLimit(`reset:ip:${await clientIp()}`, RATE_LIMITS.resetIp);
+  if (!ipLimit.ok) return { error: tooManyMessage(ipLimit.retryAfterSeconds) };
+
+  // Per-email limit stops anyone flooding a person's inbox. We still answer
+  // "check your inbox" so the response never reveals whether the account exists.
+  const emailLimit = await rateLimit(`reset:email:${email}`, RATE_LIMITS.resetEmail);
+  if (!emailLimit.ok) return { success: true };
+
   const user = await db.user.findUnique({
     where: { email },
     select: { id: true, name: true },
@@ -74,7 +84,7 @@ export async function requestPasswordResetAction(
     }),
   ]);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const baseUrl = env.NEXT_PUBLIC_APP_URL;
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
   const sent = await sendPasswordResetEmail({
@@ -85,7 +95,7 @@ export async function requestPasswordResetAction(
 
   // Without an email service (e.g. on your own PC), print the link to the
   // terminal so the flow can still be tested. Never in production.
-  if (!sent.success && process.env.NODE_ENV !== "production") {
+  if (!sent.success && env.NODE_ENV !== "production") {
     console.log(`[password-reset] Email not sent. Reset link for ${email}:\n${resetUrl}`);
   }
 

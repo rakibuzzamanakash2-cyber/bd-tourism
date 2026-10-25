@@ -63,6 +63,7 @@ export default async function BookingsPage() {
               day: "numeric",
               month: "short",
               year: "numeric",
+              timeZone: "UTC", // trip dates are stored as midnight UTC
             });
             const start = dateRange.format(b.startDate);
             const end = dateRange.format(b.endDate);

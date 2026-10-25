@@ -2,7 +2,7 @@ import { ContentPage } from "@/components/layout/content-page";
 
 export const metadata = {
   title: "Become a guide",
-  description: "Guide international travelers around Bangladesh with Bangladesh Tourism.",
+  description: "Guide international travelers around Bangladesh with DeltaWay.",
 };
 
 export default function BecomeAGuidePage() {

@@ -35,9 +35,9 @@ function Wordmark() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-900 text-paper">
-        <span className="font-display text-sm leading-none">BD</span>
+        <span className="font-display text-sm leading-none">DW</span>
       </div>
-      <span className="font-display text-2xl leading-none">Bangladesh</span>
+      <span className="font-display text-2xl leading-none">DeltaWay</span>
       <span className="hidden font-bengali text-lg text-forest-700 sm:inline">
         বাংলাদেশ
       </span>
@@ -199,6 +199,41 @@ export function SiteHeader() {
                   >
                     Sign up
                   </Link>
+                </div>
+              )}
+              {isAuthed && session?.user && (
+                <div className="mt-8 px-6">
+                  <p className="eyebrow text-ink-mute">Signed in as</p>
+                  <p className="mt-1 font-medium text-ink">
+                    {session.user.name ?? "Traveler"}
+                  </p>
+                  <p className="text-sm text-ink-mute">{session.user.email}</p>
+                  <div className="mt-6 flex flex-col gap-1">
+                    {[
+                      { href: "/dashboard", label: "Dashboard" },
+                      { href: "/dashboard/bookings", label: "My bookings" },
+                      { href: "/dashboard/saved", label: "Saved" },
+                      { href: "/dashboard/profile", label: "Profile" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className="py-2 text-ink-soft hover:text-forest-800"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                  <form action={signOutAction} className="mt-6">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-2 text-sm text-clay-700 hover:text-clay-600"
+                    >
+                      <LogOut className="size-4" />
+                      Sign out
+                    </button>
+                  </form>
                 </div>
               )}
             </SheetContent>

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { SignupForm } from "@/components/auth/signup-form";
 import { GoogleButton } from "@/components/auth/google-button";
+import { features } from "@/lib/env";
 
 export const metadata = {
   title: "Create an account",
   description:
-    "Create your Bangladesh Tourism account to book tours, homestays, and permit-included trips.",
+    "Create your DeltaWay account to book tours, homestays, and permit-included trips.",
 };
 
 export default function SignupPage() {
@@ -25,17 +26,23 @@ export default function SignupPage() {
         </Link>
       </p>
 
-      <div className="mt-10">
-        <GoogleButton label="Sign up with Google" />
-      </div>
+      {features.google ? (
+        <>
+          <div className="mt-10">
+            <GoogleButton label="Sign up with Google" />
+          </div>
 
-      <div className="my-8 flex items-center gap-4">
-        <div className="h-px flex-1 bg-forest-900/10" />
-        <span className="text-xs uppercase tracking-widest text-ink-mute">
-          or
-        </span>
-        <div className="h-px flex-1 bg-forest-900/10" />
-      </div>
+          <div className="my-8 flex items-center gap-4">
+            <div className="h-px flex-1 bg-forest-900/10" />
+            <span className="text-xs uppercase tracking-widest text-ink-mute">
+              or
+            </span>
+            <div className="h-px flex-1 bg-forest-900/10" />
+          </div>
+        </>
+      ) : (
+        <div className="mt-10" />
+      )}
 
       <SignupForm />
 
