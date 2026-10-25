@@ -1,8 +1,9 @@
 import { Resend } from "resend";
+import { env } from "@/lib/env";
 
 // Lazy-initialize so missing API key doesn't crash the build
 function getResend() {
-  const key = process.env.RESEND_API_KEY;
+  const key = env.RESEND_API_KEY;
   if (!key) return null;
   return new Resend(key);
 }
@@ -28,7 +29,7 @@ export async function sendPaymentReceipt(
     return { success: false, error: "Email service not configured" };
   }
 
-  const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const from = env.EMAIL_FROM ?? "onboarding@resend.dev";
 
   try {
     const html = receiptHtml(data);
@@ -72,7 +73,7 @@ export async function sendPasswordResetEmail(data: {
     return { success: false, error: "Email service not configured" };
   }
 
-  const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const from = env.EMAIL_FROM ?? "onboarding@resend.dev";
 
   try {
     const result = await resend.emails.send({
@@ -87,7 +88,7 @@ export async function sendPasswordResetEmail(data: {
       <td style="padding:40px 32px;">
         <h1 style="margin:0 0 16px; font-family: Georgia, 'Times New Roman', serif; font-size:28px; font-weight:400;">Reset your password</h1>
         <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#3B4340;">
-          Hi ${escapeHtml(data.name)}, we got a request to reset the password for your Bangladesh Tourism account. This link works once and expires in 1 hour.
+          Hi ${escapeHtml(data.name)}, we got a request to reset the password for your DeltaWay account. This link works once and expires in 1 hour.
         </p>
         <p style="margin:0 0 24px;">
           <a href="${data.resetUrl}" style="display:inline-block; background:#1B3D2F; color:#FAF8F1; text-decoration:none; padding:14px 28px; border-radius:9999px; font-size:14px; font-weight:500;">Choose a new password</a>
@@ -138,7 +139,7 @@ function receiptHtml(d: ReceiptData): string {
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="color:#FAF8F1; font-size:18px; font-weight:500; letter-spacing:-0.01em;">
-                  Bangladesh
+                  DeltaWay
                 </td>
                 <td align="right" style="color:#D4E0C6; font-size:11px; letter-spacing:0.15em; text-transform:uppercase;">
                   Booking Receipt
@@ -245,7 +246,7 @@ function receiptHtml(d: ReceiptData): string {
         <tr>
           <td style="background:#F5F1E6; padding:24px 32px; text-align:center; border-radius:0 0 8px 8px;">
             <p style="margin:0 0 4px; font-size:12px; color:#3B4340;">
-              Bangladesh Tourism
+              DeltaWay
             </p>
             <p style="margin:0; font-size:11px; color:#6B7570;">
               Dhanmondi, Dhaka 1209, Bangladesh

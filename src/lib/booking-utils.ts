@@ -13,9 +13,13 @@ export function generateBookingCode(): string {
   return `BD-${year}-${random}`;
 }
 
+// Trip dates are calendar dates stored as midnight UTC ("2026-12-04" →
+// 2026-12-04T00:00Z). All date maths and formatting therefore use UTC, so a
+// visitor in New York and a server in Singapore see the same day.
+
 export function calculateEndDate(startDate: Date, durationDays: number): Date {
   const end = new Date(startDate);
-  end.setDate(end.getDate() + durationDays - 1);
+  end.setUTCDate(end.getUTCDate() + durationDays - 1);
   return end;
 }
 
@@ -26,6 +30,7 @@ export function formatDate(input: string | Date): string {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   }).format(d);
 }
 

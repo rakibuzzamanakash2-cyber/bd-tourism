@@ -3,7 +3,7 @@ import { ForgotPasswordForm } from "@/components/auth/password-reset-forms";
 
 export const metadata = {
   title: "Forgot password",
-  description: "Reset the password for your Bangladesh Tourism account.",
+  description: "Reset the password for your DeltaWay account.",
 };
 
 export default function ForgotPasswordPage() {

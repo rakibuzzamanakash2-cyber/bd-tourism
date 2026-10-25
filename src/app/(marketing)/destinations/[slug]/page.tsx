@@ -17,9 +17,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const destination = await db.destination.findUnique({
     where: { slug },
-    select: { name: true, shortDesc: true, featuredImage: true },
+    select: { name: true, shortDesc: true, featuredImage: true, isPublished: true },
   });
-  if (!destination) return {};
+  if (!destination || !destination.isPublished) return {};
   return {
     title: destination.name,
     description: destination.shortDesc,
@@ -43,7 +43,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
     },
   });
 
-  if (!destination) notFound();
+  if (!destination || !destination.isPublished) notFound();
 
   const relatedPackages = await db.tourPackage.findMany({
     where: {

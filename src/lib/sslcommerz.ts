@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 // ============================================================
 // SSLCommerz API wrapper
 // Docs: https://developer.sslcommerz.com/doc/v4/
@@ -14,7 +15,7 @@ const LIVE_VALIDATE_URL =
   "https://securepay.sslcommerz.com/validator/api/validationserverAPI.php";
 
 function isSandbox() {
-  return process.env.SSLCOMMERZ_SANDBOX === "true";
+  return env.SSLCOMMERZ_SANDBOX === "true";
 }
 
 // ============================================================
@@ -40,8 +41,8 @@ export type PaymentInitResult =
 export async function initiatePayment(
   payload: PaymentInitPayload,
 ): Promise<PaymentInitResult> {
-  const storeId = process.env.SSLCOMMERZ_STORE_ID;
-  const storePwd = process.env.SSLCOMMERZ_STORE_PASSWORD;
+  const storeId = env.SSLCOMMERZ_STORE_ID;
+  const storePwd = env.SSLCOMMERZ_STORE_PASSWORD;
 
   if (!storeId || !storePwd) {
     return {
@@ -57,10 +58,10 @@ export async function initiatePayment(
   formData.append("currency", "USD");
   formData.append("tran_id", payload.tranId);
 
-  formData.append("success_url", process.env.SSLCOMMERZ_SUCCESS_URL ?? "");
-  formData.append("fail_url", process.env.SSLCOMMERZ_FAIL_URL ?? "");
-  formData.append("cancel_url", process.env.SSLCOMMERZ_CANCEL_URL ?? "");
-  formData.append("ipn_url", process.env.SSLCOMMERZ_IPN_URL ?? "");
+  formData.append("success_url", env.SSLCOMMERZ_SUCCESS_URL ?? "");
+  formData.append("fail_url", env.SSLCOMMERZ_FAIL_URL ?? "");
+  formData.append("cancel_url", env.SSLCOMMERZ_CANCEL_URL ?? "");
+  formData.append("ipn_url", env.SSLCOMMERZ_IPN_URL ?? "");
 
   formData.append("cus_name", payload.customer.name);
   formData.append("cus_email", payload.customer.email);
@@ -143,8 +144,8 @@ export type PaymentValidationResult = {
 export async function validatePayment(
   valId: string,
 ): Promise<PaymentValidationResult> {
-  const storeId = process.env.SSLCOMMERZ_STORE_ID;
-  const storePwd = process.env.SSLCOMMERZ_STORE_PASSWORD;
+  const storeId = env.SSLCOMMERZ_STORE_ID;
+  const storePwd = env.SSLCOMMERZ_STORE_PASSWORD;
 
   if (!storeId || !storePwd) {
     return { valid: false };

@@ -1,6 +1,6 @@
-# BD-Tourism
+# DeltaWay
 
-A tourism marketplace for Bangladesh. International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
+*Bangladesh, guided.* A tourism marketplace for Bangladesh (repository: `bd-tourism`). International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
 **Status:** Phase 1 (destinations, tour packages) and Phase 2 (bookings, payments) are built. Guides, homestay hosts and permit tracking are planned for later phases.
 
@@ -22,16 +22,15 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 + shadcn/ui 
 You need **Node.js 20+** and **PostgreSQL** (pgAdmin is fine).
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (also generates the Prisma client)
 npm install
 
 # 2. Create your env file, then fill in DATABASE_URL and AUTH_SECRET at least
 cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 
 # 3. Create the database tables and load the sample data
-npx prisma migrate dev
-npx prisma db seed
-npx tsx prisma/link-itinerary.ts
+npm run db:deploy
+npm run db:seed
 
 # 4. Start the app → http://localhost:3000
 npm run dev
@@ -46,8 +45,11 @@ Create an empty database called `bd_tourism` in pgAdmin first (or change the nam
 | `npm run dev` | Start the development server |
 | `npm run build` | Production build (also type-checks) |
 | `npm run start` | Run the production build |
-| `npm run lint` | Check code style |
-| `npx prisma studio` | Browse the database in your browser |
+| `npm run lint` / `npm run typecheck` | Check code style / types |
+| `npm run db:deploy` | Apply any new database migrations (safe, never deletes data) |
+| `npm run db:migrate` | Create a new migration after changing `prisma/schema.prisma` |
+| `npm run db:seed` | Load the sample destinations and tours |
+| `npm run db:studio` | Browse the database in your browser |
 
 ## Environment variables
 

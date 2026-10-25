@@ -39,11 +39,11 @@ export function SiteFooter() {
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper">
                 <span className="font-display text-sm leading-none text-forest-950">
-                  BD
+                  DW
                 </span>
               </div>
               <span className="font-display text-2xl leading-none">
-                Bangladesh
+                DeltaWay
               </span>
               <span className="font-bengali text-lg text-forest-300">
                 বাংলাদেশ
@@ -77,7 +77,7 @@ export function SiteFooter() {
 
         <div className="mt-16 flex flex-col justify-between gap-4 border-t border-forest-800 pt-8 text-xs text-forest-300 sm:flex-row">
           <p>
-            &copy; {new Date().getFullYear()} Bangladesh Tourism. Made in Dhaka.
+            &copy; {new Date().getFullYear()} DeltaWay. Made in Dhaka.
           </p>
           <p className="font-bengali text-forest-200">
             সুন্দর বাংলাদেশে স্বাগতম

@@ -287,3 +287,18 @@ model Review {
 
   @@index([destinationId])
 }
+
+// ============================================================
+// RATE LIMITING
+// One row per "bucket" (e.g. login attempts for one email), counting hits
+// in a fixed time window. Lives in Postgres so it works on serverless hosts
+// where each request may run on a different machine.
+// ============================================================
+
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}

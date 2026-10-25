@@ -2,7 +2,9 @@
 
 import { z } from "zod";
 import { auth } from "@/auth";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
 import {
   calculateEndDate,
   calculateServiceFee,
@@ -10,10 +12,12 @@ import {
   MIN_BOOKING_LEAD_DAYS,
 } from "@/lib/booking-utils";
 
+// Passport and nationality are optional here; they're enforced further down
+// only when the tour visits a restricted (permit) region.
 const additionalTravelerSchema = z.object({
-  name: z.string().min(2, "Name is too short"),
-  passportNumber: z.string().min(2, "Passport number required for permits"),
-  nationality: z.string().min(2, "Nationality required for permits"),
+  name: z.string().trim().min(2, "Name is too short").max(120),
+  passportNumber: z.string().trim().max(40).optional().default(""),
+  nationality: z.string().trim().max(80).optional().default(""),
 });
 
 const bookingSchema = z.object({
@@ -27,7 +31,8 @@ const bookingSchema = z.object({
     passportNumber: z.string().optional().default(""),
     nationality: z.string().optional().default(""),
   }),
-  additionalTravelers: z.array(additionalTravelerSchema),
+  // Bounded so an oversized request can't exhaust memory
+  additionalTravelers: z.array(additionalTravelerSchema).max(19),
   specialRequests: z.string().max(2000).optional().nullable(),
   agreedToTerms: z.literal(true, {
     message: "You must agree to the terms",
@@ -46,6 +51,11 @@ export async function createBookingAction(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "You must be signed in to book." };
+  }
+
+  const limited = await rateLimit(`booking:user:${session.user.id}`, RATE_LIMITS.bookingUser);
+  if (!limited.ok) {
+    return { success: false, error: tooManyMessage(limited.retryAfterSeconds) };
   }
 
   const parsed = bookingSchema.safeParse(data);
@@ -70,7 +80,7 @@ export async function createBookingAction(
     },
   });
 
-  if (!pkg) {
+  if (!pkg || !pkg.isPublished) {
     return { success: false, error: "Tour package no longer available." };
   }
 
@@ -97,6 +107,15 @@ export async function createBookingAction(
       return {
         success: false,
         error: "Nationality is required for the primary traveler on restricted-area tours.",
+      };
+    }
+    const missing = parsed.data.additionalTravelers.findIndex(
+      (t) => t.passportNumber.length < 2 || t.nationality.length < 2,
+    );
+    if (missing !== -1) {
+      return {
+        success: false,
+        error: `Passport number and nationality are required for traveler #${missing + 2} on restricted-area tours.`,
       };
     }
   }
@@ -158,19 +177,33 @@ export async function createBookingAction(
       : null,
   };
 
-  const booking = await db.booking.create({
-    data: {
-      bookingCode: generateBookingCode(),
-      touristId: session.user.id,
-      packageId: pkg.id,
-      startDate,
-      endDate,
-      travelerCount: parsed.data.travelerCount,
-      status: "PAYMENT_PENDING",
-      totalAmountUSD,
-      specialRequests: JSON.stringify(detailsPayload),
-    },
-  });
+  // Booking codes are random; on the rare clash with an existing code, retry
+  let booking: { id: string; bookingCode: string } | null = null;
+  for (let attempt = 0; attempt < 5 && !booking; attempt++) {
+    try {
+      booking = await db.booking.create({
+        data: {
+          bookingCode: generateBookingCode(),
+          touristId: session.user.id,
+          packageId: pkg.id,
+          startDate,
+          endDate,
+          travelerCount: parsed.data.travelerCount,
+          status: "PAYMENT_PENDING",
+          totalAmountUSD,
+          specialRequests: JSON.stringify(detailsPayload),
+        },
+        select: { id: true, bookingCode: true },
+      });
+    } catch (err) {
+      const isCodeClash =
+        err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+      if (!isCodeClash) throw err;
+    }
+  }
+  if (!booking) {
+    return { success: false, error: "Couldn't create the booking. Please try again." };
+  }
 
   return {
     success: true,

@@ -2,7 +2,7 @@ import { ContentPage } from "@/components/layout/content-page";
 
 export const metadata = {
   title: "Privacy Policy",
-  description: "What personal data Bangladesh Tourism collects, why, and how it is protected.",
+  description: "What personal data DeltaWay collects, why, and how it is protected.",
 };
 
 // NOTE: plain-language starter policy. Have a lawyer review before launch.
