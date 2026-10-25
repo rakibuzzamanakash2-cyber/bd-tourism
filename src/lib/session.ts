@@ -47,3 +47,20 @@ export async function getAdminOrNull() {
   });
   return user?.role === "ADMIN" ? user : null;
 }
+
+/**
+ * Returns the signed-in guide and their profile (null while it's being set
+ * up), or hides the page. Role is read from the database, like admins.
+ */
+export async function requireGuide(callbackUrl = "/dashboard/guide") {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, email: true, role: true, guideProfile: true },
+  });
+  if (!user || user.role !== "GUIDE") notFound();
+  return { user, profile: user.guideProfile };
+}

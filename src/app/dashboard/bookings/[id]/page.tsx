@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GuideAvatar } from "@/components/guides/guide-avatar";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -88,6 +89,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
         include: { region: { select: { name: true } } },
         orderBy: { createdAt: "asc" },
       },
+      guideAssignments: {
+        where: { status: "ACCEPTED" },
+        include: { guide: { select: { slug: true, displayName: true, photoUrl: true, languages: true, yearsExperience: true, phone: true } } },
+        take: 1,
+      },
     },
   });
 
@@ -97,6 +103,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
   if (booking.touristId !== user.id) notFound();
 
   const status = statusConfig[booking.status] ?? statusConfig.DRAFT;
+
+  // Their guide, once one has accepted. The guide's number shows from three
+  // days before the trip (before that, travelers talk to us).
+  const guide = booking.status !== "CANCELLED" ? booking.guideAssignments[0]?.guide : undefined;
+  const showGuidePhone = guide ? daysUntilTrip(booking.startDate) <= 3 : false;
 
   // Refund the tourist would get if they cancelled now (null = can't cancel)
   const cancelQuote = (CANCELLABLE_STATUSES as readonly string[]).includes(booking.status)
@@ -201,6 +212,27 @@ export default async function BookingDetailPage({ params }: PageProps) {
       {/* Body — two column */}
       <div className="mt-10 grid gap-10 lg:grid-cols-3 lg:gap-16">
         <div className="lg:col-span-2 space-y-10">
+          {guide && (
+            <section className="flex items-center gap-5 rounded-lg border border-forest-900/10 bg-paper-warm p-5">
+              <GuideAvatar name={guide.displayName} photoUrl={guide.photoUrl} className="size-20 shrink-0 rounded-full" sizes="80px" />
+              <div className="min-w-0">
+                <p className="eyebrow text-forest-700">Your guide</p>
+                <Link href={`/guides/${guide.slug}`} className="mt-1 block font-display text-2xl hover:text-forest-800">{guide.displayName}</Link>
+                <p className="text-sm text-ink-soft">
+                  {guide.yearsExperience} years guiding · speaks {guide.languages.join(", ")}
+                </p>
+                <p className="mt-1 text-sm">
+                  {showGuidePhone ? (
+                    <a href={`https://wa.me/${guide.phone.replace(/^\+/, "")}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                      WhatsApp {guide.displayName.split(/\s+/)[0]}: {guide.phone}
+                    </a>
+                  ) : (
+                    <span className="text-ink-mute">Their WhatsApp number appears here three days before the trip.</span>
+                  )}
+                </p>
+              </div>
+            </section>
+          )}
           {/* Itinerary preview */}
           {booking.package && booking.package.itinerary.length > 0 && (
             <section>
@@ -367,4 +399,8 @@ function TravelerRow({
       <p className="mt-0.5 text-xs text-ink-mute">{info}</p>
     </div>
   );
+}
+
+function daysUntilTrip(start: Date): number {
+  return Math.ceil((start.getTime() - Date.now()) / 86_400_000);
 }

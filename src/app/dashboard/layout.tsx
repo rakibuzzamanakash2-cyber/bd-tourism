@@ -17,16 +17,22 @@ export default async function DashboardLayout({
     redirect("/login?callbackUrl=/dashboard");
   }
 
-  const hasApplication =
-    (await db.partnerApplication.count({ where: { userId: session.user.id } })) > 0;
+  const [applications, guide] = await Promise.all([
+    db.partnerApplication.count({ where: { userId: session.user.id } }),
+    db.user.findUnique({ where: { id: session.user.id }, select: { role: true, guideProfile: { select: { language: true } } } }),
+  ]);
+  const nav = {
+    showApplication: applications > 0,
+    guideLang: guide?.role === "GUIDE" ? (guide.guideProfile?.language === "bn" ? "bn" : "en") : null,
+  } as const;
 
   return (
     <>
       <SiteHeader />
-      <DashboardTabs showApplication={hasApplication} />
+      <DashboardTabs {...nav} />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-16">
         <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-16">
-          <DashboardSidebar showApplication={hasApplication} />
+          <DashboardSidebar {...nav} />
           <main className="min-w-0">{children}</main>
         </div>
       </div>

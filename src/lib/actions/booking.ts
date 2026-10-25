@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { publicGuideWhere } from "@/lib/guides";
 import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
 import {
   calculateEndDate,
@@ -34,6 +35,8 @@ const bookingSchema = z.object({
   // Bounded so an oversized request can't exhaust memory
   additionalTravelers: z.array(additionalTravelerSchema).max(19),
   specialRequests: z.string().max(2000).optional().nullable(),
+  // Guide picked on their public profile (a wish; the team assigns)
+  requestedGuideSlug: z.string().max(80).optional().nullable(),
   agreedToTerms: z.literal(true, {
     message: "You must agree to the terms",
   }),
@@ -177,6 +180,10 @@ export async function createBookingAction(
       : null,
   };
 
+  const requestedGuide = parsed.data.requestedGuideSlug
+    ? await db.guideProfile.findFirst({ where: { slug: parsed.data.requestedGuideSlug, ...publicGuideWhere }, select: { id: true } })
+    : null;
+
   // Booking codes are random; on the rare clash with an existing code, retry
   let booking: { id: string; bookingCode: string } | null = null;
   for (let attempt = 0; attempt < 5 && !booking; attempt++) {
@@ -192,6 +199,7 @@ export async function createBookingAction(
           status: "PAYMENT_PENDING",
           totalAmountUSD,
           specialRequests: JSON.stringify(detailsPayload),
+          requestedGuideId: requestedGuide?.id ?? null,
         },
         select: { id: true, bookingCode: true },
       });

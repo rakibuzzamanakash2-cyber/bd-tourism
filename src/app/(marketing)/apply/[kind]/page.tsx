@@ -7,6 +7,7 @@ import { EDITABLE_STATUSES, STEPS, kindFromParam, kindParam, type PrivateFile } 
 import { db } from "@/lib/db";
 import { features } from "@/lib/env";
 import { applyText, langFromParam } from "@/lib/i18n/apply";
+import { currentInvite } from "@/lib/invites";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,23 +27,21 @@ export default async function ApplyPage({ params, searchParams }: Props) {
   const kind = kindFromParam((await params).kind);
   if (!kind) notFound();
   const sp = await searchParams;
-  const inviteToken = str(sp.invite)?.slice(0, 100);
+  // Links from before the short /i/ links: send them through it so the
+  // invite gets remembered the same way
+  const oldInvite = str(sp.invite);
+  if (oldInvite) redirect(`/i/${encodeURIComponent(oldInvite.slice(0, 100))}`);
 
-  const [session, invite] = await Promise.all([
-    auth(),
-    inviteToken ? db.applicationInvite.findUnique({ where: { token: inviteToken } }) : null,
-  ]);
-  const validInvite = invite && !invite.usedAt && invite.expiresAt > new Date() && invite.kind === kind ? invite : null;
+  const [session, validInvite] = await Promise.all([auth(), currentInvite(kind)]);
 
   const existing = session?.user?.id
     ? await db.partnerApplication.findUnique({ where: { userId_kind: { userId: session.user.id, kind } } })
     : null;
-  // Language: explicit choice in the URL, else what they used last time
-  const lang = sp.lang ? langFromParam(sp.lang) : langFromParam(existing?.language);
+  // Language: explicit choice in the URL, else what they used last time, else the invite's
+  const lang = sp.lang ? langFromParam(sp.lang) : langFromParam(existing?.language ?? validInvite?.language);
   const t = applyText[lang];
   const base = `/apply/${kindParam(kind)}`;
-  const keep = (extra = "") =>
-    [lang === "bn" && "lang=bn", validInvite && `invite=${validInvite.token}`, extra].filter(Boolean).join("&");
+  const keep = () => (lang === "bn" ? "lang=bn" : "");
 
   const header = (
     <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -55,7 +54,7 @@ export default async function ApplyPage({ params, searchParams }: Props) {
         {validInvite && <p className="mt-3 inline-block rounded-full bg-forest-100 px-3 py-1 text-sm text-forest-900">{t.invited}</p>}
       </div>
       <Link
-        href={`${base}?${[lang === "bn" ? "" : "lang=bn", validInvite && `invite=${validInvite.token}`, sp.step && `step=${str(sp.step)}`].filter(Boolean).join("&")}`}
+        href={`${base}?${[lang === "bn" ? "lang=en" : "lang=bn", sp.step && `step=${str(sp.step)}`].filter(Boolean).join("&")}`}
         className={cn("shrink-0 rounded-full border border-forest-900/20 px-4 py-2 text-sm hover:bg-forest-100", lang === "en" && "font-bengali")}
       >
         {t.switchTo}
@@ -140,7 +139,6 @@ export default async function ApplyPage({ params, searchParams }: Props) {
         lang={lang}
         step={step}
         maxStep={maxStep}
-        inviteToken={validInvite?.token}
         uploadsEnabled={features.uploads}
         regions={regions}
         initial={initial}

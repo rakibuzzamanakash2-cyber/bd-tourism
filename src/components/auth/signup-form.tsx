@@ -7,7 +7,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { signupAction, type AuthState } from "@/lib/actions/auth";
 
-export function SignupForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
+export function SignupForm({
+  callbackUrl = "/",
+  defaults,
+}: {
+  callbackUrl?: string;
+  defaults?: { name?: string; email?: string };
+}) {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(
     signupAction,
     null,
@@ -29,7 +35,7 @@ export function SignupForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
         <Input
           id="name"
           name="name"
-          defaultValue={state?.values?.name}
+          defaultValue={state?.values?.name ?? defaults?.name}
           type="text"
           autoComplete="name"
           required
@@ -50,7 +56,7 @@ export function SignupForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
         <Input
           id="email"
           name="email"
-          defaultValue={state?.values?.email}
+          defaultValue={state?.values?.email ?? defaults?.email}
           type="email"
           autoComplete="email"
           required

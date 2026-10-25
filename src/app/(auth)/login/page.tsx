@@ -3,6 +3,8 @@ import { LoginForm } from "@/components/auth/login-form";
 import { GoogleButton } from "@/components/auth/google-button";
 import { features } from "@/lib/env";
 import { safeCallbackUrl } from "@/lib/utils";
+import { InviteBanner } from "@/components/auth/invite-banner";
+import { applyPathFor, currentInvite } from "@/lib/invites";
 
 export const metadata = {
   title: "Sign in",
@@ -15,7 +17,9 @@ type Props = {
 
 export default async function LoginPage({ searchParams }: Props) {
   const { reset, callbackUrl: rawCallback } = await searchParams;
-  const callbackUrl = safeCallbackUrl(rawCallback);
+  const invite = await currentInvite();
+  const asked = safeCallbackUrl(rawCallback);
+  const callbackUrl = invite && asked === "/" ? applyPathFor(invite.kind, invite.language) : asked;
   const withCallback = (path: string) =>
     callbackUrl === "/" ? path : `${path}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
@@ -43,6 +47,8 @@ export default async function LoginPage({ searchParams }: Props) {
           Your password has been updated. Sign in with your new password.
         </div>
       )}
+
+      {invite && <InviteBanner kind={invite.kind} google={features.google} />}
 
       {features.google ? (
         <>

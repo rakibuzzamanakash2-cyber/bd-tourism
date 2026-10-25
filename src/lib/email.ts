@@ -347,7 +347,10 @@ export async function notifyTeam(data: {
 }
 
 /** A minimal branded email: heading plus paragraphs (escaped). */
-export function simpleEmail(heading: string, lines: string[]): string {
+export function simpleEmail(heading: string, lines: string[], cta?: { label: string; url: string }): string {
+  const button = cta
+    ? `<p style="margin:24px 0 8px;"><a href="${escapeHtml(cta.url)}" style="display:inline-block; background:#1B3D2F; color:#FAF8F1; text-decoration:none; padding:12px 24px; border-radius:999px; font-size:15px;">${escapeHtml(cta.label)}</a></p><p style="margin:0 0 14px; font-size:12px; color:#6B726E; word-break:break-all;">${escapeHtml(cta.url)}</p>`
+    : "";
   const paragraphs = lines
     .map(
       (l) =>
@@ -362,7 +365,7 @@ export function simpleEmail(heading: string, lines: string[]): string {
     <tr>
       <td style="padding:32px;">
         <h1 style="margin:0 0 18px; font-family: Georgia, 'Times New Roman', serif; font-size:24px; font-weight:400;">${escapeHtml(heading)}</h1>
-        ${paragraphs}
+        ${paragraphs}${button}
       </td>
     </tr>
   </table>

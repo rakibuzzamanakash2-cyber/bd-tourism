@@ -64,6 +64,7 @@ type Props = {
     nationality: string | null;
   };
   restrictedRegions: RestrictedRegion[];
+  requestedGuide?: { slug: string; displayName: string; photoUrl: string | null } | null;
 };
 
 const STEPS = [
@@ -77,7 +78,7 @@ const STEPS = [
 // WIZARD
 // ============================================================
 
-export function BookingWizard({ package: pkg, user, restrictedRegions }: Props) {
+export function BookingWizard({ package: pkg, user, restrictedRegions, requestedGuide }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -156,6 +157,7 @@ export function BookingWizard({ package: pkg, user, restrictedRegions }: Props) 
       additionalTravelers: data.additionalTravelers,
       specialRequests: data.specialRequests || null,
       agreedToTerms: true,
+      requestedGuideSlug: requestedGuide?.slug ?? null,
     });
 
     if (result.success) {
@@ -171,6 +173,14 @@ export function BookingWizard({ package: pkg, user, restrictedRegions }: Props) 
 
   return (
     <>
+      {requestedGuide && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-forest-700/20 bg-forest-100 px-4 py-3 text-sm text-forest-900">
+          <span>
+            You asked for <Link href={`/guides/${requestedGuide.slug}`} className="font-medium underline underline-offset-4">{requestedGuide.displayName}</Link> as your guide.
+            We&rsquo;ll ask them first. If they&rsquo;re not free on your dates, we&rsquo;ll suggest someone just as good.
+          </span>
+        </div>
+      )}
       {/* Back to package link */}
       <Link
         href={`/packages/${pkg.slug}`}

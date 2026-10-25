@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -11,6 +12,7 @@ import { signUpload, type UploadSignature } from "@/lib/cloudinary";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/audit";
 import { env } from "@/lib/env";
+import { INVITE_COOKIE, currentInvite } from "@/lib/invites";
 import {
   EDITABLE_STATUSES,
   STEPS,
@@ -65,7 +67,6 @@ export async function saveApplicationStepAction(input: {
   step: StepId;
   data: unknown;
   language: "en" | "bn";
-  inviteToken?: string;
 }): Promise<StepResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "signin" };
@@ -84,6 +85,16 @@ export async function saveApplicationStepAction(input: {
 
   const nextStep = Math.max(existing?.step ?? 1, stepIndex + 2);
 
+  // An invite in this browser (from the /i/ link) gets linked to the
+  // application, also when they had started a draft before opening it
+  const invite = !existing?.inviteId ? await currentInvite(kind.data) : null;
+  const claimInvite = async (applicationId: string) => {
+    if (!invite) return;
+    const { count } = await db.applicationInvite.updateMany({ where: { id: invite.id, usedAt: null }, data: { usedAt: new Date() } });
+    if (count) await db.partnerApplication.update({ where: { id: applicationId }, data: { inviteId: invite.id } });
+    (await cookies()).delete(INVITE_COOKIE);
+  };
+
   if (input.step === "basics") {
     const parsed = basicsSchema.safeParse(input.data);
     if (!parsed.success) return { ok: false, error: "fixErrors", fieldErrors: issuesToFieldErrors(parsed.error) };
@@ -93,18 +104,10 @@ export async function saveApplicationStepAction(input: {
 
     if (existing) {
       await db.partnerApplication.update({ where: { id: existing.id }, data: { ...basics, step: nextStep } });
+      await claimInvite(existing.id);
     } else {
-      // Use the invite if it's valid, unused and for this kind of application
-      const invite = input.inviteToken
-        ? await db.applicationInvite.findUnique({ where: { token: input.inviteToken.slice(0, 100) } })
-        : null;
-      const useInvite = invite && !invite.usedAt && invite.expiresAt > new Date() && invite.kind === kind.data;
-      await db.$transaction([
-        db.partnerApplication.create({
-          data: { ...basics, kind: kind.data, userId, step: nextStep, inviteId: useInvite ? invite.id : null },
-        }),
-        ...(useInvite ? [db.applicationInvite.update({ where: { id: invite.id }, data: { usedAt: new Date() } })] : []),
-      ]);
+      const created = await db.partnerApplication.create({ data: { ...basics, kind: kind.data, userId, step: nextStep } });
+      await claimInvite(created.id);
     }
   } else if (input.step === "documents") {
     const parsed = documentsSchema(kind.data).safeParse(input.data);
@@ -139,6 +142,7 @@ export async function saveApplicationStepAction(input: {
       data: { details: details as Prisma.InputJsonValue, step: nextStep, language: language.data },
     });
   }
+  if (existing && input.step !== "basics") await claimInvite(existing.id);
 
   revalidatePath("/dashboard/application");
   return { ok: true, nextStep: stepIndex + 2 };

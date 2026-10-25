@@ -3,9 +3,11 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { BookingWizard } from "@/components/booking/booking-wizard";
 import { SiteHeader } from "@/components/layout/site-header";
+import { publicGuideWhere } from "@/lib/guides";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ guide?: string | string[] }>;
 };
 
 export async function generateMetadata({ params }: PageProps) {
@@ -19,13 +21,20 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function BookingPage({ params }: PageProps) {
+export default async function BookingPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  // ?guide=<slug>: the traveler picked a guide on their profile page
+  const guideParam = (await searchParams)?.guide;
+  const guideSlug = typeof guideParam === "string" ? guideParam.slice(0, 80) : undefined;
 
   const session = await auth();
   if (!session?.user) {
-    redirect(`/login?callbackUrl=/book/${slug}`);
+    const back = `/book/${slug}${guideSlug ? `?guide=${encodeURIComponent(guideSlug)}` : ""}`;
+    redirect(`/login?callbackUrl=${encodeURIComponent(back)}`);
   }
+  const requestedGuide = guideSlug
+    ? await db.guideProfile.findFirst({ where: { slug: guideSlug, ...publicGuideWhere }, select: { slug: true, displayName: true, photoUrl: true } })
+    : null;
 
   const [pkg, user] = await Promise.all([
     db.tourPackage.findUnique({
@@ -79,6 +88,7 @@ export default async function BookingPage({ params }: PageProps) {
             passportNumber: user.touristProfile?.passportNumber ?? null,
             nationality: user.touristProfile?.nationality ?? null,
           }}
+          requestedGuide={requestedGuide}
           restrictedRegions={restrictedRegions.map((r) => ({
             id: r.id,
             name: r.name,

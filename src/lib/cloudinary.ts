@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { cloudinary } from "@/lib/env";
 
-export const UPLOAD_FOLDERS = ["destinations", "tours", "gallery", "applications", "documents"] as const;
+export const UPLOAD_FOLDERS = ["destinations", "tours", "gallery", "applications", "documents", "guides"] as const;
 /** Folders whose uploads are private (ID documents): never publicly viewable. */
 const PRIVATE_FOLDERS: readonly string[] = ["documents"];
 export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];

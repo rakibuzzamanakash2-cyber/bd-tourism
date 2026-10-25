@@ -2,7 +2,7 @@
 
 *Bangladesh, guided.* A tourism marketplace for Bangladesh (repository: `bd-tourism`). International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
-**Status:** tours, bookings, payments, permits, the admin panel and guide/host applications are built. Guide profiles and assigning guides to trips come next.
+**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard) are built. Homestays come next.
 
 ## Features
 
@@ -13,6 +13,8 @@
 - Email receipts through Resend
 - Traveler dashboard: bookings, booking details, saved trips, profile
 - Guide and homestay-host applications at `/apply/guide` and `/apply/host`, in English or Bangla, saved step by step so people can finish later
+- Public guide profiles at `/guides`, filterable by region and language. Travelers can ask for a guide when booking
+- Guide dashboard (English or Bangla): accept or decline trips, see traveler details once accepted, block days off, edit their profile and see earnings
 
 ## Tech stack
 
@@ -61,18 +63,30 @@ Sign up on the site, then run `npm run make-admin -- your@email.com` and open **
 - track restricted-area permits (travelers see the status and get emails)
 - add and edit tours (day-by-day itinerary), destinations (with photo gallery), regions and types
 - review guide and host applications: a checklist (ID, phone, interview, references or home visit), private ID documents, team notes, and Approve, which turns the account into a guide or host
-- create personal invite links for guides and hosts met offline and send them on WhatsApp
+- create personal invite links for guides and hosts met offline and send them on WhatsApp or by email, and see who opened them
+- assign a guide to each paid booking (with a check for days off and other trips), and record guide payouts
 - read contact messages, export the homestay waitlist and manage user roles
 
 Photos can be pasted as links from Unsplash, Pexels or Wikimedia Commons, or uploaded once the Cloudinary keys are set. Every admin action is kept in an activity log.
 
 ## Daily job
 
-Vercel Cron calls `/api/cron/daily` once a day (see `vercel.json`). It cancels unpaid bookings that have passed their deadline and sends a single reminder email to anyone who left an application as a draft for two days. Set `CRON_SECRET` in Vercel so only Vercel can call it. To run it locally:
+Vercel Cron calls `/api/cron/daily` once a day (see `vercel.json`). It cancels unpaid bookings that have passed their deadline, sends a single reminder email to anyone who left an application as a draft for two days, and nudges guides (and the team) about trip requests left unanswered for a day. Set `CRON_SECRET` in Vercel so only Vercel can call it. To run it locally:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily
 ```
+
+## Testing invite links on your phone
+
+Invite links use `NEXT_PUBLIC_APP_URL`. On your PC that's `http://localhost:3000`, which a phone can't open. Once the site is online, set it to the real address and links work anywhere. To try one on your own phone before that, with the phone on the same Wi-Fi:
+
+```bash
+ipconfig                              # Windows: note your IPv4 address, e.g. 192.168.0.105
+npx next dev -H 192.168.0.105
+```
+
+Then open the admin at `http://192.168.0.105:3000` on the PC (not localhost). New invite links use that address and open on the phone. If Windows asks, allow Node.js through the firewall on private networks.
 
 ## Environment variables
 

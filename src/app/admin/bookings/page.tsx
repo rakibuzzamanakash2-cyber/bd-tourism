@@ -12,6 +12,7 @@ import {
 } from "@/components/admin/ui";
 import { dateTime, money, pagination, shortDate } from "@/lib/admin-format";
 import { db } from "@/lib/db";
+import { needsGuideWhere } from "@/lib/guide-shared";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata = { title: "Bookings" };
@@ -27,10 +28,12 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
   const status = STATUSES.includes(str("status") as BookingStatus) ? (str("status") as BookingStatus) : undefined;
   const q = str("q")?.trim().slice(0, 100);
   const { page, skip, take } = pagination(sp.page);
-  const params = { status, q };
+  const needsGuide = str("needsGuide") === "1";
+  const params = { status, q, ...(needsGuide && { needsGuide: "1" }) };
 
   const where: Prisma.BookingWhereInput = {
     ...(status && { status }),
+    ...(needsGuide && needsGuideWhere(new Date())),
     ...(q && {
       OR: [
         { bookingCode: { contains: q, mode: "insensitive" } },
@@ -58,7 +61,13 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
 
   return (
     <div>
-      <AdminPageHeader title="Bookings" description="Every booking, newest first. Click one to manage it." />
+      <AdminPageHeader
+        title={needsGuide ? "Trips that need a guide" : "Bookings"}
+        description={needsGuide ? "Paid tours that include a guide, with nobody asked yet (or the guide declined)." : "Every booking, newest first. Click one to manage it."}
+      />
+      {needsGuide && (
+        <Link href="/admin/bookings" className="mb-4 inline-block text-sm text-ink-soft underline underline-offset-4">Show all bookings</Link>
+      )}
 
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <FilterPills
