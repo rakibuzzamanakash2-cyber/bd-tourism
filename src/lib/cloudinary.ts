@@ -2,7 +2,9 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { cloudinary } from "@/lib/env";
 
-export const UPLOAD_FOLDERS = ["destinations", "tours", "gallery"] as const;
+export const UPLOAD_FOLDERS = ["destinations", "tours", "gallery", "applications", "documents"] as const;
+/** Folders whose uploads are private (ID documents): never publicly viewable. */
+const PRIVATE_FOLDERS: readonly string[] = ["documents"];
 export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];
 
 export type UploadSignature = {
@@ -11,6 +13,8 @@ export type UploadSignature = {
   timestamp: number;
   folder: string;
   allowedFormats: string;
+  /** "private" for ID documents, omitted for normal public photos */
+  type?: "private";
   signature: string;
 };
 
@@ -24,10 +28,12 @@ export type UploadSignature = {
  */
 export function signUpload(folder: UploadFolder, now = Date.now()): UploadSignature | null {
   if (!cloudinary.configured) return null;
+  const isPrivate = PRIVATE_FOLDERS.includes(folder);
   const params: Record<string, string | number> = {
-    allowed_formats: "jpg,jpeg,png,webp",
+    allowed_formats: isPrivate ? "jpg,jpeg,png,webp,pdf" : "jpg,jpeg,png,webp",
     folder: `deltaway/${folder}`,
     timestamp: Math.floor(now / 1000),
+    ...(isPrivate && { type: "private" }),
   };
   const toSign = Object.keys(params)
     .sort()
@@ -40,8 +46,43 @@ export function signUpload(folder: UploadFolder, now = Date.now()): UploadSignat
     timestamp: params.timestamp as number,
     folder: params.folder as string,
     allowedFormats: params.allowed_formats as string,
+    ...(isPrivate && { type: "private" as const }),
     signature,
   };
+}
+
+/** Shared Cloudinary signing: sha1 of sorted k=v pairs + API secret. */
+function sign(params: Record<string, string | number>): string {
+  if (!cloudinary.configured) throw new Error("Cloudinary not configured");
+  const toSign = Object.keys(params)
+    .sort()
+    .map((k) => `${k}=${params[k]}`)
+    .join("&");
+  return createHash("sha1").update(toSign + cloudinary.apiSecret).digest("hex");
+}
+
+/**
+ * A short-lived link to download a private file (e.g. an ID document).
+ * Uses Cloudinary's signed "download" API, so the file is only reachable
+ * through links our server creates, and each link stops working after
+ * `ttlSeconds`.
+ */
+export function privateDownloadUrl(publicId: string, format: string, ttlSeconds = 600, now = Date.now()): string | null {
+  if (!cloudinary.configured) return null;
+  const timestamp = Math.floor(now / 1000);
+  const params: Record<string, string | number> = {
+    expires_at: timestamp + ttlSeconds,
+    format,
+    public_id: publicId,
+    timestamp,
+    type: "private",
+  };
+  const q = new URLSearchParams({
+    ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])),
+    api_key: cloudinary.apiKey,
+    signature: sign(params),
+  });
+  return `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudinary.cloudName)}/image/download?${q.toString()}`;
 }
 
 export type ConnectionTest = { ok: true; detail: string } | { ok: false; error: string };

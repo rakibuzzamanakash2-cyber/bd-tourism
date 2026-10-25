@@ -48,6 +48,8 @@ model User {
   savedPackages     SavedPackage[]
   contactMessages   ContactMessage[]
   auditLogs         AuditLog[]
+  applications      PartnerApplication[]
+  invitesCreated    ApplicationInvite[]
 }
 
 model TouristProfile {
@@ -442,4 +444,88 @@ model Permit {
 
   @@unique([bookingId, regionId])
   @@index([status])
+}
+
+// ============================================================
+// GUIDE & HOST APPLICATIONS
+// ============================================================
+
+enum ApplicationKind {
+  GUIDE
+  HOST
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  INTERVIEW
+  HOME_VISIT
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+model PartnerApplication {
+  id       String            @id @default(cuid())
+  kind     ApplicationKind
+  userId   String
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status   ApplicationStatus @default(DRAFT)
+  // Furthest step the applicant has saved (for "continue where you left off")
+  step     Int               @default(1)
+  // "en" or "bn" — the language they filled the form in
+  language String            @default("en")
+
+  // Step 1 (short, so we capture the lead even if they stop here)
+  fullName  String
+  phone     String
+  regionIds String[]
+  heardFrom String?
+
+  // Everything else, validated per kind in code (see src/lib/applications.ts)
+  details         Json?
+  // Public photos: guide profile photo, host home photos
+  photoUrl        String?
+  homePhotos      String[]
+  // Private documents: { publicId, format } of a private Cloudinary upload
+  idDocument      Json?
+  licenceDocument Json?
+  // Applicant chose to show their ID on WhatsApp instead of uploading
+  shareIdLater    Boolean           @default(false)
+
+  inviteId String?            @unique
+  invite   ApplicationInvite? @relation(fields: [inviteId], references: [id], onDelete: SetNull)
+
+  // Review
+  checklist          Json?
+  adminNotes         String?   @db.Text
+  // Shown to the applicant with "changes requested" or a refusal
+  messageToApplicant String?   @db.Text
+  submittedAt        DateTime?
+  decidedAt          DateTime?
+  reminderSentAt     DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([userId, kind])
+  @@index([kind, status])
+}
+
+model ApplicationInvite {
+  id          String          @id @default(cuid())
+  kind        ApplicationKind
+  // Random code in the invite link
+  token       String          @unique
+  name        String?
+  phone       String?
+  email       String?
+  note        String?
+  createdById String?
+  createdBy   User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime        @default(now())
+
+  application PartnerApplication?
 }

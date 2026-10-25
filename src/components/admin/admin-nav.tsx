@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarCheck,
+  ClipboardList,
   CreditCard,
   FileCheck,
   Inbox,
@@ -22,6 +23,7 @@ const items = [
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/admin/permits", label: "Permits", icon: FileCheck },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/applications", label: "Applications", icon: ClipboardList },
   { href: "/admin/messages", label: "Messages", icon: Inbox },
   { href: "/admin/tours", label: "Tours", icon: Route },
   { href: "/admin/destinations", label: "Destinations", icon: MapPin },

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookMarked,
   Calendar,
+  ClipboardList,
   LayoutDashboard,
   User,
 } from "lucide-react";
@@ -17,6 +18,9 @@ const items = [
   { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
+const applicationItem = { href: "/dashboard/application", label: "Application", icon: ClipboardList, exact: false };
+const itemsFor = (showApplication: boolean) => (showApplication ? [...items, applicationItem] : items);
+
 function isActive(pathname: string, href: string, exact = false) {
   if (exact) return pathname === href;
   return pathname === href || pathname.startsWith(href + "/");
@@ -25,14 +29,14 @@ function isActive(pathname: string, href: string, exact = false) {
 // ============================================================
 // MOBILE — horizontal tab strip (visible below lg)
 // ============================================================
-export function DashboardTabs() {
+export function DashboardTabs({ showApplication = false }: { showApplication?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="sticky top-16 z-30 border-b border-forest-900/10 bg-paper-warm/95 backdrop-blur-md lg:hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <ul className="flex gap-2 overflow-x-auto py-1">
-          {items.map((item) => {
+          {itemsFor(showApplication).map((item) => {
             const active = isActive(pathname, item.href, item.exact);
             const Icon = item.icon;
             return (
@@ -61,7 +65,7 @@ export function DashboardTabs() {
 // ============================================================
 // DESKTOP — vertical sidebar (visible from lg)
 // ============================================================
-export function DashboardSidebar() {
+export function DashboardSidebar({ showApplication = false }: { showApplication?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -70,7 +74,7 @@ export function DashboardSidebar() {
         <p className="eyebrow mb-4 text-forest-700">Account</p>
         <nav>
           <ul className="space-y-1">
-            {items.map((item) => {
+            {itemsFor(showApplication).map((item) => {
               const active = isActive(pathname, item.href, item.exact);
               const Icon = item.icon;
               return (
