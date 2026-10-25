@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { EmptyState } from "@/components/dashboard/empty-state";
 
@@ -30,10 +30,10 @@ const statusLabels: Record<string, string> = {
 };
 
 export default async function BookingsPage() {
-  const session = await auth();
+  const user = await requireUser();
 
   const bookings = await db.booking.findMany({
-    where: { touristId: session!.user.id },
+    where: { touristId: user.id },
     include: { package: true },
     orderBy: { createdAt: "desc" },
   });

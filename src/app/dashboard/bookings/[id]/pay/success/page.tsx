@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CheckCircle2, ArrowRight, Mail } from "lucide-react";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ export const metadata = {
 
 export default async function PaymentSuccessPage({ params }: Props) {
   const { id } = await params;
-  const session = await auth();
+  const user = await requireUser();
 
   const booking = await db.booking.findUnique({
     where: { id },
@@ -26,7 +26,7 @@ export default async function PaymentSuccessPage({ params }: Props) {
   });
 
   if (!booking) notFound();
-  if (booking.touristId !== session!.user.id) notFound();
+  if (booking.touristId !== user.id) notFound();
 
   // Race condition: user might arrive here before IPN webhook has fired.
   // Show a processing state that auto-refreshes until the booking flips to PAID.
@@ -55,7 +55,7 @@ export default async function PaymentSuccessPage({ params }: Props) {
         </h1>
         <p className="mt-4 max-w-lg mx-auto leading-relaxed text-ink-soft">
           Your booking is confirmed. We&rsquo;ve emailed a receipt to
-          <span className="text-ink"> {session!.user.email}</span> — check
+          <span className="text-ink"> {user.email}</span> — check
           your spam folder if it doesn&rsquo;t arrive within a few minutes.
         </p>
       </div>

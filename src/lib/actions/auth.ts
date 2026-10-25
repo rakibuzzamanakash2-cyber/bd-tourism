@@ -24,7 +24,21 @@ const loginSchema = z.object({
 export type AuthState = {
   error?: string;
   fieldErrors?: Record<string, string>;
+  /**
+   * What the user typed (never the password), sent back so the form can
+   * refill it — React 19 clears a form after every server action.
+   */
+  values?: { name?: string; email?: string };
 } | null;
+
+function typedValues(formData: FormData) {
+  const name = formData.get("name");
+  const email = formData.get("email");
+  return {
+    name: typeof name === "string" ? name : undefined,
+    email: typeof email === "string" ? email : undefined,
+  };
+}
 
 // ============================================================
 // SIGN UP
@@ -45,14 +59,17 @@ export async function signupAction(
       const key = issue.path[0]?.toString();
       if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
     }
-    return { fieldErrors };
+    return { fieldErrors, values: typedValues(formData) };
   }
 
   const { name, email, password } = parsed.data;
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
-    return { error: "An account with this email already exists." };
+    return {
+      error: "An account with this email already exists.",
+      values: typedValues(formData),
+    };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -79,6 +96,7 @@ export async function signupAction(
       return {
         error:
           "Account created, but automatic sign-in failed. Please log in.",
+        values: typedValues(formData),
       };
     }
     throw error; // Re-throw NEXT_REDIRECT
@@ -105,7 +123,7 @@ export async function loginAction(
       const key = issue.path[0]?.toString();
       if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
     }
-    return { fieldErrors };
+    return { fieldErrors, values: typedValues(formData) };
   }
 
   try {
@@ -117,9 +135,15 @@ export async function loginAction(
   } catch (error) {
     if (error instanceof AuthError) {
       if (error.type === "CredentialsSignin") {
-        return { error: "Invalid email or password." };
+        return {
+          error: "Invalid email or password.",
+          values: typedValues(formData),
+        };
       }
-      return { error: "Something went wrong. Please try again." };
+      return {
+        error: "Something went wrong. Please try again.",
+        values: typedValues(formData),
+      };
     }
     throw error; // Re-throw NEXT_REDIRECT
   }

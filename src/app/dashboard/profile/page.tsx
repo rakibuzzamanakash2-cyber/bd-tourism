@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 
@@ -8,10 +8,10 @@ export const metadata = {
 };
 
 export default async function ProfilePage() {
-  const session = await auth();
+  const sessionUser = await requireUser();
 
   const user = await db.user.findUnique({
-    where: { id: session!.user.id },
+    where: { id: sessionUser.id },
     include: { touristProfile: true },
   });
 

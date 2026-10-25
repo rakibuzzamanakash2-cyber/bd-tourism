@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 
 export const metadata = {
@@ -7,8 +7,7 @@ export const metadata = {
 };
 
 export default async function DashboardOverviewPage() {
-  const session = await auth();
-  const user = session!.user; // layout ensures session exists
+  const user = await requireUser();
   const firstName = user.name?.split(/\s+/)[0] ?? "there";
 
   const bookingCount = await db.booking.count({

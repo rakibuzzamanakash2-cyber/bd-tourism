@@ -130,8 +130,13 @@ export async function initiatePayment(
 export type PaymentValidationResult = {
   valid: boolean;
   status?: string;
+  tranId?: string;
   amount?: number;
   currency?: string;
+  /** Amount in the currency the order was created in (e.g. USD). */
+  currencyAmount?: number;
+  /** Currency the order was created in (e.g. "USD"). */
+  currencyType?: string;
   raw?: Record<string, unknown>;
 };
 
@@ -161,8 +166,13 @@ export async function validatePayment(
     return {
       valid: isValid,
       status: data.status,
+      tranId: data.tran_id,
       amount: data.amount ? parseFloat(data.amount) : undefined,
       currency: data.currency,
+      currencyAmount: data.currency_amount
+        ? parseFloat(data.currency_amount)
+        : undefined,
+      currencyType: data.currency_type,
       raw: data,
     };
   } catch (err) {

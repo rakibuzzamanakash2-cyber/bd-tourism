@@ -11,6 +11,9 @@ export async function GET(req: NextRequest, ctx: { params: Params }) {
   return handleCallback(req, ctx);
 }
 
+// SSLCommerz POSTs the customer back here. We answer with 303 See Other so the
+// browser follows up with a normal GET — a 307 would re-POST the form to the
+// page, which pages don't accept.
 async function handleCallback(
   req: NextRequest,
   { params }: { params: Params },
@@ -19,7 +22,7 @@ async function handleCallback(
 
   const allowedStatuses = new Set(["success", "fail", "cancel"]);
   if (!allowedStatuses.has(status)) {
-    return NextResponse.redirect(new URL("/dashboard/bookings", req.url));
+    return NextResponse.redirect(new URL("/dashboard/bookings", req.url), 303);
   }
 
   // Extract tran_id from POST body or query string
@@ -49,6 +52,7 @@ async function handleCallback(
     // No matching booking — send to their bookings list with a status flag
     return NextResponse.redirect(
       new URL(`/dashboard/bookings?payment=${status}`, req.url),
+      303,
     );
   }
 
@@ -62,5 +66,5 @@ async function handleCallback(
     target = `/dashboard/bookings/${bookingId}?payment=${status}`;
   }
 
-  return NextResponse.redirect(new URL(target, req.url));
+  return NextResponse.redirect(new URL(target, req.url), 303);
 }

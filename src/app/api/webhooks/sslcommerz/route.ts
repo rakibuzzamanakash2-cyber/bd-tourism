@@ -39,6 +39,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // SSLCommerz can send the same IPN more than once. If we've already
+    // recorded this payment as successful, do nothing (no duplicate emails).
+    if (payment.status === "SUCCEEDED") {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
+
     // Failure paths
     if (status !== "VALID" && status !== "VALIDATED") {
       await db.payment.update({
@@ -56,7 +62,26 @@ export async function POST(req: NextRequest) {
     }
 
     const validation = await validatePayment(valId);
-    if (!validation.valid) {
+
+    // Never trust the gateway result alone: the validated transaction must be
+    // THIS transaction, for the FULL amount, in USD. Otherwise someone could
+    // replay a cheaper payment's val_id against an expensive booking.
+    const expectedAmount = Number(payment.amountUSD);
+    const paidAmount = validation.currencyAmount ?? validation.amount;
+    const paidCurrency = validation.currencyType ?? validation.currency;
+    const matches =
+      validation.tranId === tranId &&
+      paidCurrency === "USD" &&
+      paidAmount !== undefined &&
+      Math.abs(paidAmount - expectedAmount) < 0.01;
+
+    if (validation.valid && !matches) {
+      console.error(
+        `[IPN] Mismatch for ${tranId}: expected ${expectedAmount} USD, got ${paidAmount} ${paidCurrency} (tran ${validation.tranId})`,
+      );
+    }
+
+    if (!validation.valid || !matches) {
       await db.payment.update({
         where: { id: payment.id },
         data: {

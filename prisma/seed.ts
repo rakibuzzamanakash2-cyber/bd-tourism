@@ -86,7 +86,7 @@ async function main() {
   // ============================================================
   // CATEGORIES
   // ============================================================
-  const [beaches, hills, historical, wildlife, cultural, rivers] = await Promise.all([
+  await Promise.all([
     db.category.upsert({
       where: { slug: "beaches" },
       update: {},
