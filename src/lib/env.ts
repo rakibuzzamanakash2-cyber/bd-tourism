@@ -47,7 +47,10 @@ const schema = z.object({
   // Shared secret Vercel Cron sends to /api/cron/* routes
   CRON_SECRET: optional,
 
-  // Photo uploads in the admin panel (cloudinary.com → Settings → API Keys)
+  // Photo uploads in the admin panel. Either the one-line CLOUDINARY_URL
+  // (cloudinary://API_KEY:API_SECRET@CLOUD_NAME, copied from the Cloudinary
+  // dashboard) or the three separate values below.
+  CLOUDINARY_URL: optional,
   CLOUDINARY_CLOUD_NAME: optional,
   CLOUDINARY_API_KEY: optional,
   CLOUDINARY_API_SECRET: optional,
@@ -64,10 +67,60 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
+// ============================================================
+// Cloudinary settings, from CLOUDINARY_URL or the separate values.
+// Problems don't stop the app (uploads are optional); they're shown on
+// Admin → Settings instead, so a typo is easy to spot and fix.
+// ============================================================
+export type CloudinaryConfig =
+  | { configured: true; cloudName: string; apiKey: string; apiSecret: string; source: "CLOUDINARY_URL" | "separate"; problem: null }
+  | { configured: false; problem: string | null };
+
+function resolveCloudinary(): CloudinaryConfig {
+  let cloudName = env.CLOUDINARY_CLOUD_NAME;
+  let apiKey = env.CLOUDINARY_API_KEY;
+  let apiSecret = env.CLOUDINARY_API_SECRET;
+  let source: "CLOUDINARY_URL" | "separate" = "separate";
+
+  if (env.CLOUDINARY_URL) {
+    const m = env.CLOUDINARY_URL.match(/^cloudinary:\/\/([^:]+):([^@]+)@([^/?#]+)$/);
+    if (!m) {
+      return {
+        configured: false,
+        problem: "CLOUDINARY_URL should look like cloudinary://API_KEY:API_SECRET@CLOUD_NAME (copy it exactly from the Cloudinary dashboard).",
+      };
+    }
+    [apiKey, apiSecret, cloudName] = [m[1], m[2], m[3]];
+    source = "CLOUDINARY_URL";
+  }
+
+  const missing = [
+    !cloudName && "cloud name",
+    !apiKey && "API key",
+    !apiSecret && "API secret",
+  ].filter(Boolean) as string[];
+  if (missing.length === 3) return { configured: false, problem: null }; // simply not set up
+  if (missing.length > 0) return { configured: false, problem: `Cloudinary is half set up: the ${missing.join(" and ")} ${missing.length === 1 ? "is" : "are"} missing.` };
+
+  const placeholder = /^(your[-_ ]|\.\.\.|<|xxx|changeme)/i;
+  if ([cloudName, apiKey, apiSecret].some((v) => placeholder.test(v!))) {
+    return { configured: false, problem: "A Cloudinary value still has placeholder text (like \"your-cloud-name\" or \"...\"). Paste your real values." };
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(cloudName!)) {
+    return { configured: false, problem: `The cloud name "${cloudName}" has spaces or symbols in it. Use the exact cloud name from your Cloudinary dashboard.` };
+  }
+  if (!/^\d+$/.test(apiKey!)) {
+    return { configured: false, problem: "The Cloudinary API key should be digits only. You may have swapped the key and the secret." };
+  }
+  return { configured: true, cloudName: cloudName!, apiKey: apiKey!, apiSecret: apiSecret!, source, problem: null };
+}
+
+export const cloudinary = resolveCloudinary();
+
 /** Which optional integrations are configured. */
 export const features = {
   google: Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET),
   payments: Boolean(env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_STORE_PASSWORD),
   email: Boolean(env.RESEND_API_KEY),
-  uploads: Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET),
+  uploads: cloudinary.configured,
 };

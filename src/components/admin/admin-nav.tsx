@@ -12,6 +12,7 @@ import {
   Map,
   MapPin,
   Route,
+  Settings,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const items = [
   { href: "/admin/regions", label: "Regions & types", icon: Map },
   { href: "/admin/waitlist", label: "Waitlist", icon: ListChecks },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 const isActive = (pathname: string, href: string, exact = false) =>

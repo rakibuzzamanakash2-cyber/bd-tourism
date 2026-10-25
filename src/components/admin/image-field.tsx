@@ -19,6 +19,17 @@ type Props = {
   onChange?: (url: string) => void;
 };
 
+/** Turns Cloudinary's error into what to do about it. */
+function explainUploadError(status: number, message = ""): string {
+  const check = " Open Admin → Settings and press Test connection.";
+  if (/signature/i.test(message)) return "Cloudinary rejected the upload: the API secret looks wrong." + check;
+  if (/api_key/i.test(message)) return "Cloudinary doesn't recognise the API key." + check;
+  if (/cloud_name|cloud name/i.test(message) || status === 404) return "Cloudinary doesn't recognise the cloud name." + check;
+  if (/format/i.test(message)) return "Cloudinary only accepts JPG, PNG or WebP photos here.";
+  if (/file size|too large/i.test(message)) return "That photo is too big for your Cloudinary plan. Use a smaller one.";
+  return message ? `Upload failed: ${message}` : `Upload failed (error ${status}). Try again or paste a link.`;
+}
+
 /** Photo picker: upload to Cloudinary (when configured) or paste a link. */
 export function ImageField({ name, label, defaultValue = "", folder, uploadsEnabled, required, onChange }: Props) {
   const [url, setUrl] = useState(defaultValue);
@@ -48,9 +59,14 @@ export function ImageField({ name, label, defaultValue = "", folder, uploadsEnab
       body.append("folder", s.folder);
       body.append("allowed_formats", s.allowedFormats);
       body.append("signature", s.signature);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${s.cloudName}/image/upload`, { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok || !data.secure_url) throw new Error(data?.error?.message ?? "Upload failed");
+      let res: Response;
+      try {
+        res = await fetch(`https://api.cloudinary.com/v1_1/${s.cloudName}/image/upload`, { method: "POST", body });
+      } catch {
+        throw new Error("Couldn't reach Cloudinary. Check your internet connection, or paste a link instead.");
+      }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.secure_url) throw new Error(explainUploadError(res.status, data?.error?.message));
       update(data.secure_url as string);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed. Try again or paste a link.");
