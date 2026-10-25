@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TourDuration } from "@prisma/client";
 import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
+import { getSavedState } from "@/lib/saved";
 
 
 type SearchParams = Promise<{
@@ -36,13 +37,16 @@ export default async function PackagesPage({
     ? durationFilter
     : undefined;
 
-  const packages = await db.tourPackage.findMany({
-    where: {
-      isPublished: true,
-      ...(validDuration && { duration: validDuration }),
-    },
-    orderBy: [{ durationDays: "asc" }, { title: "asc" }],
-  });
+  const [packages, savedState] = await Promise.all([
+    db.tourPackage.findMany({
+      where: {
+        isPublished: true,
+        ...(validDuration && { duration: validDuration }),
+      },
+      orderBy: [{ durationDays: "asc" }, { title: "asc" }],
+    }),
+    getSavedState(),
+  ]);
 
   const currentLabel = durationOptions.find((d) => d.value === validDuration)?.label;
 
@@ -111,7 +115,13 @@ export default async function PackagesPage({
             </div>
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
               {packages.map((p, i) => (
-                <PackageCard key={p.id} package={p} priority={i < 3} />
+                <PackageCard
+                  key={p.id}
+                  package={p}
+                  priority={i < 3}
+                  saved={savedState.packageIds.has(p.id)}
+                  signedIn={savedState.signedIn}
+                />
               ))}
             </div>
           </>

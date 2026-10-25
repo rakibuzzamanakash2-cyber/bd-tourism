@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validatePayment } from "@/lib/sslcommerz";
-import { sendPaymentReceipt } from "@/lib/email";
-import { formatDateRange } from "@/lib/booking-utils";
+import { notifyTeam, sendPaymentReceipt } from "@/lib/email";
+import { EXPIRED_BOOKING_REASON, formatDateRange } from "@/lib/booking-utils";
 import type { Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
 
@@ -93,6 +93,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Validation failed" });
     }
 
+    // A payment can land after the booking was cancelled:
+    //  • expired for non-payment → bring the booking back as PAID
+    //  • cancelled by the tourist  → keep it cancelled, owe a full refund
+    const wasCancelled = payment.booking.status === "CANCELLED";
+    const wasExpired =
+      wasCancelled && payment.booking.cancellationReason === EXPIRED_BOOKING_REASON;
+    const bookingUpdate: Prisma.BookingUpdateInput =
+      wasCancelled && !wasExpired
+        ? { refundAmountUSD: payment.booking.totalAmountUSD }
+        : { status: "PAID", cancelledAt: null, cancellationReason: null };
+
     // Payment succeeded — atomic update
     await db.$transaction([
       db.payment.update({
@@ -105,9 +116,20 @@ export async function POST(req: NextRequest) {
       }),
       db.booking.update({
         where: { id: payment.bookingId },
-        data: { status: "PAID" },
+        data: bookingUpdate,
       }),
     ]);
+
+    if (wasCancelled && !wasExpired) {
+      await notifyTeam({
+        subject: `Payment received for a cancelled booking: ${payment.booking.bookingCode}`,
+        lines: [
+          `A payment of $${Number(payment.booking.totalAmountUSD).toFixed(2)} arrived after the traveler cancelled.`,
+          "The booking stays cancelled and the full amount is recorded as a refund due.",
+        ],
+      });
+      return NextResponse.json({ ok: true });
+    }
 
     console.log(
       `[IPN] Payment succeeded for booking ${payment.booking.bookingCode}`,

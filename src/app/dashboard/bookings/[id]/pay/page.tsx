@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { PayForm } from "@/components/booking/pay-form";
 import { formatDateRange } from "@/lib/booking-utils";
+import { expireUnpaidBookings } from "@/lib/booking-expiry";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -17,6 +18,7 @@ export const metadata = {
 export default async function PayPage({ params }: Props) {
   const { id } = await params;
   const user = await requireUser();
+  await expireUnpaidBookings(user.id);
 
   const booking = await db.booking.findUnique({
     where: { id },

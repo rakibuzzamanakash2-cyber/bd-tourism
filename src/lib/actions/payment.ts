@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
 import { initiatePayment } from "@/lib/sslcommerz";
+import { expireUnpaidBookings } from "@/lib/booking-expiry";
+import { EXPIRED_BOOKING_REASON } from "@/lib/booking-utils";
 
 export type InitiatePaymentResult =
   | { success: true; gatewayUrl: string }
@@ -22,6 +24,8 @@ export async function initiatePaymentAction(
     return { success: false, error: tooManyMessage(limited.retryAfterSeconds) };
   }
 
+  await expireUnpaidBookings(session.user.id);
+
   const booking = await db.booking.findUnique({
     where: { id: bookingId },
     include: { package: true, payment: true },
@@ -38,7 +42,10 @@ export async function initiatePaymentAction(
   if (booking.status !== "PAYMENT_PENDING") {
     return {
       success: false,
-      error: "This booking is not awaiting payment.",
+      error:
+        booking.cancellationReason === EXPIRED_BOOKING_REASON
+          ? "This booking expired because payment wasn't completed within 24 hours. Please book again."
+          : "This booking is not awaiting payment.",
     };
   }
 

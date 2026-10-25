@@ -43,6 +43,10 @@ model User {
   // Relations
   bookings Booking[] @relation("BookingTourist")
   reviews  Review[]
+
+  savedDestinations SavedDestination[]
+  savedPackages     SavedPackage[]
+  contactMessages   ContactMessage[]
 }
 
 model TouristProfile {
@@ -139,6 +143,7 @@ model Destination {
   categories   Category[]         @relation("DestinationCategories")
   packageStops TourPackageDay[]
   reviews      Review[]
+  savedBy      SavedDestination[]
 
   @@index([regionId])
   @@index([isFeatured, isPublished])
@@ -185,6 +190,7 @@ model TourPackage {
 
   itinerary TourPackageDay[]
   bookings  Booking[]
+  savedBy   SavedPackage[]
 
   @@index([duration, isPublished])
 }
@@ -230,6 +236,13 @@ model Booking {
   status          BookingStatus @default(DRAFT)
   totalAmountUSD  Decimal       @db.Decimal(10, 2)
   specialRequests String?       @db.Text
+
+  // Set when the tourist cancels, or when an unpaid booking expires
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+  // Refund owed under the cancellation policy (paid out by an admin)
+  refundAmountUSD    Decimal?  @db.Decimal(10, 2)
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -301,4 +314,69 @@ model RateLimit {
   resetAt DateTime
 
   @@index([resetAt])
+}
+
+// ============================================================
+// WISHLIST
+// ============================================================
+
+model SavedDestination {
+  userId        String
+  destinationId String
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, destinationId])
+}
+
+model SavedPackage {
+  userId    String
+  packageId String
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package   TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, packageId])
+}
+
+// ============================================================
+// CONTACT & WAITLIST
+// ============================================================
+
+enum ContactStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String        @db.Text
+  status    ContactStatus @default(NEW)
+  // Linked when the sender was signed in
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+enum WaitlistKind {
+  HOMESTAY
+}
+
+model WaitlistEntry {
+  id         String       @id @default(cuid())
+  email      String
+  kind       WaitlistKind
+  createdAt  DateTime     @default(now())
+  // Set once we've emailed them that it's live
+  notifiedAt DateTime?
+
+  @@unique([email, kind])
 }

@@ -41,6 +41,11 @@ const schema = z.object({
 
   RESEND_API_KEY: optional,
   EMAIL_FROM: optional,
+  // Where team notifications (new contact messages, cancellations) go.
+  // Defaults to the public contact email in src/lib/site.ts.
+  ADMIN_EMAIL: optional,
+  // Shared secret Vercel Cron sends to /api/cron/* routes
+  CRON_SECRET: optional,
 });
 
 const parsed = schema.safeParse(process.env);

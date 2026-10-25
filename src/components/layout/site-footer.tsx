@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { site, whatsappLink } from "@/lib/site";
 
 const columns = [
   {
@@ -54,6 +55,19 @@ export function SiteFooter() {
               Bangladesh&rsquo;s most remarkable places. Restricted-area
               permits handled for you.
             </p>
+            <div className="mt-6 space-y-1 text-sm text-forest-200">
+              <a href={`mailto:${site.email}`} className="block hover:text-paper">
+                {site.email}
+              </a>
+              <a
+                href={whatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:text-paper"
+              >
+                WhatsApp {site.whatsappDisplay}
+              </a>
+            </div>
           </div>
 
           {columns.map((col) => (

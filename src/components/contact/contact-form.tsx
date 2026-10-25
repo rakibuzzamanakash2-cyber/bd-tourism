@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { sendContactMessageAction } from "@/lib/actions/contact";
 
 const schema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -19,7 +20,13 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function ContactForm() {
+type Props = {
+  defaultName?: string;
+  defaultEmail?: string;
+  defaultSubject?: string;
+};
+
+export function ContactForm({ defaultName = "", defaultEmail = "", defaultSubject = "" }: Props) {
   const {
     register,
     handleSubmit,
@@ -27,19 +34,33 @@ export function ContactForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    defaultValues: { name: defaultName, email: defaultEmail, subject: defaultSubject, message: "" },
   });
 
-  async function onSubmit(data: FormValues) {
-    await new Promise((r) => setTimeout(r, 800));
-    console.log("Contact form submission:", data);
+  async function onSubmit(data: FormValues, event?: React.BaseSyntheticEvent) {
+    // Honeypot value read straight from the form (not part of the visible fields)
+    const form = event?.target as HTMLFormElement | undefined;
+    const website = (form?.elements.namedItem("website") as HTMLInputElement | null)?.value;
+
+    const result = await sendContactMessageAction({ ...data, website });
+    if (!result.success) {
+      toast.error("Message not sent", { description: result.error });
+      return;
+    }
     toast.success("Message received", {
-      description: "We'll get back to you within a day.",
+      description: "We'll get back to you within 24 hours. A copy is on its way to your inbox.",
     });
-    reset();
+    reset({ name: data.name, email: data.email, subject: "", message: "" });
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {/* Honeypot: invisible to people, tempting to bots */}
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+        <label htmlFor="website">Website</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <Label htmlFor="name" className="text-sm">Name</Label>

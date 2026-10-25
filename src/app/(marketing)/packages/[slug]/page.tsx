@@ -6,6 +6,9 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { whatsappLink } from "@/lib/site";
+import { SaveButton } from "@/components/saved/save-button";
+import { getSavedState } from "@/lib/saved";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -45,6 +48,7 @@ export default async function PackageDetailPage({ params }: PageProps) {
   });
 
   if (!pkg || !pkg.isPublished) notFound();
+  const savedState = await getSavedState();
 
   const priceUSD = Number(pkg.basePriceUSD);
 
@@ -224,12 +228,24 @@ export default async function PackageDetailPage({ params }: PageProps) {
               >
                 Book this tour
               </Link>
-              <Link
-                href="/contact"
+              <a
+                href={whatsappLink(`Hi DeltaWay, I have a question about the "${pkg.title}" tour.`)}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="mt-3 block text-center text-sm text-ink-soft underline underline-offset-4 hover:text-forest-800"
               >
-                Or ask us a question
-              </Link>
+                Or ask us on WhatsApp
+              </a>
+              <div className="mt-3 text-center">
+                <SaveButton
+                  kind="package"
+                  id={pkg.id}
+                  name={pkg.title}
+                  initialSaved={savedState.packageIds.has(pkg.id)}
+                  signedIn={savedState.signedIn}
+                  variant="inline"
+                />
+              </div>
 
               <p className="mt-6 border-t border-forest-900/10 pt-4 text-xs leading-relaxed text-ink-mute">
                 No payment charged yet — you&rsquo;ll confirm dates and traveler

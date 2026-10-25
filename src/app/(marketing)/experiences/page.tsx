@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomestayWaitlistForm } from "@/components/experiences/waitlist-form";
 
 export const metadata = {
   title: "Homestays",
@@ -59,20 +60,7 @@ export default function ExperiencesPage() {
                 We&rsquo;ll email you once &mdash; when the first homestays are
                 open for booking. No newsletters.
               </p>
-              <form className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  className="flex-1 rounded-full border border-forest-900/15 bg-paper px-4 py-2.5 text-sm text-ink placeholder:text-ink-mute focus:border-forest-700 focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="rounded-full bg-forest-900 px-6 py-2.5 text-sm text-paper hover:bg-forest-800"
-                >
-                  Notify me
-                </button>
-              </form>
+              <HomestayWaitlistForm />
             </div>
 
             <div className="mt-12">

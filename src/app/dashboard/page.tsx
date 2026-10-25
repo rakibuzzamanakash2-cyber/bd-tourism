@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
+import { expireUnpaidBookings } from "@/lib/booking-expiry";
 
 export const metadata = {
   title: "Dashboard",
@@ -8,6 +9,7 @@ export const metadata = {
 
 export default async function DashboardOverviewPage() {
   const user = await requireUser();
+  await expireUnpaidBookings(user.id);
   const firstName = user.name?.split(/\s+/)[0] ?? "there";
 
   const bookingCount = await db.booking.count({

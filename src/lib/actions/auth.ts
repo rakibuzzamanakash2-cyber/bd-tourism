@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/auth";
 import { RATE_LIMITS, clientIp, rateLimit, tooManyMessage } from "@/lib/rate-limit";
+import { safeCallbackUrl } from "@/lib/utils";
 
 // ============================================================
 // SCHEMAS
@@ -95,7 +96,7 @@ export async function signupAction(
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/",
+      redirectTo: safeCallbackUrl(formData.get("callbackUrl")),
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -148,7 +149,7 @@ export async function loginAction(
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/",
+      redirectTo: safeCallbackUrl(formData.get("callbackUrl")),
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -172,8 +173,8 @@ export async function loginAction(
 // ============================================================
 // GOOGLE SIGN IN
 // ============================================================
-export async function signInWithGoogleAction() {
-  await signIn("google", { redirectTo: "/" });
+export async function signInWithGoogleAction(formData: FormData) {
+  await signIn("google", { redirectTo: safeCallbackUrl(formData.get("callbackUrl")) });
 }
 
 // ============================================================

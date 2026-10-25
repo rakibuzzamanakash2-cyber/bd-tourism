@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { env } from "@/lib/env";
+import { site } from "@/lib/site";
 
 // Lazy-initialize so missing API key doesn't crash the build
 function getResend() {
@@ -237,7 +238,7 @@ function receiptHtml(d: ReceiptData): string {
             <!-- Support note -->
             <p style="margin:0 0 8px; font-size:13px; line-height:1.6; color:#6B7570;">
               Questions or need to change something? Reply to this email or contact us at
-              <a href="mailto:hello@bangladeshtourism.co" style="color:#2F6B4F; text-decoration:underline;">hello@bangladeshtourism.co</a>.
+              <a href="mailto:${site.email}" style="color:#2F6B4F; text-decoration:underline;">${site.email}</a> or WhatsApp ${site.whatsappDisplay}.
             </p>
           </td>
         </tr>
@@ -249,7 +250,7 @@ function receiptHtml(d: ReceiptData): string {
               DeltaWay
             </p>
             <p style="margin:0; font-size:11px; color:#6B7570;">
-              Dhanmondi, Dhaka 1209, Bangladesh
+              ${site.city}
             </p>
           </td>
         </tr>
@@ -293,4 +294,78 @@ function escapeHtml(input: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// ============================================================
+// GENERIC SEND + TEAM NOTIFICATIONS
+// ============================================================
+
+/** Sends one email. Never throws; returns whether it went out. */
+export async function sendEmail(data: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn(`[email] RESEND_API_KEY not set — skipping "${data.subject}"`);
+    return { success: false, error: "Email service not configured" };
+  }
+  try {
+    const result = await resend.emails.send({
+      from: env.EMAIL_FROM ?? "onboarding@resend.dev",
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+      replyTo: data.replyTo,
+    });
+    if (result.error) {
+      console.error("[email] Resend error:", result.error);
+      return { success: false, error: result.error.message || "Failed to send email" };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error("[email] Exception:", err);
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+/** Notifies the DeltaWay team (ADMIN_EMAIL, or the public site email). */
+export async function notifyTeam(data: {
+  subject: string;
+  /** Plain-text lines; each becomes a paragraph. */
+  lines: string[];
+  replyTo?: string;
+}) {
+  return sendEmail({
+    to: env.ADMIN_EMAIL ?? site.email,
+    subject: `[${site.name}] ${data.subject}`,
+    replyTo: data.replyTo,
+    html: simpleEmail(data.subject, data.lines),
+  });
+}
+
+/** A minimal branded email: heading plus paragraphs (escaped). */
+export function simpleEmail(heading: string, lines: string[]): string {
+  const paragraphs = lines
+    .map(
+      (l) =>
+        `<p style="margin:0 0 14px; font-size:15px; line-height:1.6; color:#3B4340; white-space:pre-wrap;">${escapeHtml(l)}</p>`,
+    )
+    .join("");
+  return `<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0; padding:32px 16px; background-color:#FAF8F1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color:#1A1D1B;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px; margin:0 auto; background:#FFFFFF; border-radius:8px;">
+    <tr><td style="background:#1B3D2F; padding:18px 32px; border-radius:8px 8px 0 0; color:#FAF8F1; font-size:16px;">${site.name}</td></tr>
+    <tr>
+      <td style="padding:32px;">
+        <h1 style="margin:0 0 18px; font-family: Georgia, 'Times New Roman', serif; font-size:24px; font-weight:400;">${escapeHtml(heading)}</h1>
+        ${paragraphs}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }

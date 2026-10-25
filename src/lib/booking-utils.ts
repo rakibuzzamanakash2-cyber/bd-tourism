@@ -74,3 +74,68 @@ const BDT_PER_USD = 120;
 export function bdtToUsd(bdt: number): number {
   return Math.round((bdt / BDT_PER_USD) * 100) / 100;
 }
+
+// ============================================================
+// CANCELLATION & REFUNDS
+// Policy (shown to tourists on the booking page and in the terms):
+//   • more than 14 days before the start date → full refund
+//   • 14 days to 48 hours before                → 50% refund
+//   • within 48 hours                          → no refund
+//   • the permit processing fee is non-refundable once paid, because the
+//     permit application starts straight after payment
+// ============================================================
+
+/** Unpaid bookings are cancelled automatically after this many hours. */
+export const UNPAID_BOOKING_TTL_HOURS = 24;
+export const EXPIRED_BOOKING_REASON = "Payment not received within 24 hours";
+
+/** Statuses a tourist can still cancel from. */
+export const CANCELLABLE_STATUSES = ["PAYMENT_PENDING", "PAID", "CONFIRMED"] as const;
+
+export type RefundQuote = {
+  tier: "unpaid" | "full" | "half" | "none";
+  /** Hours from now until the start date (midnight UTC) */
+  hoursBeforeStart: number;
+  /** What the tourist gets back, in USD */
+  refundUSD: number;
+  /** Part of the payment that is never refunded (permit fee) */
+  nonRefundableUSD: number;
+};
+
+export function calculateRefund(input: {
+  totalUSD: number;
+  serviceFeeUSD: number;
+  startDate: Date;
+  paid: boolean;
+  now?: Date;
+}): RefundQuote {
+  const now = input.now ?? new Date();
+  const hoursBeforeStart = (input.startDate.getTime() - now.getTime()) / 36e5;
+
+  if (!input.paid) {
+    return { tier: "unpaid", hoursBeforeStart, refundUSD: 0, nonRefundableUSD: 0 };
+  }
+
+  const nonRefundableUSD = Math.min(input.serviceFeeUSD, input.totalUSD);
+  const refundableBase = input.totalUSD - nonRefundableUSD;
+  const round = (n: number) => Math.round(n * 100) / 100;
+
+  if (hoursBeforeStart > 14 * 24) {
+    return { tier: "full", hoursBeforeStart, refundUSD: round(refundableBase), nonRefundableUSD };
+  }
+  if (hoursBeforeStart > 48) {
+    return { tier: "half", hoursBeforeStart, refundUSD: round(refundableBase / 2), nonRefundableUSD };
+  }
+  return { tier: "none", hoursBeforeStart, refundUSD: 0, nonRefundableUSD };
+}
+
+/** The permit fee stored in a booking's details payload (0 if none). */
+export function serviceFeeFromDetails(specialRequests: string | null): number {
+  if (!specialRequests) return 0;
+  try {
+    const fee = JSON.parse(specialRequests)?.permitContext?.serviceFeeUSD;
+    return typeof fee === "number" ? fee : 0;
+  } catch {
+    return 0;
+  }
+}

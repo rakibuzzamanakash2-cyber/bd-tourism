@@ -16,6 +16,10 @@ export const RATE_LIMITS = {
   resetEmail: { limit: 3, windowSeconds: 60 * 60 },
   resetIp: { limit: 10, windowSeconds: 60 * 60 },
   bookingUser: { limit: 10, windowSeconds: 60 * 60 },
+  contactIp: { limit: 5, windowSeconds: 60 * 60 },
+  waitlistIp: { limit: 10, windowSeconds: 60 * 60 },
+  savedUser: { limit: 120, windowSeconds: 10 * 60 },
+  cancelUser: { limit: 10, windowSeconds: 60 * 60 },
   paymentUser: { limit: 10, windowSeconds: 10 * 60 },
 } satisfies Record<string, Rule>;
 
