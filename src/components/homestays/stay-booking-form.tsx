@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   slug: string;
-  hostRate: number;
+  facilities: string[];
   maxGuests: number;
   restrictedRegion: string | null;
   /** Nights (check-in dates) already closed or booked */
@@ -48,7 +48,7 @@ export function StayBookingForm(p: Props) {
     }
     return null;
   }, [checkIn, nights, taken]);
-  const base = nights > 0 && nights <= MAX_STAY_NIGHTS ? stayQuote(p.hostRate, nights) : null;
+  const base = nights > 0 && nights <= MAX_STAY_NIGHTS ? stayQuote(p.facilities, nights) : null;
   const permitFee = p.restrictedRegion ? calculateServiceFee(Number(guests)) : 0;
   const quote = base ? { ...base, totalUSD: Math.round((base.totalUSD + permitFee) * 100) / 100 } : null;
 
@@ -126,9 +126,15 @@ export function StayBookingForm(p: Props) {
       ) : quote ? (
         <div className="space-y-1 rounded-md bg-paper-warm px-4 py-3 text-sm">
           <div className="flex justify-between">
-            <span>{bdt(quote.nightlyBDT)} × {nights} {nights === 1 ? "night" : "nights"}</span>
-            <span>{bdt(quote.totalBDT)}</span>
+            <span>First night</span>
+            <span>{bdt(quote.firstNightBDT)}</span>
           </div>
+          {nights > 1 && (
+            <div className="flex justify-between">
+              <span>{bdt(quote.extraNightBDT)} × {nights - 1} extra {nights - 1 === 1 ? "night" : "nights"}</span>
+              <span>{bdt(quote.extraNightBDT * (nights - 1))}</span>
+            </div>
+          )}
           {permitFee > 0 && (
             <div className="flex justify-between text-ink-soft">
               <span>Permit processing</span>

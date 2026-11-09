@@ -48,7 +48,6 @@ export type WizardValues = {
   facilities: string[];
   family: string;
   houseRules: string;
-  pricePerNightBDT: string;
   homePhotos: string[];
   // both
   idDocument: PrivateFile | null;
@@ -89,7 +88,7 @@ export function ApplicationWizard({ kind, lang, step, maxStep, uploadsEnabled, r
       case "experience":
         return { languages: v.languages, yearsExperience: v.yearsExperience, bio: v.bio, dayRateBDT: v.dayRateBDT, availability: v.availability, licenceNumber: v.licenceNumber };
       case "home":
-        return { district: v.district, area: v.area, rooms: v.rooms, maxGuests: v.maxGuests, facilities: v.facilities, languages: v.languages, family: v.family, houseRules: v.houseRules, pricePerNightBDT: v.pricePerNightBDT };
+        return { district: v.district, area: v.area, rooms: v.rooms, maxGuests: v.maxGuests, facilities: v.facilities, languages: v.languages, family: v.family, houseRules: v.houseRules };
       case "references":
         return { references: v.references };
       case "documents":
@@ -231,9 +230,7 @@ export function ApplicationWizard({ kind, lang, step, maxStep, uploadsEnabled, r
             <Field id="houseRules" label={`${t.houseRules} (${t.optional})`} hint={t.houseRulesHint}>
               <textarea id="houseRules" rows={3} className={inputClass} value={v.houseRules} onChange={(e) => set("houseRules", e.target.value)} maxLength={1000} />
             </Field>
-            <Field id="pricePerNightBDT" label={t.pricePerNight} required error={err("pricePerNightBDT")}>
-              <input id="pricePerNightBDT" type="number" min={300} step={50} className={`${inputClass} sm:w-60`} value={v.pricePerNightBDT} onChange={(e) => set("pricePerNightBDT", e.target.value)} />
-            </Field>
+            <p className="rounded-md bg-forest-100 px-4 py-3 text-sm text-forest-900">{t.pricingNote}</p>
           </>
         )}
 
@@ -349,7 +346,6 @@ export function ApplicationWizard({ kind, lang, step, maxStep, uploadsEnabled, r
                   [t.languagesHost, v.languages.join(", ")],
                   [t.family, v.family],
                   [t.houseRules, v.houseRules],
-                  [t.pricePerNight, v.pricePerNightBDT && `৳${Number(v.pricePerNightBDT).toLocaleString()}`],
                 ]} />
                 <Summary title={t.steps.documents} editHref={href(3)} t={t} rows={[
                   [t.homePhotos, v.homePhotos.length ? `${v.homePhotos.length}` : ""],

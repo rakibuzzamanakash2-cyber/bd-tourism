@@ -63,7 +63,7 @@ const en = {
   familyHint: "e.g. my husband, two children (8 and 12) and my mother-in-law",
   houseRules: "House rules",
   houseRulesHint: "e.g. no smoking indoors, quiet after 10pm",
-  pricePerNight: "Price per night per guest, with meals (BDT)",
+  pricingNote: "You don't need to set a price. DeltaWay sets a fair price from your facilities, and you receive 85% of every booking.",
   facility: {
     private_room: "Private room for guests",
     attached_bathroom: "Attached bathroom",
@@ -202,7 +202,7 @@ const bn: typeof en = {
   familyHint: "যেমন: আমার স্বামী, দুই সন্তান (৮ ও ১২ বছর) এবং শাশুড়ি",
   houseRules: "বাড়ির নিয়ম",
   houseRulesHint: "যেমন: ঘরের ভেতরে ধূমপান নিষেধ, রাত ১০টার পর শান্ত থাকা",
-  pricePerNight: "খাবারসহ প্রতি রাতে প্রতি অতিথির ভাড়া (টাকা)",
+  pricingNote: "আপনাকে দাম ঠিক করতে হবে না। আপনার সুবিধাগুলো দেখে DeltaWay একটি ন্যায্য দাম ঠিক করে, আর প্রতিটি বুকিংয়ের ৮৫% আপনি পান।",
   facility: {
     private_room: "অতিথিদের জন্য আলাদা ঘর",
     attached_bathroom: "সংযুক্ত বাথরুম",

@@ -29,7 +29,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 export const metadata: Metadata = {
   title: "Become a host",
   description:
-    "Host travelers in your home with DeltaWay. Keep 100% of your nightly price, get paid after every stay, and welcome verified guests from around the world.",
+    "Host travelers in your home with DeltaWay. Receive 85% of every booking, get paid after every stay, and welcome verified guests from around the world.",
   alternates: { canonical: "/become-a-host" },
 };
 

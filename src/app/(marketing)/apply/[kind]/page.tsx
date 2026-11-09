@@ -136,7 +136,6 @@ export default async function ApplyPage({ params, searchParams }: Props) {
     facilities: arr("facilities"),
     family: s("family"),
     houseRules: s("houseRules"),
-    pricePerNightBDT: s("pricePerNightBDT"),
     homePhotos: existing?.homePhotos ?? [],
     idDocument: (existing?.idDocument as PrivateFile | null) ?? null,
     shareIdLater: existing?.shareIdLater ?? !features.uploads,

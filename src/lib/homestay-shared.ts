@@ -5,7 +5,18 @@ import { bdtToUsd } from "@/lib/booking-utils";
 import { dayKey } from "@/lib/guide-shared";
 import { isAllowedImageUrl } from "@/lib/image-hosts";
 
-/** DeltaWay's share on top of the host's nightly rate. */
+// ---- Pricing: set by DeltaWay, not by the host ----------------------
+// A stay costs the base price for the first night. Each extra night adds a
+// share of the base: 10%, plus 4% per facility the home offers (max 50%).
+// Example: 5 facilities → 30%, so 2 nights = ৳1,000 + ৳300 = ৳1,300.
+// The price is for the whole group, meals included.
+
+/** First night, whole group (BDT). */
+export const HOMESTAY_BASE_BDT = 1000;
+export const EXTRA_NIGHT_START = 0.1;
+export const EXTRA_NIGHT_PER_FACILITY = 0.04;
+export const EXTRA_NIGHT_MAX = 0.5;
+/** DeltaWay's share of what the traveler pays; the host gets the rest. */
 export const HOMESTAY_COMMISSION = 0.15;
 /** Book at least this many days ahead, so the family can prepare. */
 export const MIN_STAY_LEAD_DAYS = 2;
@@ -13,13 +24,31 @@ export const MAX_STAY_NIGHTS = 14;
 /** How far ahead stays can be booked. */
 export const MAX_STAY_DAYS_AHEAD = 365;
 
-/** Nightly price the traveler sees, in BDT (host rate + commission, rounded up to ৳10). */
-export const guestNightlyBDT = (hostRate: number) => Math.ceil((hostRate * (1 + HOMESTAY_COMMISSION)) / 10) * 10;
+/** How many of the listed facilities count towards the price (known ones, once each). */
+export const pricedFacilityCount = (facilities: readonly string[]) =>
+  new Set(facilities.filter((f) => (FACILITY_OPTIONS as readonly string[]).includes(f))).size;
 
-export function stayQuote(hostRate: number, nights: number) {
-  const nightlyBDT = guestNightlyBDT(hostRate);
-  const totalBDT = nightlyBDT * nights;
-  return { nightlyBDT, totalBDT, totalUSD: bdtToUsd(totalBDT), hostPayoutBDT: hostRate * nights };
+/** Share of the base price each extra night adds (0.1 – 0.5). */
+export const extraNightRate = (facilities: readonly string[]) =>
+  Math.min(EXTRA_NIGHT_MAX, Math.round((EXTRA_NIGHT_START + EXTRA_NIGHT_PER_FACILITY * pricedFacilityCount(facilities)) * 100) / 100);
+
+/** What one extra night costs, in BDT (rounded to ৳10). */
+export const extraNightBDT = (facilities: readonly string[]) => Math.round((HOMESTAY_BASE_BDT * extraNightRate(facilities)) / 10) * 10;
+
+/** The whole price of a stay: first night + extra nights. */
+export function stayQuote(facilities: readonly string[], nights: number) {
+  const firstNightBDT = HOMESTAY_BASE_BDT;
+  const extra = extraNightBDT(facilities);
+  const totalBDT = nights >= 1 ? firstNightBDT + extra * (nights - 1) : 0;
+  const hostPayoutBDT = Math.round(totalBDT * (1 - HOMESTAY_COMMISSION));
+  return {
+    firstNightBDT,
+    extraNightBDT: extra,
+    extraNightPercent: Math.round(extraNightRate(facilities) * 100),
+    totalBDT,
+    totalUSD: bdtToUsd(totalBDT),
+    hostPayoutBDT,
+  };
 }
 
 /** Nights between check-in and check-out ("2026-11-03" → "2026-11-05" is 2). */
@@ -63,7 +92,6 @@ export const homestayListingSchema = z.object({
   maxGuests: z.coerce.number().int().min(1).max(30),
   facilities: z.array(z.enum(FACILITY_OPTIONS)).max(FACILITY_OPTIONS.length),
   languages: z.array(z.string().trim().min(2).max(40)).min(1, "Pick at least one language").max(12),
-  pricePerNightBDT: z.coerce.number().int().min(300, "At least ৳300").max(50000),
   photos: z.array(photo).max(12, "Up to 12 photos"),
   isListed: z.boolean().default(true),
 });

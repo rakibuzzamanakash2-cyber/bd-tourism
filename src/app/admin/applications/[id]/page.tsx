@@ -91,7 +91,6 @@ export default async function AdminApplicationPage({ params }: { params: Promise
                 [t.area, s("area")],
                 [t.rooms, s("rooms")],
                 [t.maxGuests, s("maxGuests")],
-                [t.pricePerNight, d.pricePerNightBDT ? `৳${Number(d.pricePerNightBDT).toLocaleString()}` : "—"],
                 [t.facilities, list("facilities", (f) => t.facility[f] ?? f)],
                 [t.languagesHost, list("languages")],
                 [t.family, s("family")],

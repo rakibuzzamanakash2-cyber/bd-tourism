@@ -10,7 +10,7 @@ import { adminUpdateHomestay } from "@/lib/actions/admin/homestays";
 import { getHostUploadSignature, updateMyHomestayAction } from "@/lib/actions/host";
 import { FACILITY_OPTIONS, LANGUAGE_OPTIONS } from "@/lib/applications";
 import { bdt } from "@/lib/guide-shared";
-import { guestNightlyBDT } from "@/lib/homestay-shared";
+import { stayQuote } from "@/lib/homestay-shared";
 import { applyText } from "@/lib/i18n/apply";
 import { hostText } from "@/lib/i18n/host";
 
@@ -26,7 +26,6 @@ export type HomestayFormValues = {
   maxGuests: string;
   facilities: string[];
   languages: string[];
-  pricePerNightBDT: string;
   photos: string[];
   isListed: boolean;
 };
@@ -52,7 +51,7 @@ export function HomestayListingForm(props: Props) {
   const toggle = (k: "facilities" | "languages", item: string) =>
     setV((x) => ({ ...x, [k]: x[k].includes(item) ? x[k].filter((i) => i !== item) : [...x[k], item] }));
   const languageOptions = [...new Set([...LANGUAGE_OPTIONS, ...props.initial.languages])];
-  const guestPrice = Number(v.pricePerNightBDT) > 0 ? bdt(guestNightlyBDT(Number(v.pricePerNightBDT))) : "—";
+  const price = stayQuote(v.facilities, 2);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -97,19 +96,19 @@ export function HomestayListingForm(props: Props) {
       <Field id="houseRules" label={t.houseRules} error={errors.houseRules}>
         <textarea id="houseRules" rows={3} maxLength={1500} className={inputClass} value={v.houseRules} onChange={(e) => set("houseRules", e.target.value)} />
       </Field>
-      <div className="grid gap-6 sm:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2">
         <Field id="rooms" label={t.rooms} error={errors.rooms}>
           <input id="rooms" type="number" min={1} max={20} className={inputClass} value={v.rooms} onChange={(e) => set("rooms", e.target.value)} />
         </Field>
         <Field id="maxGuests" label={t.maxGuests} error={errors.maxGuests}>
           <input id="maxGuests" type="number" min={1} max={30} className={inputClass} value={v.maxGuests} onChange={(e) => set("maxGuests", e.target.value)} />
         </Field>
-        <Field id="pricePerNightBDT" label={t.price} required error={errors.pricePerNightBDT}>
-          <input id="pricePerNightBDT" type="number" min={300} step={50} className={inputClass} value={v.pricePerNightBDT} onChange={(e) => set("pricePerNightBDT", e.target.value)} />
-        </Field>
       </div>
-      <p className="-mt-3 text-xs text-ink-mute">{t.priceHint(guestPrice)}</p>
       <Chips legend={t.facilities} options={FACILITY_OPTIONS.map((f) => ({ value: f, label: facilityLabel[f] ?? f }))} selected={v.facilities} onToggle={(f) => toggle("facilities", f)} error={errors.facilities} />
+      <div className="rounded-md bg-forest-100 px-4 py-3" aria-live="polite">
+        <p className="text-sm font-medium text-forest-900">{t.price}</p>
+        <p className="mt-1 text-sm text-forest-900/80">{t.priceHint(bdt(price.firstNightBDT), bdt(price.extraNightBDT), price.extraNightPercent)}</p>
+      </div>
       <Chips legend={t.languages} options={languageOptions.map((l) => ({ value: l, label: l }))} selected={v.languages} onToggle={(l) => toggle("languages", l)} error={errors.languages} />
       {props.mode === "admin" && (
         <Field id="phone" label="Host phone (private)" error={errors.phone}>

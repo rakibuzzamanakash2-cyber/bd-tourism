@@ -3,7 +3,7 @@ import { CreateHomestayButton, EmailWaitlistButton } from "@/components/admin/ho
 import { AdminPageHeader, Table, Td } from "@/components/admin/ui";
 import { db } from "@/lib/db";
 import { bdt } from "@/lib/guide-shared";
-import { guestNightlyBDT } from "@/lib/homestay-shared";
+import { stayQuote } from "@/lib/homestay-shared";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata = { title: "Homestays" };
@@ -45,7 +45,7 @@ export default async function AdminHomestaysPage() {
           </ul>
         </div>
       )}
-      <Table head={["Homestay", "Where", "Status", "Price / night", "Upcoming", "Owed to host"]} empty={homestays.length === 0}>
+      <Table head={["Homestay", "Where", "Status", "Price", "Upcoming", "Owed to host"]} empty={homestays.length === 0}>
         {homestays.map((h) => {
           const upcoming = h.bookings.filter((b) => ["PAID", "CONFIRMED", "IN_PROGRESS"].includes(b.status) && b.endDate >= now).length;
           const owed = h.bookings.filter((b) => b.hostPayoutStatus === "UNPAID" && b.endDate <= now).reduce((n, b) => n + (b.hostPayoutBDT ?? 0), 0);
@@ -58,7 +58,7 @@ export default async function AdminHomestaysPage() {
               </Td>
               <Td className="text-xs">{h.district} · {h.region.name}</Td>
               <Td className="text-sm">{state}</Td>
-              <Td className="text-sm">{bdt(h.pricePerNightBDT)}<div className="text-xs text-ink-mute">guests pay {bdt(guestNightlyBDT(h.pricePerNightBDT))}</div></Td>
+              <Td className="text-sm">{bdt(stayQuote(h.facilities, 1).firstNightBDT)}<div className="text-xs text-ink-mute">+{bdt(stayQuote(h.facilities, 2).extraNightBDT)} / extra night ({stayQuote(h.facilities, 2).extraNightPercent}%)</div></Td>
               <Td>{upcoming || "—"}</Td>
               <Td>{owed ? bdt(owed) : "—"}</Td>
             </tr>
