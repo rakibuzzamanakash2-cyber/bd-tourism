@@ -122,7 +122,7 @@ export function GuideProfileForm(props: Props) {
   );
 }
 
-function Chips({ legend, options, selected, onToggle, error }: { legend: string; options: { value: string; label: string }[]; selected: string[]; onToggle: (v: string) => void; error?: string }) {
+export function Chips({ legend, options, selected, onToggle, error }: { legend: string; options: { value: string; label: string }[]; selected: string[]; onToggle: (v: string) => void; error?: string }) {
   return (
     <fieldset>
       <legend className="text-sm font-medium">

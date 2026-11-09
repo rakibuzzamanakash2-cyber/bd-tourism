@@ -16,14 +16,14 @@ export async function ensurePermitsForBooking(bookingId: string): Promise<number
       package: {
         select: { itinerary: { select: { destination: { select: { region: { select: { id: true, isRestricted: true } } } } } } },
       },
+      homestay: { select: { region: { select: { id: true, isRestricted: true } } } },
     },
   });
   if (!booking || !PAID_STATUSES.includes(booking.status)) return 0;
 
   const regionIds = [
     ...new Set(
-      (booking.package?.itinerary ?? [])
-        .map((d) => d.destination?.region)
+      [...(booking.package?.itinerary ?? []).map((d) => d.destination?.region), booking.homestay?.region]
         .filter((r): r is { id: string; isRestricted: boolean } => Boolean(r?.isRestricted))
         .map((r) => r.id),
     ),

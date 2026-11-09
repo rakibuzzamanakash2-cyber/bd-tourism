@@ -15,6 +15,8 @@ import {
 import { CancelBookingButton } from "@/components/booking/cancel-booking";
 import { PERMIT_STATUS } from "@/lib/permit-labels";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
+import { bookingTitle, stayNightKeys } from "@/lib/homestay-shared";
+import Image from "next/image";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -89,6 +91,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
         include: { region: { select: { name: true } } },
         orderBy: { createdAt: "asc" },
       },
+      homestay: {
+        select: { name: true, slug: true, photos: true, area: true, district: true, address: true, phone: true, houseRules: true, host: { select: { name: true } }, region: { select: { name: true } } },
+      },
       guideAssignments: {
         where: { status: "ACCEPTED" },
         include: { guide: { select: { slug: true, displayName: true, photoUrl: true, languages: true, yearsExperience: true, phone: true } } },
@@ -122,6 +127,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const pricePerPerson = booking.package
     ? Number(booking.package.basePriceUSD)
     : 0;
+
+  // Homestay bookings: address and the host's number once it's paid
+  const stay = booking.homestay;
+  const stayNights = stay ? stayNightKeys(booking.startDate, booking.endDate).length : 0;
+  const stayPaid = ["PAID", "CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(booking.status);
+  // Tours that are booked can suggest a homestay in the same region
+  const suggestRegion =
+    !stay && booking.package && booking.status !== "CANCELLED"
+      ? booking.package.itinerary.map((d) => d.destination?.region).find((r) => r)
+      : undefined;
 
   // Parse the details payload we stashed in specialRequests
   let details: {
@@ -158,12 +173,20 @@ export default async function BookingDetailPage({ params }: PageProps) {
           Booking · {booking.bookingCode}
         </p>
         <h1 className="mt-2 font-display text-4xl leading-tight sm:text-5xl">
-          {booking.package?.title ?? "Custom trip"}
+          {bookingTitle(booking)}
         </h1>
         <p className="mt-3 text-ink-soft">
-          {formatDateRange(booking.startDate, booking.endDate)} ·{" "}
-          {booking.travelerCount}{" "}
-          {booking.travelerCount === 1 ? "traveler" : "travelers"}
+          {stay ? (
+            <>
+              Check-in {formatDateRange(booking.startDate, booking.endDate).replace(/ → | – /, ", check-out ")} · {stayNights}{" "}
+              {stayNights === 1 ? "night" : "nights"} · {booking.travelerCount} {booking.travelerCount === 1 ? "guest" : "guests"}
+            </>
+          ) : (
+            <>
+              {formatDateRange(booking.startDate, booking.endDate)} · {booking.travelerCount}{" "}
+              {booking.travelerCount === 1 ? "traveler" : "travelers"}
+            </>
+          )}
         </p>
       </div>
 
@@ -212,6 +235,45 @@ export default async function BookingDetailPage({ params }: PageProps) {
       {/* Body — two column */}
       <div className="mt-10 grid gap-10 lg:grid-cols-3 lg:gap-16">
         <div className="lg:col-span-2 space-y-10">
+          {stay && (
+            <section className="overflow-hidden rounded-lg border border-forest-900/10">
+              {stay.photos[0] && (
+                <div className="relative aspect-[3/1] bg-forest-100">
+                  <Image src={stay.photos[0]} alt={stay.name} fill sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />
+                </div>
+              )}
+              <div className="space-y-3 p-5 text-sm">
+                <p className="eyebrow text-forest-700">Your homestay</p>
+                <Link href={`/homestays/${stay.slug}`} className="block font-display text-2xl hover:text-forest-800">{stay.name}</Link>
+                <p className="text-ink-soft">{stay.area}, {stay.district} · {stay.region.name}</p>
+                {stayPaid ? (
+                  <div className="space-y-1 rounded-md bg-paper-warm p-3">
+                    {stay.address && <p><span className="text-ink-mute">Address:</span> {stay.address}</p>}
+                    <p>
+                      <span className="text-ink-mute">Host:</span> {stay.host.name ?? "Your host"} ·{" "}
+                      <a href={`https://wa.me/${stay.phone.replace(/^\+/, "")}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">WhatsApp {stay.phone}</a>
+                    </p>
+                    <p className="text-xs text-ink-mute">Let your host know roughly when you&rsquo;ll arrive. Check-in is from midday unless you agree otherwise.</p>
+                  </div>
+                ) : (
+                  <p className="text-ink-mute">The address and your host&rsquo;s number appear here once the stay is paid.</p>
+                )}
+                {stay.houseRules && (
+                  <details className="text-ink-soft">
+                    <summary className="cursor-pointer">House rules</summary>
+                    <p className="mt-2 whitespace-pre-line">{stay.houseRules}</p>
+                  </details>
+                )}
+              </div>
+            </section>
+          )}
+          {suggestRegion && (
+            <section className="rounded-lg border border-dashed border-forest-900/20 p-5 text-sm">
+              <p className="font-medium">Add a night with a local family?</p>
+              <p className="mt-1 text-ink-soft">Stay in a verified homestay in {suggestRegion.name} before or after your tour.</p>
+              <Link href={`/homestays?region=${suggestRegion.slug}`} className="mt-3 inline-block underline underline-offset-4">See homestays in {suggestRegion.name} →</Link>
+            </section>
+          )}
           {guide && (
             <section className="flex items-center gap-5 rounded-lg border border-forest-900/10 bg-paper-warm p-5">
               <GuideAvatar name={guide.displayName} photoUrl={guide.photoUrl} className="size-20 shrink-0 rounded-full" sizes="80px" />
@@ -348,7 +410,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between text-ink-soft">
                 <span>
-                  {booking.travelerCount} × ${pricePerPerson.toFixed(0)}
+                  {stay ? `${stayNights} ${stayNights === 1 ? "night" : "nights"}` : `${booking.travelerCount} × $${pricePerPerson.toFixed(0)}`}
                 </span>
                 <span>${priceUSD.toFixed(0)}</span>
               </div>

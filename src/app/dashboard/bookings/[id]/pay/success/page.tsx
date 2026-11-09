@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDateRange } from "@/lib/booking-utils";
 import { PaymentProcessing } from "@/components/booking/payment-processing";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -22,7 +23,7 @@ export default async function PaymentSuccessPage({ params }: Props) {
 
   const booking = await db.booking.findUnique({
     where: { id },
-    include: { package: true, payment: true },
+    include: { package: true, homestay: { select: { name: true } }, payment: true },
   });
 
   if (!booking) notFound();
@@ -74,7 +75,7 @@ export default async function PaymentSuccessPage({ params }: Props) {
             <div className="grid grid-cols-3 gap-4">
               <dt className="text-ink-mute">Tour</dt>
               <dd className="col-span-2 font-medium text-ink">
-                {booking.package?.title ?? "Custom trip"}
+                {bookingTitle(booking)}
               </dd>
             </div>
             <div className="grid grid-cols-3 gap-4">

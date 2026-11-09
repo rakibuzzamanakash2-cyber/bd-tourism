@@ -51,6 +51,7 @@ model User {
   invitesCreated       ApplicationInvite[]
   guideProfile         GuideProfile?
   guideAssignmentsMade GuideAssignment[]    @relation("AssignedBy")
+  homestay             Homestay?
 }
 
 model TouristProfile {
@@ -116,6 +117,7 @@ model Region {
   destinations Destination[]
   permits      Permit[]
   guides       GuideProfile[] @relation("GuideRegions")
+  homestays    Homestay[]
 }
 
 model Category {
@@ -264,7 +266,20 @@ model Booking {
   requestedGuide   GuideProfile?     @relation("RequestedGuide", fields: [requestedGuideId], references: [id], onDelete: SetNull)
   guideAssignments GuideAssignment[]
 
+  // A homestay booking: startDate is check-in, endDate is check-out (the
+  // night of endDate isn't included). Tour bookings leave these empty.
+  homestayId          String?
+  homestay            Homestay?     @relation(fields: [homestayId], references: [id], onDelete: Restrict)
+  // What the host is paid for the stay, and whether we've paid them
+  hostPayoutBDT       Int?
+  hostPayoutStatus    PayoutStatus?
+  hostPaidAt          DateTime?
+  hostPayoutReference String?
+  // Host was reminded the guests are arriving soon
+  hostReminderSentAt  DateTime?
+
   @@index([touristId, status])
+  @@index([homestayId, startDate])
   @@index([status])
 }
 
@@ -624,4 +639,56 @@ model GuideAssignment {
 
   @@index([bookingId])
   @@index([guideId, status])
+}
+
+// ============================================================
+// Homestays
+// ============================================================
+// A family's home that travelers can stay in. Created when a host
+// application is approved. One host, one homestay; one group at a time.
+model Homestay {
+  id               String   @id @default(cuid())
+  hostId           String   @unique
+  host             User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  slug             String   @unique
+  name             String
+  regionId         String
+  region           Region   @relation(fields: [regionId], references: [id])
+  district         String
+  // Area / nearby landmark. The exact address is shared after booking.
+  area             String
+  description      String   @db.Text
+  houseRules       String?  @db.Text
+  rooms            Int
+  maxGuests        Int
+  facilities       String[]
+  languages        String[]
+  // What the host is paid per night. Travelers see it plus our commission.
+  pricePerNightBDT Int
+  photos           String[]
+  // Private: given to guests once their stay is paid
+  address          String?  @db.Text
+  phone            String
+  // Language for the host's emails and dashboard ("en" | "bn")
+  language         String   @default("bn")
+  // isActive: the team can pause it. isListed: the host can hide it.
+  isActive         Boolean  @default(true)
+  isListed         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  blockedDates HomestayBlockedDate[]
+  bookings     Booking[]
+
+  @@index([isActive, isListed, regionId])
+}
+
+// Nights the host has closed (the date is the night's check-in date)
+model HomestayBlockedDate {
+  id         String   @id @default(cuid())
+  homestayId String
+  homestay   Homestay @relation(fields: [homestayId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+
+  @@unique([homestayId, date])
 }

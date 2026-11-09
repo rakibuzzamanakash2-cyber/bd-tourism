@@ -6,6 +6,8 @@ import { EXPIRED_BOOKING_REASON, formatDateRange } from "@/lib/booking-utils";
 import type { Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
 import { ensurePermitsForBooking } from "@/lib/permits";
+import { homestayTakenNights, onStayPaid } from "@/lib/homestays";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 // SSLCommerz sends form-encoded POST to this endpoint after payment.
 export async function POST(req: NextRequest) {
@@ -30,6 +32,7 @@ export async function POST(req: NextRequest) {
         booking: {
           include: {
             package: true,
+            homestay: { select: { name: true } },
             tourist: true,
           },
         },
@@ -98,8 +101,14 @@ export async function POST(req: NextRequest) {
     //  • expired for non-payment → bring the booking back as PAID
     //  • cancelled by the tourist  → keep it cancelled, owe a full refund
     const wasCancelled = payment.booking.status === "CANCELLED";
-    const wasExpired =
+    let wasExpired =
       wasCancelled && payment.booking.cancellationReason === EXPIRED_BOOKING_REASON;
+    // A homestay's nights may have gone to someone else after this booking
+    // expired. Then it can't come back: keep it cancelled and refund in full.
+    if (wasExpired && payment.booking.homestayId) {
+      const taken = await homestayTakenNights(payment.booking.homestayId, payment.booking.startDate, payment.booking.endDate, payment.bookingId);
+      if (taken.booked.length || taken.blocked.length) wasExpired = false;
+    }
     const bookingUpdate: Prisma.BookingUpdateInput =
       wasCancelled && !wasExpired
         ? { refundAmountUSD: payment.booking.totalAmountUSD }
@@ -123,6 +132,7 @@ export async function POST(req: NextRequest) {
 
     if (!wasCancelled || wasExpired) {
       await ensurePermitsForBooking(payment.bookingId);
+      await onStayPaid(payment.bookingId);
     }
 
     if (wasCancelled && !wasExpired) {
@@ -162,7 +172,7 @@ export async function POST(req: NextRequest) {
         travelerName:
           payment.booking.tourist.name?.split(/\s+/)[0] ?? "Traveler",
         bookingCode: payment.booking.bookingCode,
-        packageTitle: payment.booking.package?.title ?? "Custom trip",
+        packageTitle: bookingTitle(payment.booking),
         dateRange: formatDateRange(
           payment.booking.startDate,
           payment.booking.endDate,

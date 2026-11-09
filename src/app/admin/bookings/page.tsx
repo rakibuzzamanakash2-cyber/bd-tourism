@@ -14,6 +14,7 @@ import { dateTime, money, pagination, shortDate } from "@/lib/admin-format";
 import { db } from "@/lib/db";
 import { needsGuideWhere } from "@/lib/guide-shared";
 import { requireAdmin } from "@/lib/session";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 export const metadata = { title: "Bookings" };
 
@@ -40,6 +41,7 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
         { tourist: { email: { contains: q, mode: "insensitive" } } },
         { tourist: { name: { contains: q, mode: "insensitive" } } },
         { package: { title: { contains: q, mode: "insensitive" } } },
+        { homestay: { name: { contains: q, mode: "insensitive" } } },
       ],
     }),
   };
@@ -49,6 +51,7 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
       where,
       include: {
         package: { select: { title: true } },
+        homestay: { select: { name: true } },
         tourist: { select: { name: true, email: true } },
         payment: { select: { status: true } },
       },
@@ -85,7 +88,7 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
           <tr key={b.id} className="hover:bg-paper-warm/60">
             <Td>
               <Link href={`/admin/bookings/${b.id}`} className="font-medium underline-offset-4 hover:underline">
-                {b.package?.title ?? "Custom trip"}
+                {bookingTitle(b)}
               </Link>
               <div className="font-mono text-xs text-ink-mute">{b.bookingCode}</div>
             </Td>

@@ -6,6 +6,7 @@ import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
 import { initiatePayment } from "@/lib/sslcommerz";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 import { EXPIRED_BOOKING_REASON } from "@/lib/booking-utils";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 export type InitiatePaymentResult =
   | { success: true; gatewayUrl: string }
@@ -28,7 +29,7 @@ export async function initiatePaymentAction(
 
   const booking = await db.booking.findUnique({
     where: { id: bookingId },
-    include: { package: true, payment: true },
+    include: { package: true, homestay: { select: { name: true } }, payment: true },
   });
 
   if (!booking) {
@@ -76,7 +77,7 @@ export async function initiatePaymentAction(
     amountUSD: Number(booking.totalAmountUSD),
     tranId,
     bookingCode: booking.bookingCode,
-    packageTitle: booking.package?.title ?? "Custom trip",
+    packageTitle: bookingTitle(booking),
     customer,
   });
 

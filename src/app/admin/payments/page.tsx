@@ -12,6 +12,7 @@ import {
 import { dateTime, daysAgo, money, pagination, paymentMethod } from "@/lib/admin-format";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 export const metadata = { title: "Payments" };
 
@@ -134,7 +135,7 @@ async function AllPayments({
 async function RefundsOwed({ where }: { where: Prisma.BookingWhereInput }) {
   const bookings = await db.booking.findMany({
     where,
-    include: { tourist: { select: { name: true, email: true } }, package: { select: { title: true } }, payment: true },
+    include: { tourist: { select: { name: true, email: true } }, package: { select: { title: true } }, homestay: { select: { name: true } }, payment: true },
     orderBy: { cancelledAt: "asc" },
   });
   return (
@@ -142,7 +143,7 @@ async function RefundsOwed({ where }: { where: Prisma.BookingWhereInput }) {
       {bookings.map((b) => (
         <tr key={b.id} className="hover:bg-paper-warm/60">
           <Td>
-            {b.package?.title ?? "Custom trip"}
+            {bookingTitle(b)}
             <div className="font-mono text-xs text-ink-mute">{b.bookingCode}</div>
           </Td>
           <Td>

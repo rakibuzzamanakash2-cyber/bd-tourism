@@ -44,6 +44,10 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: imageHosts.map((hostname) => ({ protocol: "https", hostname })),
   },
+  // Homestays used to live at /experiences (as a waitlist page)
+  async redirects() {
+    return [{ source: "/experiences", destination: "/homestays", permanent: true }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

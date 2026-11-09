@@ -4,6 +4,7 @@ import { describeAction, money, shortDate, timeAgo } from "@/lib/admin-format";
 import { db } from "@/lib/db";
 import { needsGuideWhere } from "@/lib/guide-shared";
 import { requireAdmin } from "@/lib/session";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 export const metadata = { title: "Overview" };
 
@@ -27,6 +28,7 @@ export default async function AdminOverviewPage() {
     permitsToDo,
     applicationsToReview,
     needGuide,
+    hostsToPay,
     upcoming,
     recent,
     activity,
@@ -50,17 +52,18 @@ export default async function AdminOverviewPage() {
     }),
     db.partnerApplication.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW", "INTERVIEW", "HOME_VISIT"] } } }),
     db.booking.count({ where: needsGuideWhere(now) }),
+    db.booking.count({ where: { hostPayoutStatus: "UNPAID", status: { not: "CANCELLED" }, endDate: { lte: now } } }),
     db.booking.findMany({
       where: {
         status: { in: ["PAID", "CONFIRMED", "IN_PROGRESS"] },
         startDate: { gte: new Date(now.getTime() - DAY), lte: new Date(now.getTime() + 14 * DAY) },
       },
-      include: { package: { select: { title: true } }, tourist: { select: { name: true, email: true } } },
+      include: { package: { select: { title: true } }, homestay: { select: { name: true } }, tourist: { select: { name: true, email: true } } },
       orderBy: { startDate: "asc" },
       take: 10,
     }),
     db.booking.findMany({
-      include: { package: { select: { title: true } }, tourist: { select: { name: true, email: true } } },
+      include: { package: { select: { title: true } }, homestay: { select: { name: true } }, tourist: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
@@ -120,6 +123,13 @@ export default async function AdminOverviewPage() {
           tone={needGuide > 0 ? "attention" : "default"}
         />
         <StatCard
+          label="Hosts to pay"
+          value={hostsToPay}
+          hint="Finished stays not paid out"
+          href="/admin/homestays"
+          tone={hostsToPay > 0 ? "attention" : "default"}
+        />
+        <StatCard
           label="Awaiting payment"
           value={awaitingPayment}
           hint="Expire after 24 hours"
@@ -143,7 +153,7 @@ export default async function AdminOverviewPage() {
               <Td>{shortDate(b.startDate)}</Td>
               <Td>
                 <Link href={`/admin/bookings/${b.id}`} className="font-medium underline-offset-4 hover:underline">
-                  {b.package?.title ?? "Custom trip"}
+                  {bookingTitle(b)}
                 </Link>
                 <div className="font-mono text-xs text-ink-mute">{b.bookingCode}</div>
               </Td>
@@ -171,7 +181,7 @@ export default async function AdminOverviewPage() {
               <li key={b.id}>
                 <Link href={`/admin/bookings/${b.id}`} className="flex items-center justify-between gap-4 p-4 hover:bg-paper-warm/60">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{b.package?.title ?? "Custom trip"}</p>
+                    <p className="truncate font-medium">{bookingTitle(b)}</p>
                     <p className="truncate text-xs text-ink-mute">
                       {b.tourist.name ?? b.tourist.email} · {timeAgo(b.createdAt)}
                     </p>

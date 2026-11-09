@@ -1,13 +1,8 @@
 import Link from "next/link";
 import { HomestayWaitlistForm } from "@/components/experiences/waitlist-form";
 
-export const metadata = {
-  title: "Homestays",
-  description:
-    "Live Like a Local — homestays with verified Bangladeshi families. Coming soon.",
-};
-
-export default function ExperiencesPage() {
+/** Shown on /homestays until the first homestay is live: the waitlist. */
+export function HomestaysComingSoon() {
   return (
     <>
       {/* Hero */}

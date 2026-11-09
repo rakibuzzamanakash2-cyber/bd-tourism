@@ -2,7 +2,7 @@
 
 *Bangladesh, guided.* A tourism marketplace for Bangladesh (repository: `bd-tourism`). International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
-**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard) are built. Homestays come next.
+**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard) and homestays are built. Reviews and more content come next.
 
 ## Features
 
@@ -15,6 +15,8 @@
 - Guide and homestay-host applications at `/apply/guide` and `/apply/host`, in English or Bangla, saved step by step so people can finish later
 - Public guide profiles at `/guides`, filterable by region and language. Travelers can ask for a guide when booking
 - Guide dashboard (English or Bangla): accept or decline trips, see traveler details once accepted, block days off, edit their profile and see earnings
+- Homestays at `/homestays`: search by dates, guests, region and facilities, then book and pay for a stay. Prices are the host's rate plus DeltaWay's 15% fee, shown in BDT and USD
+- Host dashboard (English or Bangla): upcoming guests with their details once paid, a calendar to close nights, listing editing with photos, and earnings
 
 ## Tech stack
 
@@ -65,13 +67,14 @@ Sign up on the site, then run `npm run make-admin -- your@email.com` and open **
 - review guide and host applications: a checklist (ID, phone, interview, references or home visit), private ID documents, team notes, and Approve, which turns the account into a guide or host
 - create personal invite links for guides and hosts met offline and send them on WhatsApp or by email, and see who opened them
 - assign a guide to each paid booking (with a check for days off and other trips), and record guide payouts
+- manage homestay listings, record host payouts, and email the homestay waitlist when the first homes go live
 - read contact messages, export the homestay waitlist and manage user roles
 
 Photos can be pasted as links from Unsplash, Pexels or Wikimedia Commons, or uploaded once the Cloudinary keys are set. Every admin action is kept in an activity log.
 
 ## Daily job
 
-Vercel Cron calls `/api/cron/daily` once a day (see `vercel.json`). It cancels unpaid bookings that have passed their deadline, sends a single reminder email to anyone who left an application as a draft for two days, and nudges guides (and the team) about trip requests left unanswered for a day. Set `CRON_SECRET` in Vercel so only Vercel can call it. To run it locally:
+Vercel Cron calls `/api/cron/daily` once a day (see `vercel.json`). It cancels unpaid bookings that have passed their deadline, sends a single reminder email to anyone who left an application as a draft for two days, nudges guides (and the team) about trip requests left unanswered for a day, and reminds hosts two days before guests arrive. Set `CRON_SECRET` in Vercel so only Vercel can call it. To run it locally:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily

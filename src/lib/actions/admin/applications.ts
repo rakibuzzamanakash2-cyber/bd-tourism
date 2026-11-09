@@ -10,6 +10,7 @@ import { env } from "@/lib/env";
 import { sendEmail, simpleEmail } from "@/lib/email";
 import { getAdminOrNull } from "@/lib/session";
 import { createGuideProfileFromApplication } from "@/lib/guides";
+import { createHomestayFromApplication } from "@/lib/homestays";
 import { APPLICATION_TRANSITIONS, CHECKLIST, normalizeBdPhone } from "@/lib/applications";
 import { INVITE_DAYS, inviteEmail, inviteLink, inviteMessage, inviteState, inviteWhatsapp, siteOrigin } from "@/lib/invites";
 import type { AdminActionResult } from "@/lib/actions/admin/bookings";
@@ -95,6 +96,9 @@ export async function adminSetApplicationStatus(input: z.input<typeof statusSche
   // Approved guides get their public profile straight away (they can edit it)
   const profile = to === "APPROVED" && app.kind === "GUIDE" ? await createGuideProfileFromApplication(app.userId) : null;
   if (profile) revalidatePath("/guides");
+  // Approved hosts get their homestay listing (they can edit and add photos)
+  const homestay = to === "APPROVED" && app.kind === "HOST" ? await createHomestayFromApplication(app.userId) : null;
+  if (homestay) revalidatePath("/homestays");
 
   await audit({
     actorId: admin.id,
