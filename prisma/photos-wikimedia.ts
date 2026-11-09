@@ -12,7 +12,7 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { commonsSearchUrl, pickPhotos, type CommonsPage, type PickedPhoto } from "../src/lib/wikimedia";
+import { cleanImageUrl, commonsSearchUrl, pickPhotos, type CommonsPage, type PickedPhoto } from "../src/lib/wikimedia";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const DRY = process.argv.includes("--dry-run");
@@ -71,8 +71,42 @@ async function saveCredit(p: PickedPhoto) {
   });
 }
 
+/** Photos saved by an earlier run may carry "?utm_source=…": remove it everywhere. */
+async function tidySavedUrls() {
+  const tidy = (u: string) => (u.includes("wikimedia.org") && u.includes("?") ? cleanImageUrl(u) : u);
+  let n = 0;
+  for (const d of await db.destination.findMany({ select: { id: true, featuredImage: true } })) {
+    if (tidy(d.featuredImage) !== d.featuredImage) {
+      await db.destination.update({ where: { id: d.id }, data: { featuredImage: tidy(d.featuredImage) } });
+      n++;
+    }
+  }
+  for (const t of await db.tourPackage.findMany({ select: { id: true, featuredImage: true } })) {
+    if (tidy(t.featuredImage) !== t.featuredImage) {
+      await db.tourPackage.update({ where: { id: t.id }, data: { featuredImage: tidy(t.featuredImage) } });
+      n++;
+    }
+  }
+  for (const i of await db.destinationImage.findMany({ select: { id: true, url: true } })) {
+    if (tidy(i.url) !== i.url) {
+      await db.destinationImage.update({ where: { id: i.id }, data: { url: tidy(i.url) } });
+      n++;
+    }
+  }
+  for (const c of await db.imageCredit.findMany({ select: { id: true, url: true } })) {
+    const clean = tidy(c.url);
+    if (clean === c.url) continue;
+    // Keep one credit per photo
+    if (await db.imageCredit.findUnique({ where: { url: clean } })) await db.imageCredit.delete({ where: { id: c.id } });
+    else await db.imageCredit.update({ where: { id: c.id }, data: { url: clean } });
+    n++;
+  }
+  if (n) console.log(`🧹 Tidied ${n} saved photo links.\n`);
+}
+
 async function main() {
   console.log(DRY ? "🔎 Dry run: nothing will be saved.\n" : "📷 Fetching photos from Wikimedia Commons…\n");
+  if (!DRY) await tidySavedUrls();
   const destinations = await db.destination.findMany({ include: { images: true }, orderBy: { name: "asc" } });
   let featured = 0;
   let gallery = 0;

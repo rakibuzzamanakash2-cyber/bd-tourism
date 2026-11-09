@@ -5,6 +5,7 @@ export const IMAGE_HOSTS = [
   "images.unsplash.com",
   "images.pexels.com",
   "upload.wikimedia.org",
+  "thumb.wikimedia.org", // Wikimedia's newer thumbnail address
   "res.cloudinary.com",
   "lh3.googleusercontent.com", // Google profile pictures
 ] as const;

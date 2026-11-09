@@ -19,7 +19,7 @@ export type CommonsPage = {
 };
 
 export type PickedPhoto = {
-  url: string; // 1600px-wide thumbnail on upload.wikimedia.org
+  url: string; // ~1600px-wide thumbnail on upload.wikimedia.org or thumb.wikimedia.org
   title: string;
   author: string;
   license: string;
@@ -49,6 +49,18 @@ export function stripHtml(html: string | undefined): string {
     .trim();
 }
 
+/** Drop the tracking parameters Commons adds (?utm_source=…); the image is the same. */
+export function cleanImageUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.endsWith("wikimedia.org")) return url;
+    u.search = "";
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 /** The search results of one Commons API call → the usable photos, best first. */
 export function pickPhotos(pages: CommonsPage[], max: number): PickedPhoto[] {
   const out: PickedPhoto[] = [];
@@ -69,9 +81,10 @@ export function pickPhotos(pages: CommonsPage[], max: number): PickedPhoto[] {
     // CC licences need a named author; skip files where we can't credit anyone
     if (!author && !/^(public domain|pd|cc0)/i.test(license)) continue;
     const caption = stripHtml(meta.ImageDescription?.value || meta.ObjectName?.value).slice(0, 140) || null;
-    if (out.some((x) => x.url === info.thumburl)) continue;
+    const url = cleanImageUrl(info.thumburl);
+    if (out.some((x) => x.url === url)) continue;
     out.push({
-      url: info.thumburl,
+      url,
       title: p.title.replace(/^File:/, "").replace(/\.[a-z]+$/i, ""),
       author: (author || "Unknown author").slice(0, 200),
       license,
