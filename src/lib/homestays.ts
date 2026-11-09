@@ -74,7 +74,6 @@ export async function createHomestayFromApplication(userId: string): Promise<Hom
       maxGuests: Number(d.maxGuests) || 2,
       facilities: Array.isArray(d.facilities) ? (d.facilities as string[]) : [],
       languages: Array.isArray(d.languages) ? (d.languages as string[]) : [],
-      pricePerNightBDT: Number(d.pricePerNightBDT) || 1500,
       photos: app.homePhotos,
       phone: app.phone,
       language: app.language === "en" ? "en" : "bn",

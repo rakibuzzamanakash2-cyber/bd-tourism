@@ -107,7 +107,6 @@ export const hostHomeSchema = z.object({
   languages: z.array(z.string()).min(1, "languages").max(12),
   family: z.string().trim().min(10, "family").max(1000),
   houseRules: z.string().trim().max(1000).optional().default(""),
-  pricePerNightBDT: z.coerce.number().int("number").min(300, "price").max(50000, "price"),
 });
 
 export const hostDocumentsSchema = z

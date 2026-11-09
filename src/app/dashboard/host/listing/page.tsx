@@ -27,7 +27,7 @@ export default async function HostListingPage() {
         initial={{
           name: h.name, regionId: h.regionId, district: h.district, area: h.area, address: h.address ?? "",
           description: h.description, houseRules: h.houseRules ?? "", rooms: String(h.rooms), maxGuests: String(h.maxGuests),
-          facilities: h.facilities, languages: h.languages, pricePerNightBDT: String(h.pricePerNightBDT), photos: h.photos, isListed: h.isListed,
+          facilities: h.facilities, languages: h.languages, photos: h.photos, isListed: h.isListed,
         }}
       />
     </div>

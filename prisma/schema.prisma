@@ -709,8 +709,6 @@ model Homestay {
   maxGuests        Int
   facilities       String[]
   languages        String[]
-  // What the host is paid per night. Travelers see it plus our commission.
-  pricePerNightBDT Int
   photos           String[]
   // Private: given to guests once their stay is paid
   address          String?  @db.Text
