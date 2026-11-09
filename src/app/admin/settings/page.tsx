@@ -3,6 +3,7 @@ import { TestCloudinaryButton } from "@/components/admin/test-connection";
 import { AdminPageHeader } from "@/components/admin/ui";
 import { cloudinary, env, features } from "@/lib/env";
 import { BDT_PER_USD } from "@/lib/booking-utils";
+import { encryptionStatus } from "@/lib/crypto";
 import { callbackUrls, paymentMode, type PaymentMode } from "@/lib/sslcommerz";
 import { requireAdmin } from "@/lib/session";
 
@@ -17,6 +18,7 @@ export default async function AdminSettingsPage() {
   await requireAdmin();
 
   const mode = paymentMode();
+  const enc = encryptionStatus();
   const urls = callbackUrls();
   const isLocal = (u: string) => /^http:\/\/|localhost|127\.0\.0\.1/.test(u);
   const paymentProblems = [
@@ -51,6 +53,16 @@ export default async function AdminSettingsPage() {
         ? "Not set up. Travelers see “pay via WhatsApp” instead, and you record bKash/bank/cash payments by hand on the booking."
         : `${mode === "live" ? "LIVE: real money is taken." : "Sandbox (test) mode: no real money is taken."} Store ${mask(env.SSLCOMMERZ_STORE_ID)}.`,
       extra: features.payments ? <PaymentChecklist mode={mode} problems={paymentProblems} ipn={urls.ipn} /> : undefined,
+    },
+    {
+      name: "Passport encryption",
+      purpose: "Passport numbers are encrypted before they're stored, and deleted 90 days after each trip.",
+      state: enc.problem ? "problem" : enc.explicit ? "on" : "problem",
+      detail: enc.problem
+        ? enc.problem
+        : enc.explicit
+          ? "Using DATA_ENCRYPTION_KEY. Keep a safe copy of it: without it, stored passport numbers can't be read."
+          : "Using a key made from AUTH_SECRET. Set DATA_ENCRYPTION_KEY (see .env.example) and never change it afterwards. Numbers saved before then stay readable.",
     },
     {
       name: "Exchange rate",

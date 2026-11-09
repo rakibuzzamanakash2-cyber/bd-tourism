@@ -2,7 +2,7 @@
 
 *Bangladesh, guided.* A tourism marketplace for Bangladesh (repository: `bd-tourism`). International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
-**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard), homestays, reviews and payments in USD or BDT are built. Data and privacy work comes next.
+**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard), homestays, reviews and payments in USD or BDT, and privacy protections are built. SEO, Bangla and accessibility come next.
 
 ## Features
 
@@ -85,6 +85,13 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/dail
 ## Payments: test and live
 
 Payments run in **sandbox (test) mode** unless `SSLCOMMERZ_LIVE=true`, so no real money is taken by accident. Travelers choose USD or BDT; the taka amount is fixed when they start paying (rate from `NEXT_PUBLIC_BDT_PER_USD`, default 120), and the IPN checks the exact amount and currency. The callback URLs default to your site address. SSLCommerz must be able to reach `/api/webhooks/sslcommerz`, so payments only confirm on a public https address (or through a tunnel like ngrok). Admin → Settings shows a checklist, including the steps to go live once the trade licence and live store are ready. Without SSLCommerz keys, the pay page offers "pay via WhatsApp" and you record the payment by hand.
+
+## Privacy
+
+- **Passports** are encrypted with AES-256-GCM (`src/lib/crypto.ts`) using `DATA_ENCRYPTION_KEY`, shown masked everywhere, revealed to admins only with a logged "Show" click, and deleted 90 days after the trip by the daily job. Each traveler on a booking is a `BookingTraveler` row.
+- **Older data**: run `npm run privacy:migrate` once after updating. It moves plain-text passports from old bookings and profiles into encrypted storage. The daily job does the same as a safety net.
+- **Email verification**: new accounts confirm their email before booking (only when email sending is set up). Existing accounts and Google sign-ins count as verified.
+- **Your data**: travelers can download everything we hold (Profile → Your data) or delete their account; bookings stay, anonymised, for payment records.
 
 ## Real photos
 

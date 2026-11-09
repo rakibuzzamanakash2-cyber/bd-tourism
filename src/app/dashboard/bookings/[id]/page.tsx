@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GuideAvatar } from "@/components/guides/guide-avatar";
 import { Stars } from "@/components/reviews/stars";
 import { reviewEligibility } from "@/lib/reviews";
+import { maskedPassport } from "@/lib/travelers";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -95,6 +96,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       },
       review: { select: { rating: true, createdAt: true, status: true } },
       payment: { select: { status: true } },
+      travelers: { select: { id: true, position: true, name: true, nationality: true, passportLast4: true, passportPurgedAt: true }, orderBy: { position: "asc" } },
       homestay: {
         select: { name: true, slug: true, photos: true, area: true, district: true, address: true, phone: true, houseRules: true, host: { select: { name: true } }, region: { select: { name: true } } },
       },
@@ -150,7 +152,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     primaryContact?: { name: string; email: string; phone: string };
     additionalTravelers?: {
       name: string;
-      passportNumber: string;
+      passportNumber?: string;
       nationality: string;
     }[];
     notes?: string;
@@ -407,14 +409,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   name={details.primaryContact.name}
                   info={`${details.primaryContact.email} · ${details.primaryContact.phone}`}
                 />
-                {details.additionalTravelers?.map((t, i) => (
-                  <TravelerRow
-                    key={i}
-                    label={`Traveler #${i + 2}`}
-                    name={t.name}
-                    info={`${t.nationality} · Passport ${t.passportNumber}`}
-                  />
-                ))}
+                {booking.travelers.length > 0
+                  ? booking.travelers
+                      .filter((t) => t.position > 0)
+                      .map((t) => (
+                        <TravelerRow
+                          key={t.id}
+                          label={`Traveler #${t.position + 1}`}
+                          name={t.name}
+                          info={[t.nationality, maskedPassport(t) && `Passport ${maskedPassport(t)}`].filter(Boolean).join(" · ")}
+                        />
+                      ))
+                  : details.additionalTravelers?.map((t, i) => <TravelerRow key={i} label={`Traveler #${i + 2}`} name={t.name} info={t.nationality ?? ""} />)}
               </div>
             </section>
           )}

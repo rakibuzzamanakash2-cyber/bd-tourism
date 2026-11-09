@@ -72,6 +72,8 @@ export function describeAction(action: string): string {
     "homestay.payout": "recorded a host payout",
     "homestay.waitlist_email": "emailed the homestay waitlist",
     "review.reply": "replied to a review",
+    "privacy.passport_view": "viewed a passport number",
+    "account.delete": "deleted their account",
     "booking.refund_gateway": "sent a refund through SSLCommerz",
     "review.hide": "hid a review",
     "review.show": "made a review public again",

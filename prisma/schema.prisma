@@ -29,6 +29,8 @@ model User {
   name          String?
   image         String?
   role          UserRole  @default(TOURIST)
+  // Set when the person deleted their account (the row stays, anonymised, for booking records)
+  deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -258,9 +260,10 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  payment Payment?
-  review  Review?
-  permits Permit[]
+  payment   Payment?
+  review    Review?
+  permits   Permit[]
+  travelers BookingTraveler[]
 
   // Guide the tourist asked for when booking (a wish, not an assignment)
   requestedGuideId String?
@@ -748,4 +751,24 @@ model ImageCredit {
   licenseUrl String?
   sourceUrl  String
   createdAt  DateTime @default(now())
+}
+
+// Each person on a booking. Passport numbers are encrypted (see src/lib/crypto.ts),
+// shown masked, and deleted 90 days after the trip.
+model BookingTraveler {
+  id               String    @id @default(cuid())
+  bookingId        String
+  booking          Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  // 0 = the lead traveler (the contact person)
+  position         Int       @default(0)
+  name             String
+  email            String?
+  phone            String?
+  nationality      String?
+  passportEnc      String?
+  passportLast4    String?
+  passportPurgedAt DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([bookingId])
 }

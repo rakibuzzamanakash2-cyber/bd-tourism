@@ -17,7 +17,8 @@
     "db:seed": "prisma db seed && tsx prisma/link-itinerary.ts",
     "db:studio": "prisma studio",
     "make-admin": "tsx prisma/make-admin.ts",
-    "photos:wikimedia": "tsx prisma/photos-wikimedia.ts"
+    "photos:wikimedia": "tsx prisma/photos-wikimedia.ts",
+    "privacy:migrate": "tsx --conditions=react-server prisma/privacy-migrate.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

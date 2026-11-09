@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { sendVerificationEmail } from "@/lib/email-verification";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { db } from "@/lib/db";
@@ -90,6 +91,9 @@ export async function signupAction(
       touristProfile: { create: {} },
     },
   });
+  // Ask them to confirm the address (needed before booking). Don't let an
+  // email problem stop the sign-up itself.
+  await sendVerificationEmail({ email, name }).catch((e) => console.error("[signup] verification email failed", e));
 
   // Auto sign-in the newly created user
   try {
