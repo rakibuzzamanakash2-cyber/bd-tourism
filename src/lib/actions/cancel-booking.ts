@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releaseGuidesForBooking } from "@/lib/guides";
+import { onStayCancelled } from "@/lib/homestays";
 import { env } from "@/lib/env";
 import { notifyTeam, sendEmail, simpleEmail } from "@/lib/email";
 import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
@@ -14,6 +15,7 @@ import {
   formatDateRange,
   serviceFeeFromDetails,
 } from "@/lib/booking-utils";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 const schema = z.object({
   bookingId: z.string().min(1).max(64),
@@ -36,7 +38,7 @@ export async function cancelBookingAction(input: z.input<typeof schema>): Promis
 
   const booking = await db.booking.findUnique({
     where: { id: parsed.data.bookingId },
-    include: { package: true, payment: true, tourist: true },
+    include: { package: true, homestay: { select: { name: true } }, payment: true, tourist: true },
   });
   if (!booking || booking.touristId !== session.user.id) {
     return { success: false, error: "Booking not found." };
@@ -68,8 +70,9 @@ export async function cancelBookingAction(input: z.input<typeof schema>): Promis
     return { success: false, error: "This booking just changed. Please refresh and try again." };
   }
   await releaseGuidesForBooking(booking.id, parsed.data.reason || "Cancelled by the traveler");
+  await onStayCancelled(booking.id);
 
-  const title = booking.package?.title ?? "Custom trip";
+  const title = bookingTitle(booking);
   const dates = formatDateRange(booking.startDate, booking.endDate);
   const refundLine = paid
     ? quote.refundUSD > 0

@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 import { remindStaleDrafts } from "@/lib/application-reminders";
 import { remindUnansweredTrips } from "@/lib/guide-reminders";
+import { remindHostsOfArrivals } from "@/lib/homestays";
 
 // Daily housekeeping, called by Vercel Cron (see vercel.json). Vercel sends
 // "Authorization: Bearer <CRON_SECRET>" when CRON_SECRET is set in the project.
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   if (req.headers.get("authorization") !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const jobs = { expiredBookings: expireUnpaidBookings, draftReminders: () => remindStaleDrafts(), guideReminders: () => remindUnansweredTrips() };
+  const jobs = { expiredBookings: expireUnpaidBookings, draftReminders: () => remindStaleDrafts(), guideReminders: () => remindUnansweredTrips(), hostReminders: () => remindHostsOfArrivals() };
   const results: Record<string, number | string> = {};
   for (const [name, job] of Object.entries(jobs)) {
     try {

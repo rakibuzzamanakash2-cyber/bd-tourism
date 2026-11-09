@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { toggleBlockedDayAction } from "@/lib/actions/guide";
+import { toggleHomestayNightAction } from "@/lib/actions/host";
+import { hostText } from "@/lib/i18n/host";
 import { guideText } from "@/lib/i18n/guide";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +17,14 @@ const key = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
  * Month calendar: tap a day to block it or free it again.
  * Days with a trip are shown and can't be blocked.
  */
-export function AvailabilityCalendar({ lang, today, blocked: initialBlocked, tripDays }: { lang: "en" | "bn"; today: string; blocked: string[]; tripDays: string[] }) {
-  const t = guideText[lang];
+export function AvailabilityCalendar({ lang, today, blocked: initialBlocked, tripDays, kind = "guide" }: { lang: "en" | "bn"; today: string; blocked: string[]; tripDays: string[]; kind?: "guide" | "host" }) {
+  // Guides block days; hosts close nights. Same calendar, their own words.
+  const g = guideText[lang];
+  const h = hostText[lang];
+  const t = kind === "host"
+    ? { ...g, legendBlocked: h.legendClosed, legendTrip: h.legendBooked, errors: h.errors }
+    : g;
+  const toggleAction = kind === "host" ? toggleHomestayNightAction : toggleBlockedDayAction;
   const [ty, tm] = today.split("-").map(Number);
   const [offset, setOffset] = useState(0);
   const [blocked, setBlocked] = useState(() => new Set(initialBlocked));
@@ -42,7 +50,7 @@ export function AvailabilityCalendar({ lang, today, blocked: initialBlocked, tri
       return n;
     });
     start(async () => {
-      const r = await toggleBlockedDayAction(day);
+      const r = await toggleAction(day);
       setBusyDay(null);
       if (!r.ok) {
         toast.error(t.errors[r.error] ?? t.errors.generic);

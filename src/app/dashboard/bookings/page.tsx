@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 export const metadata = {
   title: "Bookings",
@@ -36,7 +37,7 @@ export default async function BookingsPage() {
 
   const bookings = await db.booking.findMany({
     where: { touristId: user.id },
-    include: { package: true },
+    include: { package: true, homestay: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -78,7 +79,7 @@ export default async function BookingsPage() {
                 <div className="min-w-0">
                   <p className="eyebrow text-ink-mute">{b.bookingCode}</p>
                   <p className="mt-1 font-display text-xl leading-tight">
-                    {b.package?.title ?? "Custom trip"}
+                    {bookingTitle(b)}
                   </p>
                   <p className="mt-1 text-sm text-ink-soft">
                     {start} — {end} · {b.travelerCount}{" "}

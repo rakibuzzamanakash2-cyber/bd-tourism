@@ -6,6 +6,7 @@ import type { BookingStatus } from "@prisma/client";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { releaseGuidesForBooking } from "@/lib/guides";
+import { onStayCancelled, onStayPaid } from "@/lib/homestays";
 import { env } from "@/lib/env";
 import { sendEmail, simpleEmail } from "@/lib/email";
 import { getAdminOrNull } from "@/lib/session";
@@ -15,6 +16,7 @@ import {
   ADMIN_STATUS_TRANSITIONS,
   formatDateRange,
 } from "@/lib/booking-utils";
+import { bookingTitle } from "@/lib/homestay-shared";
 
 export type AdminActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -30,7 +32,7 @@ function refresh(id: string) {
 async function loadBooking(id: string) {
   return db.booking.findUnique({
     where: { id },
-    include: { package: { select: { title: true } }, tourist: { select: { name: true, email: true } }, payment: true },
+    include: { package: { select: { title: true } }, homestay: { select: { name: true } }, tourist: { select: { name: true, email: true } }, payment: true },
   });
 }
 
@@ -75,7 +77,7 @@ export async function adminChangeBookingStatus(input: z.input<typeof statusSchem
       to: booking.tourist.email,
       subject: `Your trip is confirmed — ${booking.bookingCode}`,
       html: simpleEmail("Your trip is confirmed.", [
-        `Hi ${booking.tourist.name?.split(/\s+/)[0] ?? "there"}, everything is arranged for ${booking.package?.title ?? "your trip"} (${formatDateRange(booking.startDate, booking.endDate)}).`,
+        `Hi ${booking.tourist.name?.split(/\s+/)[0] ?? "there"}, everything is arranged for ${bookingTitle(booking)} (${formatDateRange(booking.startDate, booking.endDate)}).`,
         "About 7 days before you travel, we'll send a full brief with your guide's contact details.",
         `Your booking: ${bookingUrl(booking.id)}`,
       ]),
@@ -124,6 +126,7 @@ export async function adminMarkBookingPaid(input: z.input<typeof manualPaymentSc
   ]);
 
   await ensurePermitsForBooking(bookingId);
+  await onStayPaid(bookingId);
   await audit({ actorId: admin.id, action: "booking.mark_paid", targetType: "Booking", targetId: bookingId, details: raw });
   refresh(bookingId);
   return { ok: true, message: "Payment recorded. The booking is now Paid." };
@@ -167,6 +170,7 @@ export async function adminCancelBooking(input: z.input<typeof cancelSchema>): P
   });
   if (count === 0) return { ok: false, error: "The booking changed meanwhile. Refresh and try again." };
   await releaseGuidesForBooking(bookingId, reason);
+  await onStayCancelled(bookingId);
 
   await audit({
     actorId: admin.id,
@@ -181,7 +185,7 @@ export async function adminCancelBooking(input: z.input<typeof cancelSchema>): P
       to: booking.tourist.email,
       subject: `Booking cancelled — ${booking.bookingCode}`,
       html: simpleEmail("Your booking has been cancelled.", [
-        `We've had to cancel ${booking.package?.title ?? "your trip"} (${formatDateRange(booking.startDate, booking.endDate)}).`,
+        `We've had to cancel ${bookingTitle(booking)} (${formatDateRange(booking.startDate, booking.endDate)}).`,
         `Reason: ${reason}`,
         paid && refundUSD > 0
           ? `We'll refund $${refundUSD.toFixed(2)} USD within 7–10 working days.`

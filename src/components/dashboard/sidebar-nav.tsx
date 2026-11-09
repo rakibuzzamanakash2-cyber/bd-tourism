@@ -8,11 +8,13 @@ import {
   CalendarDays,
   ClipboardList,
   Compass,
+  House,
   IdCard,
   LayoutDashboard,
   User,
 } from "lucide-react";
 import { guideText } from "@/lib/i18n/guide";
+import { hostText } from "@/lib/i18n/host";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -25,7 +27,7 @@ const items = [
 const applicationItem = { href: "/dashboard/application", label: "Application", icon: ClipboardList, exact: false };
 
 /** Guides get their own section; its labels follow their chosen language. */
-export type NavOptions = { showApplication?: boolean; guideLang?: "en" | "bn" | null };
+export type NavOptions = { showApplication?: boolean; guideLang?: "en" | "bn" | null; hostLang?: "en" | "bn" | null };
 const guideItems = (lang: "en" | "bn") => {
   const t = guideText[lang].nav;
   return [
@@ -34,8 +36,17 @@ const guideItems = (lang: "en" | "bn") => {
     { href: "/dashboard/guide/profile", label: t.profile, icon: IdCard, exact: true },
   ];
 };
-const itemsFor = ({ showApplication, guideLang }: NavOptions) => [
+const hostItems = (lang: "en" | "bn") => {
+  const t = hostText[lang].nav;
+  return [
+    { href: "/dashboard/host", label: t.stays, icon: House, exact: true },
+    { href: "/dashboard/host/calendar", label: t.calendar, icon: CalendarDays, exact: true },
+    { href: "/dashboard/host/listing", label: t.listing, icon: IdCard, exact: true },
+  ];
+};
+const itemsFor = ({ showApplication, guideLang, hostLang }: NavOptions) => [
   ...(guideLang ? guideItems(guideLang) : []),
+  ...(hostLang ? hostItems(hostLang) : []),
   ...items,
   ...(showApplication ? [applicationItem] : []),
 ];

@@ -26,7 +26,7 @@ const nav = [
   { href: "/destinations", label: "Destinations" },
   { href: "/packages", label: "Tours" },
   { href: "/guides", label: "Guides" },
-  { href: "/experiences", label: "Homestays" },
+  { href: "/homestays", label: "Homestays" },
   { href: "/permits", label: "Permits" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },

@@ -24,6 +24,8 @@ import { db } from "@/lib/db";
 import { ensurePermitsForBooking } from "@/lib/permits";
 import { PermitEditor } from "@/components/admin/permit-panel";
 import { requireAdmin } from "@/lib/session";
+import { bookingTitle, stayNightKeys } from "@/lib/homestay-shared";
+import { MarkHostPaidForm } from "@/components/admin/homestay-actions";
 
 export const metadata = { title: "Booking" };
 
@@ -48,6 +50,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
       where: { id },
       include: {
         package: { select: { id: true, title: true, slug: true, durationDays: true, includesGuide: true } },
+        homestay: { select: { id: true, name: true, slug: true, phone: true, address: true, host: { select: { name: true, email: true } } } },
         requestedGuide: { select: { id: true, slug: true, displayName: true } },
         guideAssignments: {
           include: { guide: { select: { id: true, displayName: true, slug: true, phone: true } }, assignedBy: { select: { name: true, email: true } } },
@@ -95,7 +98,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
   // ---- Guide
   const liveAssignment = booking.guideAssignments.find((a) => a.status === "PENDING" || a.status === "ACCEPTED");
   const pastAssignments = booking.guideAssignments.filter((a) => a !== liveAssignment);
-  const canAssign = !liveAssignment && (GUIDE_ASSIGNABLE_BOOKING as readonly string[]).includes(booking.status);
+  const canAssign = !booking.homestayId && !liveAssignment && (GUIDE_ASSIGNABLE_BOOKING as readonly string[]).includes(booking.status);
   const days = tripDays(booking.startDate, booking.endDate);
   let candidates: GuideCandidate[] = [];
   if (canAssign) {
@@ -144,7 +147,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-mono text-sm text-ink-mute">{booking.bookingCode}</p>
-          <h1 className="mt-1 font-display text-4xl leading-tight">{booking.package?.title ?? "Custom trip"}</h1>
+          <h1 className="mt-1 font-display text-4xl leading-tight">{bookingTitle(booking)}</h1>
           <p className="mt-2 text-ink-soft">
             {formatDateRange(booking.startDate, booking.endDate)} · {booking.travelerCount}{" "}
             {booking.travelerCount === 1 ? "traveler" : "travelers"} · {money(booking.totalAmountUSD)}
@@ -300,7 +303,26 @@ export default async function AdminBookingDetailPage({ params }: Props) {
               )}
             </div>
           </Section>
-          <Section title="Guide">
+          {booking.homestay && (
+            <Section title="Homestay">
+              <div className="space-y-2 text-sm">
+                <Link href={`/admin/homestays/${booking.homestay.id}`} className="font-medium underline-offset-4 hover:underline">{booking.homestay.name}</Link>
+                <p className="text-xs text-ink-mute">
+                  Host: {booking.homestay.host.name ?? booking.homestay.host.email} · {booking.homestay.phone}
+                  <br />
+                  {stayNightKeys(booking.startDate, booking.endDate).length} nights · host gets {bdt(booking.hostPayoutBDT ?? 0)}
+                </p>
+                {booking.hostPayoutStatus === "PAID" ? (
+                  <p className="text-xs text-forest-800">Host paid {dateTime(booking.hostPaidAt)}{booking.hostPayoutReference && ` · ${booking.hostPayoutReference}`}</p>
+                ) : booking.hostPayoutStatus === "UNPAID" && booking.status !== "CANCELLED" ? (
+                  <MarkHostPaidForm bookingId={booking.id} amountBDT={booking.hostPayoutBDT ?? 0} />
+                ) : (
+                  <p className="text-xs text-ink-mute">{booking.status === "CANCELLED" ? "Cancelled: nothing owed to the host." : "Host payout is owed once the stay is paid."}</p>
+                )}
+              </div>
+            </Section>
+          )}
+          {!booking.homestay && <Section title="Guide">
             {booking.requestedGuide && (
               <p className="mb-3 rounded-md bg-paper-warm px-3 py-2 text-xs">
                 Traveler asked for{" "}
@@ -353,7 +375,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                 ))}
               </ul>
             )}
-          </Section>
+          </Section>}
           <Section title="Team notes">
             <NotesForm bookingId={booking.id} initial={booking.adminNotes ?? ""} />
           </Section>

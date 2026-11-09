@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { PayForm } from "@/components/booking/pay-form";
 import { formatDateRange } from "@/lib/booking-utils";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
+import { bookingTitle, stayNightKeys } from "@/lib/homestay-shared";
+import { serviceFeeFromDetails } from "@/lib/booking-utils";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -22,7 +24,7 @@ export default async function PayPage({ params }: Props) {
 
   const booking = await db.booking.findUnique({
     where: { id },
-    include: { package: true },
+    include: { package: true, homestay: { select: { name: true, region: { select: { isRestricted: true } } } } },
   });
 
   if (!booking) notFound();
@@ -35,8 +37,11 @@ export default async function PayPage({ params }: Props) {
   const perPerson = booking.package
     ? Number(booking.package.basePriceUSD)
     : 0;
-  const tourTotal = perPerson * booking.travelerCount;
+  // Stays: the permit fee (if any) is recorded in the booking details
+  const stayFee = booking.homestay ? serviceFeeFromDetails(booking.specialRequests) : 0;
+  const tourTotal = booking.homestay ? totalUSD - stayFee : perPerson * booking.travelerCount;
   const serviceFee = totalUSD - tourTotal;
+  const stayNights = booking.homestay ? stayNightKeys(booking.startDate, booking.endDate).length : 0;
   const hasServiceFee = serviceFee > 0.01;
 
   return (
@@ -57,7 +62,7 @@ export default async function PayPage({ params }: Props) {
           Complete your booking.
         </h1>
         <p className="mt-3 text-ink-soft">
-          {booking.package?.title ?? "Custom trip"} ·{" "}
+          {bookingTitle(booking)} ·{" "}
           {formatDateRange(booking.startDate, booking.endDate)}
         </p>
       </div>
@@ -69,7 +74,9 @@ export default async function PayPage({ params }: Props) {
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between text-ink-soft">
               <span>
-                Tour · {booking.travelerCount} × ${perPerson.toFixed(0)}
+                {booking.homestay
+                  ? `Homestay · ${stayNights} ${stayNights === 1 ? "night" : "nights"}, ${booking.travelerCount} ${booking.travelerCount === 1 ? "guest" : "guests"}`
+                  : `Tour · ${booking.travelerCount} × $${perPerson.toFixed(0)}`}
               </span>
               <span>${tourTotal.toFixed(2)}</span>
             </div>

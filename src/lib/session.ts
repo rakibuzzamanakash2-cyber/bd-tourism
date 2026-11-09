@@ -64,3 +64,17 @@ export async function requireGuide(callbackUrl = "/dashboard/guide") {
   if (!user || user.role !== "GUIDE") notFound();
   return { user, profile: user.guideProfile };
 }
+
+/** The signed-in host and their homestay (null while it's being set up), or hides the page. */
+export async function requireHost(callbackUrl = "/dashboard/host") {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, email: true, role: true, homestay: true },
+  });
+  if (!user || user.role !== "HOST") notFound();
+  return { user, homestay: user.homestay };
+}

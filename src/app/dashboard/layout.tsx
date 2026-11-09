@@ -19,11 +19,12 @@ export default async function DashboardLayout({
 
   const [applications, guide] = await Promise.all([
     db.partnerApplication.count({ where: { userId: session.user.id } }),
-    db.user.findUnique({ where: { id: session.user.id }, select: { role: true, guideProfile: { select: { language: true } } } }),
+    db.user.findUnique({ where: { id: session.user.id }, select: { role: true, guideProfile: { select: { language: true } }, homestay: { select: { language: true } } } }),
   ]);
   const nav = {
     showApplication: applications > 0,
     guideLang: guide?.role === "GUIDE" ? (guide.guideProfile?.language === "bn" ? "bn" : "en") : null,
+    hostLang: guide?.role === "HOST" ? (guide.homestay?.language === "en" ? "en" : "bn") : null,
   } as const;
 
   return (
