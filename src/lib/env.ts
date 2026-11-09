@@ -33,6 +33,10 @@ const schema = z.object({
 
   SSLCOMMERZ_STORE_ID: optional,
   SSLCOMMERZ_STORE_PASSWORD: optional,
+  // Real money is only taken when this is exactly "true" (needs a live store
+  // from SSLCommerz, which needs the trade licence). Anything else = sandbox.
+  SSLCOMMERZ_LIVE: optional,
+  // Old setting, still read so existing .env files keep working
   SSLCOMMERZ_SANDBOX: optional,
   SSLCOMMERZ_SUCCESS_URL: optional,
   SSLCOMMERZ_FAIL_URL: optional,

@@ -66,13 +66,22 @@ export function calculateServiceFee(travelerCount: number): number {
 }
 
 /**
- * Rough BDT → USD conversion. In production, use a live rate.
- * As of early 2026: ~120 BDT per USD.
+ * Taka per US dollar, used to show prices in both currencies and to work
+ * out what someone paying in BDT pays. Set NEXT_PUBLIC_BDT_PER_USD to update
+ * it (then redeploy). Bangladesh Bank's rate was around 120 in 2026.
  */
-const BDT_PER_USD = 120;
+export const BDT_PER_USD = (() => {
+  const n = Number(process.env.NEXT_PUBLIC_BDT_PER_USD);
+  return Number.isFinite(n) && n > 50 && n < 500 ? n : 120;
+})();
 
 export function bdtToUsd(bdt: number): number {
   return Math.round((bdt / BDT_PER_USD) * 100) / 100;
+}
+
+/** Whole taka, as charged for BDT payments. */
+export function usdToBdt(usd: number, rate = BDT_PER_USD): number {
+  return Math.round(usd * rate);
 }
 
 // ============================================================

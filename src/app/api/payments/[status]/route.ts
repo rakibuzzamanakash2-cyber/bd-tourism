@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { bookingCodeFromTranId } from "@/lib/payments";
 
 type Params = Promise<{ status: string }>;
 
@@ -19,10 +20,12 @@ async function handleCallback(
   { params }: { params: Params },
 ) {
   const { status } = await params;
+  // Redirect on the address the visitor used (req.url can be the bind address)
+  const origin = `${req.headers.get("x-forwarded-proto") ?? new URL(req.url).protocol.replace(":", "")}://${req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? new URL(req.url).host}`;
 
   const allowedStatuses = new Set(["success", "fail", "cancel"]);
   if (!allowedStatuses.has(status)) {
-    return NextResponse.redirect(new URL("/dashboard/bookings", req.url), 303);
+    return NextResponse.redirect(new URL("/dashboard/bookings", origin), 303);
   }
 
   // Extract tran_id from POST body or query string
@@ -41,17 +44,17 @@ async function handleCallback(
 
   let bookingId: string | null = null;
   if (tranId) {
-    const payment = await db.payment.findFirst({
-      where: { providerTxnId: tranId },
-      select: { bookingId: true },
-    });
+    const payment =
+      (await db.payment.findFirst({ where: { providerTxnId: tranId }, select: { bookingId: true } })) ??
+      // An earlier attempt for the same booking
+      (await db.payment.findFirst({ where: { booking: { bookingCode: bookingCodeFromTranId(tranId) } }, select: { bookingId: true } }));
     bookingId = payment?.bookingId ?? null;
   }
 
   if (!bookingId) {
     // No matching booking — send to their bookings list with a status flag
     return NextResponse.redirect(
-      new URL(`/dashboard/bookings?payment=${status}`, req.url),
+      new URL(`/dashboard/bookings?payment=${status}`, origin),
       303,
     );
   }
@@ -66,5 +69,5 @@ async function handleCallback(
     target = `/dashboard/bookings/${bookingId}?payment=${status}`;
   }
 
-  return NextResponse.redirect(new URL(target, req.url), 303);
+  return NextResponse.redirect(new URL(target, origin), 303);
 }

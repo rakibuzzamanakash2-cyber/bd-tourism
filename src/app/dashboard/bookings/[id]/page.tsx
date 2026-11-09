@@ -94,6 +94,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         orderBy: { createdAt: "asc" },
       },
       review: { select: { rating: true, createdAt: true, status: true } },
+      payment: { select: { status: true } },
       homestay: {
         select: { name: true, slug: true, photos: true, area: true, district: true, address: true, phone: true, houseRules: true, host: { select: { name: true } }, region: { select: { name: true } } },
       },
@@ -442,6 +443,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 </span>
                 <span>${priceUSD.toFixed(0)}</span>
               </div>
+              {booking.payment && ["SUCCEEDED", "REFUNDED", "PARTIAL_REFUND"].includes(booking.payment.status) && (
+                <a href={`/dashboard/bookings/${booking.id}/receipt`} className="block text-right text-xs underline underline-offset-4">
+                  Download receipt (PDF)
+                </a>
+              )}
               <div className="flex items-baseline justify-between border-t border-forest-900/10 pt-3">
                 <span className="font-medium">Total</span>
                 <span className="font-display text-3xl text-forest-900">

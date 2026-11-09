@@ -6,6 +6,8 @@ import {
   MarkPaidForm,
   NotesForm,
   RefundPaidForm,
+  GatewayRefundButton,
+  RefundStatusButton,
   StatusButtons,
 } from "@/components/admin/booking-actions";
 import { AssignmentStatusBadge, BookingStatusBadge, PaymentStatusBadge } from "@/components/admin/ui";
@@ -253,8 +255,15 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                 <Item label="Status">
                   <PaymentStatusBadge status={booking.payment.status} />
                 </Item>
-                <Item label="Amount">{money(booking.payment.amountUSD)}</Item>
-                <Item label="Method">{paymentMethod(booking.payment.provider)}</Item>
+                <Item label="Amount">
+                  {booking.payment.currency === "BDT" && booking.payment.amountBDT
+                    ? `৳${Number(booking.payment.amountBDT).toLocaleString("en-US")} (${money(booking.payment.amountUSD)})`
+                    : money(booking.payment.amountUSD)}
+                </Item>
+                <Item label="Method">
+                  {paymentMethod(booking.payment.provider)}
+                  {booking.payment.method && <span className="block text-xs text-ink-mute">{booking.payment.method}</span>}
+                </Item>
                 <Item label="Paid at">{dateTime(booking.payment.paidAt)}</Item>
                 <Item label="Transaction">
                   <span className="break-all font-mono text-xs">
@@ -265,6 +274,13 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                   <Item label="Refund">
                     {money(booking.refundAmountUSD)}
                     {booking.payment.refundedAt ? ` · sent ${dateTime(booking.payment.refundedAt)}` : " · owed"}
+                    {booking.payment.refundRefId && (
+                      <span className="block text-xs text-ink-mute">
+                        SSLCommerz ref {booking.payment.refundRefId}
+                        {booking.payment.refundAmountBDT && ` · ৳${Number(booking.payment.refundAmountBDT).toLocaleString("en-US")}`} · {booking.payment.refundStatus ?? "sent"}{" "}
+                        <RefundStatusButton bookingId={booking.id} />
+                      </span>
+                    )}
                   </Item>
                 )}
               </dl>
@@ -292,7 +308,13 @@ export default async function AdminBookingDetailPage({ params }: Props) {
         <aside className="space-y-6">
           <Section title="Actions">
             <div className="space-y-4">
+              {refundOwed && booking.payment?.provider === "sslcommerz" && booking.payment.bankTranId && (
+                <GatewayRefundButton bookingId={booking.id} amountLabel={money(booking.refundAmountUSD)} />
+              )}
               {refundOwed && <RefundPaidForm bookingId={booking.id} amount={money(booking.refundAmountUSD)} />}
+              {booking.payment && ["SUCCEEDED", "REFUNDED", "PARTIAL_REFUND"].includes(booking.payment.status) && (
+                <a href={`/dashboard/bookings/${booking.id}/receipt`} className="block text-center text-sm underline underline-offset-4">Download receipt (PDF)</a>
+              )}
               {booking.status === "PAYMENT_PENDING" && <MarkPaidForm bookingId={booking.id} />}
               <StatusButtons bookingId={booking.id} allowed={allowed} />
               {canCancel && (

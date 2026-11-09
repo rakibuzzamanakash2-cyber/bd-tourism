@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { adminCheckRefundStatus, adminRefundViaGateway } from "@/lib/actions/admin/bookings";
 import {
   adminCancelBooking,
   adminChangeBookingStatus,
@@ -267,5 +268,50 @@ export function NotesForm({ bookingId, initial }: { bookingId: string; initial: 
         Save notes
       </button>
     </div>
+  );
+}
+
+export function GatewayRefundButton({ bookingId, amountLabel }: { bookingId: string; amountLabel: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      className="w-full rounded-full bg-forest-900 px-4 py-2 text-sm text-paper hover:bg-forest-800 disabled:opacity-50"
+      onClick={() =>
+        window.confirm(`Send a refund of ${amountLabel} back to the traveler through SSLCommerz? This can't be undone.`) &&
+        start(async () => {
+          const r = await adminRefundViaGateway(bookingId);
+          if (!r.ok) return void toast.error(r.error);
+          toast.success(r.message ?? "Refund sent");
+          router.refresh();
+        })
+      }
+    >
+      {pending ? "Sending refund…" : `Refund ${amountLabel} through SSLCommerz`}
+    </button>
+  );
+}
+
+export function RefundStatusButton({ bookingId }: { bookingId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      className="text-xs underline underline-offset-4 disabled:opacity-50"
+      onClick={() =>
+        start(async () => {
+          const r = await adminCheckRefundStatus(bookingId);
+          if (!r.ok) return void toast.error(r.error);
+          toast.success(r.message ?? "Updated");
+          router.refresh();
+        })
+      }
+    >
+      {pending ? "Checking…" : "Check refund status"}
+    </button>
   );
 }

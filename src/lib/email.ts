@@ -19,6 +19,8 @@ type ReceiptData = {
   amountPaid: number;
   bookingUrl: string;
   hasPermit: boolean;
+  /** The PDF receipt, attached when we have it */
+  attachment?: { filename: string; content: Uint8Array };
 };
 
 export async function sendPaymentReceipt(
@@ -39,6 +41,7 @@ export async function sendPaymentReceipt(
       to: data.to,
       subject: `Booking confirmed — ${data.bookingCode}`,
       html,
+      ...(data.attachment && { attachments: [{ filename: data.attachment.filename, content: Buffer.from(data.attachment.content) }] }),
     });
 
     if (result.error) {
