@@ -3,13 +3,14 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { ApplicationWizard, type WizardValues } from "@/components/apply/application-wizard";
-import { EDITABLE_STATUSES, STEPS, kindFromParam, kindParam, type PrivateFile } from "@/lib/applications";
+import { EDITABLE_STATUSES, STEPS, canStartApplication, kindFromParam, kindParam, type PrivateFile } from "@/lib/applications";
 import { db } from "@/lib/db";
 import { features } from "@/lib/env";
 import { applyText, langFromParam } from "@/lib/i18n/apply";
 import { currentInvite } from "@/lib/invites";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { whatsappLink } from "@/lib/site";
 
 type Props = {
   params: Promise<{ kind: string }>;
@@ -61,6 +62,22 @@ export default async function ApplyPage({ params, searchParams }: Props) {
       </Link>
     </div>
   );
+
+  // ---- Guides are invite-only for now: no invite and no draft → say so
+  if (!existing && !canStartApplication(kind, !!validInvite)) {
+    return (
+      <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
+        {header}
+        <div className="rounded-lg border border-forest-900/10 bg-paper-warm p-8">
+          <p className={cn("font-display text-2xl", lang === "bn" && "font-bengali")}>{t.inviteOnlyTitle}</p>
+          <p className="mt-3 text-ink-soft">{t.inviteOnlyBody}</p>
+          <a href={whatsappLink(lang === "bn" ? "আসসালামু আলাইকুম DeltaWay, আমি গাইড হিসেবে কাজ করতে চাই।" : "Hi DeltaWay, I'd like to guide with you.")} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "lg" }), "mt-6 rounded-full bg-forest-900 text-paper hover:bg-forest-800")}>
+            {t.inviteOnlyWhatsapp}
+          </a>
+        </div>
+      </section>
+    );
+  }
 
   // ---- Signed out: explain, then send them to sign up / in and back here
   if (!session?.user?.id) {
@@ -119,7 +136,6 @@ export default async function ApplyPage({ params, searchParams }: Props) {
     facilities: arr("facilities"),
     family: s("family"),
     houseRules: s("houseRules"),
-    pricePerNightBDT: s("pricePerNightBDT"),
     homePhotos: existing?.homePhotos ?? [],
     idDocument: (existing?.idDocument as PrivateFile | null) ?? null,
     shareIdLater: existing?.shareIdLater ?? !features.uploads,

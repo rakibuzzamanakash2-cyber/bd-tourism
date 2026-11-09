@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Home, Users } from "lucide-react";
 import { bdtToUsd } from "@/lib/booking-utils";
 import { bdt } from "@/lib/guide-shared";
-import { guestNightlyBDT } from "@/lib/homestay-shared";
+import { stayQuote } from "@/lib/homestay-shared";
 
 export type HomestayCardData = {
   slug: string;
@@ -13,12 +13,12 @@ export type HomestayCardData = {
   photos: string[];
   maxGuests: number;
   rooms: number;
-  pricePerNightBDT: number;
+  facilities: string[];
   region: { name: string };
 };
 
 export function HomestayCard({ h, query = "", rating }: { h: HomestayCardData; query?: string; rating?: { average: number; count: number } }) {
-  const nightly = guestNightlyBDT(h.pricePerNightBDT);
+  const price = stayQuote(h.facilities, 1);
   return (
     <Link href={`/homestays/${h.slug}${query}`} className="group block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-forest-100">
@@ -35,8 +35,8 @@ export function HomestayCard({ h, query = "", rating }: { h: HomestayCardData; q
       </p>
       <RatingBadge summary={rating} className="mt-2" />
       <p className="mt-2 text-sm">
-        <span className="font-medium">{bdt(nightly)}</span>
-        <span className="text-ink-mute"> / night · about ${Math.round(bdtToUsd(nightly))}</span>
+        <span className="font-medium">{bdt(price.firstNightBDT)}</span>
+        <span className="text-ink-mute"> first night (about ${Math.round(bdtToUsd(price.firstNightBDT))}) · +{bdt(price.extraNightBDT)} each extra night</span>
       </p>
     </Link>
   );

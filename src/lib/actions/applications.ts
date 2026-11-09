@@ -15,6 +15,7 @@ import { env } from "@/lib/env";
 import { INVITE_COOKIE, currentInvite } from "@/lib/invites";
 import {
   EDITABLE_STATUSES,
+  canStartApplication,
   STEPS,
   STEP_SCHEMA,
   basicsSchema,
@@ -88,6 +89,8 @@ export async function saveApplicationStepAction(input: {
   // An invite in this browser (from the /i/ link) gets linked to the
   // application, also when they had started a draft before opening it
   const invite = !existing?.inviteId ? await currentInvite(kind.data) : null;
+  // Guide applications are invite-only for now
+  if (!existing && !canStartApplication(kind.data, !!invite)) return { ok: false, error: "inviteOnly" };
   const claimInvite = async (applicationId: string) => {
     if (!invite) return;
     const { count } = await db.applicationInvite.updateMany({ where: { id: invite.id, usedAt: null }, data: { usedAt: new Date() } });

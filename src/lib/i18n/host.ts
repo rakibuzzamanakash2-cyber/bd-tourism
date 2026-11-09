@@ -61,8 +61,9 @@ const en = {
   maxGuests: "Maximum guests",
   facilities: "What you have",
   languages: "Languages spoken at home",
-  price: "Your price per night (BDT)",
-  priceHint: (guest: string) => `What you receive per night for the whole group, meals included. Travelers see ${guest} (with DeltaWay's fee).`,
+  price: "Price (set by DeltaWay)",
+  priceHint: (first: string, extra: string, pct: number) =>
+    `Travelers pay ${first} for the first night and ${extra} for each extra night (${pct}% of the base, from your facilities). Whole group, meals included. You receive 85% of every booking.`,
   listed: "Show my homestay to travelers",
   listedHint: "Turn off to stop new bookings. Existing bookings stay.",
   save: "Save",
@@ -150,8 +151,9 @@ const bn: typeof en = {
   maxGuests: "সর্বোচ্চ অতিথি",
   facilities: "যা যা আছে",
   languages: "বাড়িতে যে ভাষায় কথা বলেন",
-  price: "প্রতি রাতের দাম (টাকা)",
-  priceHint: (guest: string) => `পুরো দলের জন্য প্রতি রাতে আপনি যা পাবেন, খাবারসহ। পর্যটকেরা দেখবেন ${guest} (DeltaWay-এর ফিসহ)।`,
+  price: "দাম (DeltaWay ঠিক করে)",
+  priceHint: (first: string, extra: string, pct: number) =>
+    `পর্যটকেরা প্রথম রাতে ${first} আর প্রতিটি বাড়তি রাতে ${extra} দেন (আপনার সুবিধা অনুযায়ী মূল দামের ${toBn(pct)}%)। পুরো দলের জন্য, খাবারসহ। প্রতিটি বুকিংয়ের ৮৫% আপনি পান।`,
   listed: "পর্যটকদের আমার হোমস্টে দেখান",
   listedHint: "বন্ধ করলে নতুন বুকিং আসবে না। আগের বুকিং থাকবে।",
   save: "সংরক্ষণ করুন",

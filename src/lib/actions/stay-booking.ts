@@ -71,7 +71,7 @@ export async function createStayBookingAction(input: StayBookingInput): Promise<
   const checkIn = new Date(`${d.checkIn}T00:00:00Z`);
   const checkOut = new Date(`${d.checkOut}T00:00:00Z`);
   const nights = nightsBetween(d.checkIn, d.checkOut);
-  const quote = stayQuote(homestay.pricePerNightBDT, nights);
+  const quote = stayQuote(homestay.facilities, nights);
   // Same permit processing fee as tours, for homes in permit regions
   const serviceFeeUSD = homestay.region.isRestricted ? calculateServiceFee(d.guests) : 0;
   const totalAmountUSD = Math.round((quote.totalUSD + serviceFeeUSD) * 100) / 100;
@@ -79,7 +79,7 @@ export async function createStayBookingAction(input: StayBookingInput): Promise<
     primaryContact: { name: d.name, email: d.email, phone: d.phone, passportNumber: d.passportNumber, nationality: d.nationality },
     additionalTravelers: [],
     notes: d.notes,
-    stay: { nights, nightlyBDT: quote.nightlyBDT, totalBDT: quote.totalBDT },
+    stay: { nights, firstNightBDT: quote.firstNightBDT, extraNightBDT: quote.extraNightBDT, totalBDT: quote.totalBDT },
     permitContext: homestay.region.isRestricted
       ? { isRestricted: true, restrictedRegions: [{ id: homestay.region.id, name: homestay.region.name, slug: homestay.region.slug }], serviceFeeUSD, tourPriceUSD: quote.totalUSD }
       : null,

@@ -107,7 +107,6 @@ export const hostHomeSchema = z.object({
   languages: z.array(z.string()).min(1, "languages").max(12),
   family: z.string().trim().min(10, "family").max(1000),
   houseRules: z.string().trim().max(1000).optional().default(""),
-  pricePerNightBDT: z.coerce.number().int("number").min(300, "price").max(50000, "price"),
 });
 
 export const hostDocumentsSchema = z
@@ -118,6 +117,16 @@ export const hostDocumentsSchema = z
   .refine((d) => d.idDocument || d.shareIdLater, { message: "id", path: ["idDocument"] });
 
 /** The steps for each kind, in order. The last step is always "review". */
+/**
+ * Guide applications are invite-only while we build the guide team in-house.
+ * Set to true to let anyone apply from /become-a-guide again.
+ */
+export const GUIDE_APPLICATIONS_OPEN = false;
+
+/** Can someone start a new application of this kind (no draft yet)? */
+export const canStartApplication = (kind: Kind, hasInvite: boolean) =>
+  kind === "HOST" || GUIDE_APPLICATIONS_OPEN || hasInvite;
+
 export const STEPS = {
   GUIDE: ["basics", "experience", "documents", "references", "review"],
   HOST: ["basics", "home", "documents", "review"],

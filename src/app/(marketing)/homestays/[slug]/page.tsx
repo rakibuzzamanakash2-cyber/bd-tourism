@@ -11,7 +11,7 @@ import { StayBookingForm } from "@/components/homestays/stay-booking-form";
 import { bdtToUsd } from "@/lib/booking-utils";
 import { db } from "@/lib/db";
 import { bdt, dayKey } from "@/lib/guide-shared";
-import { guestNightlyBDT, MAX_STAY_DAYS_AHEAD, MIN_STAY_LEAD_DAYS } from "@/lib/homestay-shared";
+import { stayQuote, MAX_STAY_DAYS_AHEAD, MIN_STAY_LEAD_DAYS } from "@/lib/homestay-shared";
 import { homestayTakenNights, publicHomestayWhere } from "@/lib/homestays";
 import { applyText } from "@/lib/i18n/apply";
 
@@ -57,7 +57,7 @@ export default async function HomestayPage({ params, searchParams }: Props) {
     ratingSummary({ homestayId: h.id }),
     db.review.findMany({ where: { homestayId: h.id, status: "PUBLISHED" }, include: publicReviewInclude, orderBy: { createdAt: "desc" }, take: 30 }),
   ]);
-  const nightly = guestNightlyBDT(h.pricePerNightBDT);
+  const price = stayQuote(h.facilities, 3);
   const hostFirst = (h.host.name ?? h.name).split(/\s+/)[0];
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   const facility = applyText.en.facility;
@@ -151,14 +151,15 @@ export default async function HomestayPage({ params, searchParams }: Props) {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-lg border border-forest-900/10 p-6 shadow-sm">
             <p>
-              <span className="font-display text-3xl">{bdt(nightly)}</span>
-              <span className="text-ink-mute"> / night · about ${Math.round(bdtToUsd(nightly))}</span>
+              <span className="font-display text-3xl">{bdt(price.firstNightBDT)}</span>
+              <span className="text-ink-mute"> first night · about ${Math.round(bdtToUsd(price.firstNightBDT))}</span>
             </p>
+            <p className="mt-1 text-sm text-ink-soft">+{bdt(price.extraNightBDT)} for each extra night · 3 nights: {bdt(price.totalBDT)}</p>
             <p className="mb-5 mt-1 text-xs text-ink-mute">For the whole group, meals included</p>
             {isPublic ? (
               <StayBookingForm
                 slug={h.slug}
-                hostRate={h.pricePerNightBDT}
+                facilities={h.facilities}
                 maxGuests={h.maxGuests}
                 restrictedRegion={h.region.isRestricted ? h.region.name : null}
                 takenNights={[...taken.blocked, ...taken.booked]}

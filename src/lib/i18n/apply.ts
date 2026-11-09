@@ -63,7 +63,7 @@ const en = {
   familyHint: "e.g. my husband, two children (8 and 12) and my mother-in-law",
   houseRules: "House rules",
   houseRulesHint: "e.g. no smoking indoors, quiet after 10pm",
-  pricePerNight: "Price per night per guest, with meals (BDT)",
+  pricingNote: "You don't need to set a price. DeltaWay sets a fair price from your facilities, and you receive 85% of every booking.",
   facility: {
     private_room: "Private room for guests",
     attached_bathroom: "Attached bathroom",
@@ -119,6 +119,9 @@ const en = {
   continueApplication: "Continue your application",
   editAndResubmit: "Edit and resubmit",
   messageFromTeam: "Message from the DeltaWay team",
+  inviteOnlyTitle: "Guide applications are invite-only for now",
+  inviteOnlyBody: "We're building our guide team ourselves at the moment, so you need an invite link from DeltaWay to apply. Opening to everyone soon. If you know us, message us on WhatsApp.",
+  inviteOnlyWhatsapp: "Message us on WhatsApp",
   // Errors (keyed by the codes in src/lib/applications.ts)
   errors: {
     name: "Please enter your full name.",
@@ -199,7 +202,7 @@ const bn: typeof en = {
   familyHint: "যেমন: আমার স্বামী, দুই সন্তান (৮ ও ১২ বছর) এবং শাশুড়ি",
   houseRules: "বাড়ির নিয়ম",
   houseRulesHint: "যেমন: ঘরের ভেতরে ধূমপান নিষেধ, রাত ১০টার পর শান্ত থাকা",
-  pricePerNight: "খাবারসহ প্রতি রাতে প্রতি অতিথির ভাড়া (টাকা)",
+  pricingNote: "আপনাকে দাম ঠিক করতে হবে না। আপনার সুবিধাগুলো দেখে DeltaWay একটি ন্যায্য দাম ঠিক করে, আর প্রতিটি বুকিংয়ের ৮৫% আপনি পান।",
   facility: {
     private_room: "অতিথিদের জন্য আলাদা ঘর",
     attached_bathroom: "সংযুক্ত বাথরুম",
@@ -251,6 +254,9 @@ const bn: typeof en = {
   continueApplication: "আবেদন চালিয়ে যান",
   editAndResubmit: "ঠিক করে আবার জমা দিন",
   messageFromTeam: "DeltaWay টিমের বার্তা",
+  inviteOnlyTitle: "গাইড হিসেবে আবেদন এখন শুধু আমন্ত্রণে",
+  inviteOnlyBody: "আমরা এখন নিজেরাই গাইড দল তৈরি করছি, তাই আবেদন করতে DeltaWay-এর আমন্ত্রণ লিংক লাগবে। শিগগিরই সবার জন্য খুলে দেব। আমাদের চেনেন? হোয়াটসঅ্যাপে মেসেজ দিন।",
+  inviteOnlyWhatsapp: "হোয়াটসঅ্যাপে মেসেজ দিন",
   errors: {
     name: "আপনার পুরো নাম লিখুন।",
     phone: "বাংলাদেশি মোবাইল নম্বর লিখুন, যেমন 01712-345678।",
