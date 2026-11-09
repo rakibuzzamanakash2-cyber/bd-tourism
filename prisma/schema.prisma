@@ -299,19 +299,32 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  bookingId     String        @unique
-  booking       Booking       @relation(fields: [bookingId], references: [id])
-  amountUSD     Decimal       @db.Decimal(10, 2)
-  currency      String        @default("USD")
-  provider      String        @default("sslcommerz")
-  providerTxnId String?       @unique
-  providerRaw   Json? // dump the gateway response for debugging
-  status        PaymentStatus @default(PENDING)
-  paidAt        DateTime?
-  refundedAt    DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  amountUSD       Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  provider        String        @default("sslcommerz")
+  providerTxnId   String?       @unique
+  providerRaw     Json? // dump the gateway response for debugging
+  // Paying in BDT: the amount and the rate are fixed when payment starts
+  amountBDT       Decimal?      @db.Decimal(12, 2)
+  exchangeRate    Decimal?      @db.Decimal(10, 4)
+  // Every gateway attempt, so a payment for an earlier attempt still confirms:
+  // { [tranId]: { currency, amount, at } }
+  attempts        Json?
+  // From the gateway once paid: e.g. "BKASH-BKash", "VISA-Dutch Bangla"
+  method          String?
+  bankTranId      String?
+  // Refund sent through the gateway
+  refundRefId     String?
+  refundStatus    String? // "processing" | "refunded" | "failed"
+  refundAmountBDT Decimal?      @db.Decimal(12, 2)
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 // ============================================================

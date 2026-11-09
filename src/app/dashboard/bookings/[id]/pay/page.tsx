@@ -4,6 +4,10 @@ import { ArrowLeft, Lock } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { PayForm } from "@/components/booking/pay-form";
+import { features } from "@/lib/env";
+import { payableAmounts } from "@/lib/payments";
+import { paymentMode } from "@/lib/sslcommerz";
+import { whatsappLink } from "@/lib/site";
 import { formatDateRange } from "@/lib/booking-utils";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 import { bookingTitle, stayNightKeys } from "@/lib/homestay-shared";
@@ -34,12 +38,15 @@ export default async function PayPage({ params }: Props) {
   }
 
   const totalUSD = Number(booking.totalAmountUSD);
+  const amounts = payableAmounts(booking);
+  const mode = paymentMode();
   const perPerson = booking.package
     ? Number(booking.package.basePriceUSD)
     : 0;
   // Stays: the permit fee (if any) is recorded in the booking details
-  const stayFee = booking.homestay ? serviceFeeFromDetails(booking.specialRequests) : 0;
-  const tourTotal = booking.homestay ? totalUSD - stayFee : perPerson * booking.travelerCount;
+  // The line items always add up to the stored total: total minus any permit fee
+  const permitFee = serviceFeeFromDetails(booking.specialRequests);
+  const tourTotal = Math.round((totalUSD - permitFee) * 100) / 100;
   const serviceFee = totalUSD - tourTotal;
   const stayNights = booking.homestay ? stayNightKeys(booking.startDate, booking.endDate).length : 0;
   const hasServiceFee = serviceFee > 0.01;
@@ -87,22 +94,48 @@ export default async function PayPage({ params }: Props) {
               </div>
             )}
             <div className="flex items-baseline justify-between border-t border-forest-900/10 pt-3">
-              <span className="font-medium text-ink">Total (USD)</span>
-              <span className="font-display text-3xl text-forest-900">
-                ${totalUSD.toFixed(2)}
+              <span className="font-medium text-ink">Total</span>
+              <span className="text-right">
+                <span className="block font-display text-3xl text-forest-900">${totalUSD.toFixed(2)}</span>
+                <span className="text-xs text-ink-mute">or ৳{amounts.bdt.toLocaleString("en-US")}</span>
               </span>
             </div>
           </div>
         </div>
 
-        {/* Payment button */}
+        {/* Payment */}
         <div className="mt-8">
-          <PayForm bookingId={booking.id} amount={totalUSD} />
-          <p className="mt-3 flex items-center justify-center gap-2 text-xs text-ink-mute">
-            <Lock className="size-3" />
-            Secure payment via SSLCommerz. Your card details never touch our
-            servers.
-          </p>
+          {features.payments ? (
+            <>
+              {mode === "sandbox" && (
+                <p role="note" className="mb-4 rounded-md border border-clay-600/30 bg-clay-500/10 px-4 py-3 text-sm text-clay-700">
+                  Test mode: this opens the SSLCommerz sandbox and no real money is taken.
+                </p>
+              )}
+              <PayForm bookingId={booking.id} usd={amounts.usd} bdt={amounts.bdt} />
+              <p className="mt-3 flex items-center justify-center gap-2 text-xs text-ink-mute">
+                <Lock className="size-3" />
+                Secure payment via SSLCommerz. Your card details never touch our servers.
+              </p>
+            </>
+          ) : (
+            <div className="rounded-lg border border-forest-900/10 p-6">
+              <p className="font-medium">Online payment is coming soon</p>
+              <p className="mt-2 text-sm text-ink-soft">
+                For now, pay by bKash, Nagad or bank transfer: message us on WhatsApp with your booking code{" "}
+                <span className="font-mono">{booking.bookingCode}</span> and we&rsquo;ll send the details. Your booking is confirmed as soon as
+                the payment arrives. The total is <strong>${amounts.usd.toFixed(2)}</strong> or <strong>৳{amounts.bdt.toLocaleString("en-US")}</strong>.
+              </p>
+              <a
+                href={whatsappLink(`Hi DeltaWay, I'd like to pay for booking ${booking.bookingCode} ($${amounts.usd.toFixed(2)} / ৳${amounts.bdt}).`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex rounded-full bg-forest-900 px-6 py-3 text-sm font-medium text-paper hover:bg-forest-800"
+              >
+                Pay via WhatsApp
+              </a>
+            </div>
+          )}
         </div>
 
         {/* What happens next */}

@@ -3,7 +3,9 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
-import { initiatePayment } from "@/lib/sslcommerz";
+import { initiatePayment, type PayCurrency } from "@/lib/sslcommerz";
+import { payableAmounts, type Attempts } from "@/lib/payments";
+import type { Prisma } from "@prisma/client";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 import { EXPIRED_BOOKING_REASON } from "@/lib/booking-utils";
 import { bookingTitle } from "@/lib/homestay-shared";
@@ -14,7 +16,9 @@ export type InitiatePaymentResult =
 
 export async function initiatePaymentAction(
   bookingId: string,
+  currency: PayCurrency = "USD",
 ): Promise<InitiatePaymentResult> {
+  if (currency !== "USD" && currency !== "BDT") return { success: false, error: "Choose USD or BDT." };
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "You must be signed in to pay." };
@@ -72,9 +76,13 @@ export async function initiatePaymentAction(
   }
 
   const tranId = `${booking.bookingCode}-${Date.now()}`;
+  // Fix the amount now, in the chosen currency. The IPN checks against it.
+  const amounts = payableAmounts(booking);
+  const amount = currency === "BDT" ? amounts.bdt : amounts.usd;
 
   const result = await initiatePayment({
-    amountUSD: Number(booking.totalAmountUSD),
+    amount,
+    currency,
     tranId,
     bookingCode: booking.bookingCode,
     packageTitle: bookingTitle(booking),
@@ -85,20 +93,20 @@ export async function initiatePaymentAction(
     return { success: false, error: result.error };
   }
 
+  // Keep every attempt: someone may pay in a gateway tab they opened earlier
+  const attempts: Attempts = { ...((booking.payment?.attempts as Attempts | null) ?? {}), [tranId]: { currency, amount, at: new Date().toISOString() } };
+  const fields = {
+    amountUSD: booking.totalAmountUSD,
+    currency,
+    amountBDT: currency === "BDT" ? amounts.bdt : null,
+    exchangeRate: currency === "BDT" ? amounts.rate : null,
+    providerTxnId: tranId,
+    attempts: attempts as Prisma.InputJsonValue,
+  };
   await db.payment.upsert({
     where: { bookingId: booking.id },
-    create: {
-      bookingId: booking.id,
-      amountUSD: booking.totalAmountUSD,
-      currency: "USD",
-      provider: "sslcommerz",
-      providerTxnId: tranId,
-      status: "PENDING",
-    },
-    update: {
-      providerTxnId: tranId,
-      status: "PENDING",
-    },
+    create: { bookingId: booking.id, provider: "sslcommerz", status: "PENDING", ...fields },
+    update: { ...fields, status: "PENDING" },
   });
 
   return { success: true, gatewayUrl: result.gatewayUrl };

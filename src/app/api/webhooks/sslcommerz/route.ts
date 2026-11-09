@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { receiptForBooking } from "@/lib/receipts";
 import { db } from "@/lib/db";
 import { validatePayment } from "@/lib/sslcommerz";
 import { notifyTeam, sendPaymentReceipt } from "@/lib/email";
@@ -8,6 +9,7 @@ import { env } from "@/lib/env";
 import { ensurePermitsForBooking } from "@/lib/permits";
 import { homestayTakenNights, onStayPaid } from "@/lib/homestays";
 import { bookingTitle } from "@/lib/homestay-shared";
+import { bookingCodeFromTranId, type Attempts } from "@/lib/payments";
 
 // SSLCommerz sends form-encoded POST to this endpoint after payment.
 export async function POST(req: NextRequest) {
@@ -26,18 +28,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing tran_id" }, { status: 400 });
     }
 
-    const payment = await db.payment.findFirst({
-      where: { providerTxnId: tranId },
-      include: {
-        booking: {
-          include: {
-            package: true,
-            homestay: { select: { name: true } },
-            tourist: true,
-          },
-        },
-      },
-    });
+    const include = {
+      booking: { include: { package: true, homestay: { select: { name: true } }, tourist: true } },
+    } satisfies Prisma.PaymentInclude;
+    // The latest attempt is on the payment row; an earlier attempt (paid in a
+    // tab opened before) is found through the booking code in the tran_id.
+    let payment = await db.payment.findFirst({ where: { providerTxnId: tranId }, include });
+    if (!payment) {
+      const byCode = await db.payment.findFirst({ where: { booking: { bookingCode: bookingCodeFromTranId(tranId) } }, include });
+      if (byCode && ((byCode.attempts as Attempts | null) ?? {})[tranId]) payment = byCode;
+    }
 
     if (!payment) {
       console.warn(`[IPN] Payment not found for tran_id: ${tranId}`);
@@ -71,18 +71,21 @@ export async function POST(req: NextRequest) {
     // Never trust the gateway result alone: the validated transaction must be
     // THIS transaction, for the FULL amount, in USD. Otherwise someone could
     // replay a cheaper payment's val_id against an expensive booking.
-    const expectedAmount = Number(payment.amountUSD);
+    // What THIS attempt asked for (older payments only ever asked in USD)
+    const attempt = ((payment.attempts as Attempts | null) ?? {})[tranId];
+    const expectedCurrency = attempt?.currency ?? "USD";
+    const expectedAmount = attempt?.amount ?? Number(payment.amountUSD);
     const paidAmount = validation.currencyAmount ?? validation.amount;
     const paidCurrency = validation.currencyType ?? validation.currency;
     const matches =
       validation.tranId === tranId &&
-      paidCurrency === "USD" &&
+      paidCurrency === expectedCurrency &&
       paidAmount !== undefined &&
       Math.abs(paidAmount - expectedAmount) < 0.01;
 
     if (validation.valid && !matches) {
       console.error(
-        `[IPN] Mismatch for ${tranId}: expected ${expectedAmount} USD, got ${paidAmount} ${paidCurrency} (tran ${validation.tranId})`,
+        `[IPN] Mismatch for ${tranId}: expected ${expectedAmount} ${expectedCurrency}, got ${paidAmount} ${paidCurrency} (tran ${validation.tranId})`,
       );
     }
 
@@ -121,6 +124,12 @@ export async function POST(req: NextRequest) {
         data: {
           status: "SUCCEEDED",
           paidAt: new Date(),
+          providerTxnId: tranId,
+          currency: expectedCurrency,
+          amountBDT: expectedCurrency === "BDT" ? expectedAmount : (validation.amount ?? null),
+          exchangeRate: expectedCurrency === "BDT" ? payment.exchangeRate : (validation.raw?.currency_rate ? Number(validation.raw.currency_rate) : null),
+          method: validation.cardType ?? null,
+          bankTranId: validation.bankTranId ?? null,
           providerRaw: (validation.raw ?? raw) as Prisma.InputJsonValue,
         },
       }),
@@ -181,6 +190,9 @@ export async function POST(req: NextRequest) {
         amountPaid: Number(payment.booking.totalAmountUSD),
         bookingUrl,
         hasPermit,
+        attachment: await receiptForBooking(payment.bookingId)
+          .then((r) => (r ? { filename: r.filename, content: r.pdf } : undefined))
+          .catch(() => undefined),
       });
     } catch (emailErr) {
       console.error("[IPN] Failed to send receipt email:", emailErr);

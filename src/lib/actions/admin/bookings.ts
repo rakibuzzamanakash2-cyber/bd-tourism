@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { BookingStatus } from "@prisma/client";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { initiateRefund, refundStatus } from "@/lib/sslcommerz";
 import { releaseGuidesForBooking } from "@/lib/guides";
 import { onStayCancelled, onStayPaid } from "@/lib/homestays";
 import { env } from "@/lib/env";
@@ -268,4 +269,75 @@ export async function adminSaveBookingNotes(input: z.input<typeof notesSchema>):
   await audit({ actorId: admin.id, action: "booking.notes", targetType: "Booking", targetId: parsed.data.bookingId });
   revalidatePath(`/admin/bookings/${parsed.data.bookingId}`);
   return { ok: true, message: "Notes saved." };
+}
+
+// ============================================================
+// Refund through SSLCommerz (instead of sending it by hand)
+// ============================================================
+/** Taka to refund for a dollar refund, in proportion to what was charged. */
+function refundInTaka(payment: { amountUSD: unknown; amountBDT: unknown }, refundUSD: number): number | null {
+  const paidUSD = Number(payment.amountUSD);
+  const paidBDT = payment.amountBDT === null ? NaN : Number(payment.amountBDT);
+  if (!(paidUSD > 0) || !(paidBDT > 0)) return null;
+  return Math.round(((refundUSD / paidUSD) * paidBDT) * 100) / 100;
+}
+
+export async function adminRefundViaGateway(bookingId: string): Promise<AdminActionResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Not allowed." };
+  const booking = await loadBooking(bookingId);
+  if (!booking?.payment) return { ok: false, error: "Booking or payment not found." };
+  const refund = Number(booking.refundAmountUSD ?? 0);
+  if (booking.status !== "CANCELLED" || refund <= 0) return { ok: false, error: "No refund is owed on this booking." };
+  if (booking.payment.status !== "SUCCEEDED") return { ok: false, error: "This refund was already sent or recorded." };
+  if (booking.payment.provider !== "sslcommerz" || !booking.payment.bankTranId) {
+    return { ok: false, error: "This payment didn't go through SSLCommerz, so send the refund by hand and record it." };
+  }
+  const amountBDT = refundInTaka(booking.payment, refund);
+  if (!amountBDT) return { ok: false, error: "The taka amount of this payment isn't known. Refund it from the SSLCommerz panel and record it here." };
+
+  const result = await initiateRefund({
+    bankTranId: booking.payment.bankTranId,
+    refundTransId: `${booking.bookingCode}-R${Date.now()}`,
+    amountBDT,
+    remarks: `DeltaWay refund for ${booking.bookingCode}`,
+  });
+  if (!result.ok) return { ok: false, error: result.error };
+
+  const full = refund >= Number(booking.payment.amountUSD) - 0.005;
+  const previousRaw = (booking.payment.providerRaw ?? {}) as Record<string, unknown>;
+  await db.payment.update({
+    where: { id: booking.payment.id },
+    data: {
+      status: full ? "REFUNDED" : "PARTIAL_REFUND",
+      refundedAt: new Date(),
+      refundRefId: result.refundRefId,
+      refundStatus: result.status,
+      refundAmountBDT: amountBDT,
+      providerRaw: { ...previousRaw, refund: { amountUSD: refund, amountBDT, method: "sslcommerz", reference: result.refundRefId, recordedBy: admin.email } },
+    },
+  });
+  await audit({ actorId: admin.id, action: "booking.refund_gateway", targetType: "Booking", targetId: bookingId, details: { amountUSD: refund, amountBDT, refundRefId: result.refundRefId } });
+  await sendEmail({
+    to: booking.tourist.email,
+    subject: `Refund sent — ${booking.bookingCode}`,
+    html: simpleEmail("Your refund is on its way.", [
+      `We've sent your refund of $${refund.toFixed(2)} USD (৳${amountBDT.toLocaleString("en-US")}) for booking ${booking.bookingCode} back to the card or wallet you paid with.`,
+      "Banks and wallets usually take 7–10 working days to show it.",
+    ]),
+  });
+  refresh(bookingId);
+  return { ok: true, message: `Refund of ৳${amountBDT.toLocaleString("en-US")} sent to SSLCommerz (ref ${result.refundRefId}).` };
+}
+
+export async function adminCheckRefundStatus(bookingId: string): Promise<AdminActionResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Not allowed." };
+  const payment = await db.payment.findUnique({ where: { bookingId } });
+  if (!payment?.refundRefId) return { ok: false, error: "No gateway refund on this booking." };
+  const r = await refundStatus(payment.refundRefId);
+  if (!r.ok) return { ok: false, error: r.error };
+  await db.payment.update({ where: { id: payment.id }, data: { refundStatus: r.status } });
+  refresh(bookingId);
+  return { ok: true, message: `SSLCommerz says: ${r.status}.` };
 }

@@ -2,14 +2,14 @@
 
 *Bangladesh, guided.* A tourism marketplace for Bangladesh (repository: `bd-tourism`). International travelers browse destinations and tour packages, book with a step-by-step wizard, and pay online. For restricted areas (Chittagong Hill Tracts, Sundarbans) the platform collects passport details and handles government permits.
 
-**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard), homestays and reviews are built. Payments in USD and BDT come next.
+**Status:** tours, bookings, payments, permits, the admin panel, guide/host applications and guides (profiles, trip assignment, guide dashboard), homestays, reviews and payments in USD or BDT are built. Data and privacy work comes next.
 
 ## Features
 
 - Destination and tour package pages, with region and permit information
 - Sign up / sign in with email and password or Google, plus password reset by email
 - 4-step booking wizard (dates → travelers → details → review) with permit-aware pricing
-- Online payment through SSLCommerz, verified server-side through the IPN webhook
+- Online payment through SSLCommerz in USD or BDT (bKash, Nagad, cards), verified server-side through the IPN webhook, with PDF receipts
 - Email receipts through Resend
 - Traveler dashboard: bookings, booking details, saved trips, profile
 - Guide and homestay-host applications at `/apply/guide` and `/apply/host`, in English or Bangla, saved step by step so people can finish later
@@ -62,7 +62,7 @@ Create an empty database called `bd_tourism` in pgAdmin first (or change the nam
 
 Sign up on the site, then run `npm run make-admin -- your@email.com` and open **/admin**. From there the team can:
 
-- confirm bookings, record bKash/bank/cash payments, cancel with a refund and record refunds
+- confirm bookings, record bKash/bank/cash payments, cancel with a refund, and send refunds through SSLCommerz or record them
 - track restricted-area permits (travelers see the status and get emails)
 - add and edit tours (day-by-day itinerary), destinations (with photo gallery), regions and types
 - review guide and host applications: a checklist (ID, phone, interview, references or home visit), private ID documents, team notes, and Approve, which turns the account into a guide or host
@@ -81,6 +81,10 @@ Vercel Cron calls `/api/cron/daily` once a day (see `vercel.json`). It cancels u
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily
 ```
+
+## Payments: test and live
+
+Payments run in **sandbox (test) mode** unless `SSLCOMMERZ_LIVE=true`, so no real money is taken by accident. Travelers choose USD or BDT; the taka amount is fixed when they start paying (rate from `NEXT_PUBLIC_BDT_PER_USD`, default 120), and the IPN checks the exact amount and currency. The callback URLs default to your site address. SSLCommerz must be able to reach `/api/webhooks/sslcommerz`, so payments only confirm on a public https address (or through a tunnel like ngrok). Admin → Settings shows a checklist, including the steps to go live once the trade licence and live store are ready. Without SSLCommerz keys, the pay page offers "pay via WhatsApp" and you record the payment by hand.
 
 ## Real photos
 
