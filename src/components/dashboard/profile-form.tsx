@@ -21,6 +21,7 @@ type Props = {
     nationality: string | null;
     phoneNumber: string | null;
     passportNumber: string | null;
+    passportMasked?: string | null;
     emergencyContact: string | null;
     dietaryPrefs: string | null;
   } | null;
@@ -78,13 +79,21 @@ export function ProfileForm({ user, profile }: Props) {
           placeholder="+880 1XXX-XXXXXX"
           error={state?.fieldErrors?.phoneNumber}
         />
-        <FormField
-          label="Passport number"
-          name="passportNumber"
-          defaultValue={profile?.passportNumber ?? ""}
-          placeholder="For permit applications"
-          error={state?.fieldErrors?.passportNumber}
-        />
+        <div>
+          <FormField
+            label="Passport number"
+            name="passportNumber"
+            defaultValue=""
+            placeholder={profile?.passportMasked ? `Saved: ${profile.passportMasked} (type to replace)` : "For permit applications"}
+            error={state?.fieldErrors?.passportNumber}
+          />
+          <p className="mt-1 text-xs text-ink-mute">Stored encrypted. Only the DeltaWay team can see it, and only for permits.</p>
+          {profile?.passportMasked && (
+            <label className="mt-2 flex items-center gap-2 text-xs text-ink-soft">
+              <input type="checkbox" name="removePassport" /> Remove my saved passport number
+            </label>
+          )}
+        </div>
         <FormField
           label="Emergency contact"
           name="emergencyContact"

@@ -1,6 +1,8 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { verificationRequired } from "@/lib/email-verification";
+import { travelerCreates, withoutPassports } from "@/lib/travelers";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { calculateServiceFee, generateBookingCode, UNPAID_BOOKING_TTL_HOURS } from "@/lib/booking-utils";
@@ -19,6 +21,15 @@ export async function createStayBookingAction(input: StayBookingInput): Promise<
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "Please sign in to book." };
   const userId = session.user.id;
+
+
+  // A confirmed email, so receipts, permits and changes reach the right person
+  if (verificationRequired()) {
+    const me = await db.user.findUnique({ where: { id: userId }, select: { emailVerified: true } });
+    if (!me?.emailVerified) {
+      return { ok: false, error: "Please confirm your email first. We sent you a link when you signed up; you can send a new one from your dashboard." };
+    }
+  }
 
   const limited = await rateLimit(`booking:user:${userId}`, RATE_LIMITS.bookingUser);
   if (!limited.ok) return { ok: false, error: tooManyMessage(limited.retryAfterSeconds) };
@@ -103,7 +114,8 @@ export async function createStayBookingAction(input: StayBookingInput): Promise<
             status: "PAYMENT_PENDING",
             totalAmountUSD,
             hostPayoutBDT: quote.hostPayoutBDT,
-            specialRequests: JSON.stringify(details),
+            specialRequests: JSON.stringify(withoutPassports(details)),
+            travelers: { create: travelerCreates([{ name: d.name, email: d.email, phone: d.phone, nationality: d.nationality, passport: d.passportNumber }]) },
           },
           select: { id: true },
         });

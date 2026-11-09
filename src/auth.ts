@@ -72,6 +72,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    // After a Google OAuth user is created, also create their TouristProfile
+    async createUser({ user }) {
+      if (!user.id) return;
+      await db.touristProfile
+        .create({ data: { userId: user.id } })
+        .catch(() => {
+          // Profile already exists — no-op
+        });
+    },
+    // Google has already confirmed the address. If someone had signed up with
+    // a password for this email without ever confirming it, that password
+    // wasn't proven to belong to the owner, so it's removed.
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "google" || !user.id || !(profile as { email_verified?: boolean } | undefined)?.email_verified) return;
+      const u = await db.user.findUnique({ where: { id: user.id }, select: { emailVerified: true } });
+      if (u && !u.emailVerified) {
+        await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date(), passwordHash: null } });
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger }) {
       // On initial sign-in, stuff the user's id and role into the JWT
@@ -100,9 +121,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (typeof token.id === "string" && Date.now() - checkedAt > ROLE_REFRESH_MS) {
         const fresh = await db.user.findUnique({
           where: { id: token.id },
-          select: { role: true },
+          select: { role: true, deletedAt: true },
         });
-        token.role = fresh?.role ?? "TOURIST";
+        // A deleted account's session ends here
+        if (!fresh || fresh.deletedAt) return null;
+        token.role = fresh.role;
         token.roleCheckedAt = Date.now();
       }
       return token;
@@ -115,15 +138,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-  events: {
-    // After a Google OAuth user is created, also create their TouristProfile
-    async createUser({ user }) {
-      if (!user.id) return;
-      await db.touristProfile
-        .create({ data: { userId: user.id } })
-        .catch(() => {
-          // Profile already exists — no-op
-        });
-    },
-  },
+
 });

@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { decrypt, last4 } from "@/lib/crypto";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { ProfileForm } from "@/components/dashboard/profile-form";
+import { YourData } from "@/components/dashboard/your-data";
 
 export const metadata = {
   title: "Profile",
@@ -32,9 +34,20 @@ export default async function ProfilePage() {
       <div className="mt-12 max-w-2xl">
         <ProfileForm
           user={{ name: user.name, email: user.email }}
-          profile={user.touristProfile}
+          profile={
+            user.touristProfile && {
+              ...user.touristProfile,
+              // Never send the number itself back to the page: only its last 4
+              passportNumber: null,
+              passportMasked: (() => {
+                const p = decrypt(user.touristProfile.passportNumber);
+                return p ? `•••• ${last4(p)}` : null;
+              })(),
+            }
+          }
         />
       </div>
+      <YourData email={user.email} canDelete={user.role === "TOURIST"} />
     </div>
   );
 }

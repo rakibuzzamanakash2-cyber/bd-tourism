@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { encrypt } from "@/lib/crypto";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -47,7 +48,10 @@ export async function updateProfileAction(
     return { fieldErrors };
   }
 
-  const { name, ...profileData } = parsed.data;
+  const { name, passportNumber, ...rest } = parsed.data;
+  // Passport: encrypted; an empty box keeps the saved one; the tick box removes it
+  const passport = formData.get("removePassport") === "on" ? { passportNumber: null } : passportNumber ? { passportNumber: encrypt(passportNumber.trim()) } : {};
+  const profileData = { ...rest, ...passport };
 
   try {
     await db.user.update({

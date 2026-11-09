@@ -1,6 +1,8 @@
 "use server";
 
 import { z } from "zod";
+import { verificationRequired } from "@/lib/email-verification";
+import { travelerCreates, withoutPassports } from "@/lib/travelers";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -54,6 +56,15 @@ export async function createBookingAction(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "You must be signed in to book." };
+  }
+
+
+  // A confirmed email, so receipts, permits and changes reach the right person
+  if (verificationRequired()) {
+    const me = await db.user.findUnique({ where: { id: session.user.id }, select: { emailVerified: true } });
+    if (!me?.emailVerified) {
+      return { success: false, error: "Please confirm your email first. We sent you a link when you signed up; you can send a new one from your dashboard." };
+    }
   }
 
   const limited = await rateLimit(`booking:user:${session.user.id}`, RATE_LIMITS.bookingUser);
@@ -198,8 +209,11 @@ export async function createBookingAction(
           travelerCount: parsed.data.travelerCount,
           status: "PAYMENT_PENDING",
           totalAmountUSD,
-          specialRequests: JSON.stringify(detailsPayload),
+          // Passport numbers never go in the details JSON: they're stored
+          // encrypted, one row per traveler
+          specialRequests: JSON.stringify(withoutPassports(detailsPayload)),
           requestedGuideId: requestedGuide?.id ?? null,
+          travelers: { create: travelerCreates(travelersFrom(parsed.data)) },
         },
         select: { id: true, bookingCode: true },
       });
@@ -218,4 +232,11 @@ export async function createBookingAction(
     bookingId: booking.id,
     bookingCode: booking.bookingCode,
   };
+}
+
+function travelersFrom(d: BookingData) {
+  return [
+    { name: d.primaryContact.name, email: d.primaryContact.email, phone: d.primaryContact.phone, nationality: d.primaryContact.nationality, passport: d.primaryContact.passportNumber },
+    ...d.additionalTravelers.map((t) => ({ name: t.name, nationality: t.nationality, passport: t.passportNumber })),
+  ];
 }

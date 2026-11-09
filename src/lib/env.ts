@@ -43,6 +43,11 @@ const schema = z.object({
   SSLCOMMERZ_CANCEL_URL: optional,
   SSLCOMMERZ_IPN_URL: optional,
 
+  // Key for encrypting passport numbers: 32 random bytes, base64 or hex.
+  // Make one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+  // Keep it safe and never change it (old data can't be read without it).
+  DATA_ENCRYPTION_KEY: optional,
+
   RESEND_API_KEY: optional,
   EMAIL_FROM: optional,
   // Where team notifications (new contact messages, cancellations) go.

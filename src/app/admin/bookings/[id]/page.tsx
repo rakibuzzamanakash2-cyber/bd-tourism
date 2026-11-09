@@ -28,6 +28,8 @@ import { PermitEditor } from "@/components/admin/permit-panel";
 import { requireAdmin } from "@/lib/session";
 import { bookingTitle, stayNightKeys } from "@/lib/homestay-shared";
 import { MarkHostPaidForm } from "@/components/admin/homestay-actions";
+import { RevealPassport } from "@/components/admin/reveal-passport";
+import { maskedPassport } from "@/lib/travelers";
 
 export const metadata = { title: "Booking" };
 
@@ -54,6 +56,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
         package: { select: { id: true, title: true, slug: true, durationDays: true, includesGuide: true } },
         homestay: { select: { id: true, name: true, slug: true, phone: true, address: true, host: { select: { name: true, email: true } } } },
         requestedGuide: { select: { id: true, slug: true, displayName: true } },
+        travelers: { orderBy: { position: "asc" } },
         guideAssignments: {
           include: { guide: { select: { id: true, displayName: true, slug: true, phone: true } }, assignedBy: { select: { name: true, email: true } } },
           orderBy: { createdAt: "desc" },
@@ -187,22 +190,23 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                   </>
                 )}
               </Item>
-              {details.primaryContact?.passportNumber && (
-                <Item label="Primary passport">
-                  {details.primaryContact.passportNumber} · {details.primaryContact.nationality}
-                </Item>
-              )}
-              {details.additionalTravelers?.map((t, i) => (
-                <Item key={i} label={`Traveler #${i + 2}`}>
+              {booking.travelers.map((t) => (
+                <Item key={t.id} label={t.position === 0 ? "Lead traveler" : `Traveler #${t.position + 1}`}>
                   {t.name}
-                  {t.passportNumber && (
+                  {t.nationality && <span className="text-ink-mute"> · {t.nationality}</span>}
+                  {maskedPassport(t) && (
                     <>
                       <br />
-                      Passport {t.passportNumber} · {t.nationality}
+                      Passport{" "}
+                      {t.passportEnc ? <RevealPassport travelerId={t.id} masked={maskedPassport(t)!} /> : <span className="font-mono">{maskedPassport(t)}</span>}
                     </>
                   )}
                 </Item>
               ))}
+              {booking.travelers.length === 0 &&
+                details.additionalTravelers?.map((t, i) => (
+                  <Item key={i} label={`Traveler #${i + 2}`}>{t.name}</Item>
+                ))}
               {booking.tourist.touristProfile?.emergencyContact && (
                 <Item label="Emergency contact">{booking.tourist.touristProfile.emergencyContact}</Item>
               )}

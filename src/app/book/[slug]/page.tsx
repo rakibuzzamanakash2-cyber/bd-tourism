@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { decrypt } from "@/lib/crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { BookingWizard } from "@/components/booking/booking-wizard";
@@ -85,7 +86,8 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
             name: user.name,
             email: user.email,
             phone: user.touristProfile?.phoneNumber ?? null,
-            passportNumber: user.touristProfile?.passportNumber ?? null,
+            // Their own saved passport, to pre-fill the form for them
+            passportNumber: decrypt(user.touristProfile?.passportNumber) ?? null,
             nationality: user.touristProfile?.nationality ?? null,
           }}
           requestedGuide={requestedGuide}
