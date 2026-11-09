@@ -8,6 +8,7 @@ import { cn, countWord } from "@/lib/utils";
 import { DestinationCard } from "@/components/destinations/destination-card";
 import { PackageCard } from "@/components/packages/package-card";
 import { getSavedState } from "@/lib/saved";
+import { ratingsBy } from "@/lib/reviews";
 
 // ============================================================
 // HERO
@@ -217,6 +218,7 @@ async function FeaturedPackages() {
     }),
     getSavedState(),
   ]);
+  const ratings = await ratingsBy("packageId", packages.map((p) => p.id));
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
@@ -244,6 +246,7 @@ async function FeaturedPackages() {
             package={p}
             priority={i < 3}
             saved={savedState.packageIds.has(p.id)}
+            rating={ratings.get(p.id)}
             signedIn={savedState.signedIn}
           />
         ))}

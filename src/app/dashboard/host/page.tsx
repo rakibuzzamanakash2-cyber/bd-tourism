@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { HostHeader } from "@/components/host/host-header";
+import { HostReplyForm } from "@/components/reviews/review-actions";
+import { Stars } from "@/components/reviews/stars";
+import { reviewerName } from "@/lib/review-shared";
 import { formatDateRange } from "@/lib/booking-utils";
 import { db } from "@/lib/db";
 import { bdt, dayKey } from "@/lib/guide-shared";
@@ -44,6 +47,12 @@ export default async function HostDashboardPage() {
   const upcoming = active.filter((b) => paidStatuses.includes(b.status) && b.endDate >= today);
   const waiting = active.filter((b) => b.status === "PAYMENT_PENDING" && b.endDate >= today);
   const past = active.filter((b) => paidStatuses.includes(b.status) && b.endDate < today).reverse();
+  const reviews = await db.review.findMany({
+    where: { homestayId: homestay.id, status: "PUBLISHED" },
+    include: { author: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
   const paidTotal = bookings.filter((b) => b.hostPayoutStatus === "PAID").reduce((n, b) => n + (b.hostPayoutBDT ?? 0), 0);
   const owedTotal = active.filter((b) => b.hostPayoutStatus === "UNPAID" && b.endDate <= today).reduce((n, b) => n + (b.hostPayoutBDT ?? 0), 0);
 
@@ -131,6 +140,28 @@ export default async function HostDashboardPage() {
           <div className="rounded-lg border border-forest-900/10 p-5"><p className="text-sm text-ink-mute">{t.paidTotal}</p><p className="mt-1 font-display text-3xl">{bdt(paidTotal)}</p></div>
           <div className="rounded-lg border border-forest-900/10 p-5"><p className="text-sm text-ink-mute">{t.owedTotal}</p><p className="mt-1 font-display text-3xl">{bdt(owedTotal)}</p></div>
         </div>
+      </section>
+
+      <section className="mb-12">
+        <h2 className="font-display text-2xl">{t.reviews}</h2>
+        {reviews.length === 0 ? <p className="mt-3 text-ink-soft">{t.noReviews}</p> : (
+          <ul className="mt-4 space-y-4">
+            {reviews.map((r) => (
+              <li key={r.id} className="space-y-3 rounded-lg border border-forest-900/10 p-5">
+                <div className="flex flex-wrap items-center gap-2"><Stars value={r.rating} />{r.title && <span className="font-medium">{r.title}</span>}</div>
+                <p className="whitespace-pre-line text-sm">{r.comment}</p>
+                <p className="text-xs text-ink-mute">{reviewerName(r.author.name)}</p>
+                {r.reply && (
+                  <div className="border-l-2 border-forest-700 pl-3 text-sm">
+                    <p className="text-xs text-forest-800">{r.replyBy === "TEAM" ? t.teamReplied : t.yourReply}</p>
+                    <p className="whitespace-pre-line text-ink-soft">{r.reply}</p>
+                  </div>
+                )}
+                {r.replyBy !== "TEAM" && <HostReplyForm id={r.id} reply={r.reply} lang={lang} />}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {past.length > 0 && (

@@ -28,6 +28,7 @@ const columns = [
       { href: "/safety", label: "Traveler safety" },
       { href: "/terms", label: "Terms" },
       { href: "/privacy", label: "Privacy" },
+      { href: "/credits", label: "Photo credits" },
     ],
   },
 ];

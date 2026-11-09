@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { GuideHeader } from "./guide-header";
+import { Stars } from "@/components/reviews/stars";
+import { ratingSummary } from "@/lib/reviews";
 import { TripResponse } from "@/components/guide/trip-response";
 import { formatDateRange } from "@/lib/booking-utils";
 import { db } from "@/lib/db";
@@ -29,6 +31,7 @@ export default async function GuideTripsPage() {
     orderBy: { booking: { startDate: "asc" } },
   });
   const today = new Date(dayKey(new Date()));
+  const rating = await ratingSummary({ guideId: profile.id }, "guideRating");
   const live = assignments.filter((a) => a.booking.status !== "CANCELLED");
   const requests = live.filter((a) => a.status === "PENDING");
   const accepted = live.filter((a) => a.status === "ACCEPTED");
@@ -56,6 +59,12 @@ export default async function GuideTripsPage() {
   return (
     <div className={cn(bn)}>
       <GuideHeader lang={lang} title={t.hello(profile.displayName.split(/\s+/)[0])} intro={t.intro} />
+      {rating.count > 0 && (
+        <p className="-mt-6 mb-8 flex items-center gap-2 text-sm">
+          <Stars value={rating.average} /> <span className="font-medium">{rating.average.toFixed(1)}</span>
+          <Link href={`/guides/${profile.slug}#reviews`} className="text-ink-soft underline underline-offset-4">({rating.count})</Link>
+        </p>
+      )}
 
       {!profile.isActive && <p className="mb-6 rounded-md border border-clay-600/30 bg-clay-500/10 px-4 py-3 text-sm text-clay-700">{t.profilePaused}</p>}
       {profile.isActive && !profile.isListed && (

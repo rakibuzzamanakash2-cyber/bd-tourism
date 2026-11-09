@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { publicReviewInclude, ratingSummary } from "@/lib/reviews";
+import { RatingBadge } from "@/components/reviews/stars";
+import { ReviewSection } from "@/components/reviews/review-list";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BadgeCheck, Check, Languages, MapPin, MessageCircle } from "lucide-react";
@@ -42,6 +45,10 @@ export default async function GuideProfilePage({ params }: Props) {
   if (!isPublic && !isOwner && !isAdmin) notFound();
 
   const first = guide.displayName.split(/\s+/)[0];
+  const [rating, reviews] = await Promise.all([
+    ratingSummary({ guideId: guide.id }, "guideRating"),
+    db.review.findMany({ where: { guideId: guide.id, status: "PUBLISHED", guideRating: { not: null } }, include: publicReviewInclude, orderBy: { createdAt: "desc" }, take: 30 }),
+  ]);
   const tours = await db.tourPackage.findMany({
     where: { isPublished: true, includesGuide: true, itinerary: { some: { destination: { regionId: { in: guide.regions.map((r) => r.id) } } } } },
     select: { slug: true, title: true, durationDays: true, basePriceUSD: true, summary: true },
@@ -64,6 +71,7 @@ export default async function GuideProfilePage({ params }: Props) {
           <div>
             <p className="eyebrow text-forest-700">Local guide</p>
             <h1 className="mt-3 font-display text-5xl leading-tight sm:text-6xl">{guide.displayName}</h1>
+            <RatingBadge summary={rating} className="mt-3" />
             <dl className="mt-6 space-y-2 text-ink-soft">
               <div className="flex items-start gap-2.5">
                 <MapPin className="mt-1 size-4 shrink-0" />
@@ -107,6 +115,12 @@ export default async function GuideProfilePage({ params }: Props) {
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
+          <ReviewSection mode="guide" summary={rating} reviews={reviews} emptyText={`No reviews yet. Travelers rate ${first} after their trip.`} />
         </div>
       </section>
 

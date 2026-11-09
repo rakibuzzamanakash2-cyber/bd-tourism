@@ -199,6 +199,7 @@ model TourPackage {
   itinerary TourPackageDay[]
   bookings  Booking[]
   savedBy   SavedPackage[]
+  reviews   Review[]
 
   @@index([duration, isPublished])
 }
@@ -277,6 +278,8 @@ model Booking {
   hostPayoutReference String?
   // Host was reminded the guests are arriving soon
   hostReminderSentAt  DateTime?
+  // We asked the traveler to review it (once, after the trip)
+  reviewRequestSentAt DateTime?
 
   @@index([touristId, status])
   @@index([homestayId, startDate])
@@ -315,20 +318,46 @@ model Payment {
 // REVIEWS
 // ============================================================
 
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN // by the team (spam, abuse, personal details…)
+}
+
+// One review per booking, written after the trip or stay has ended.
 model Review {
-  id            String       @id @default(cuid())
-  bookingId     String       @unique
-  booking       Booking      @relation(fields: [bookingId], references: [id])
+  id            String        @id @default(cuid())
+  bookingId     String        @unique
+  booking       Booking       @relation(fields: [bookingId], references: [id])
   authorId      String
-  author        User         @relation(fields: [authorId], references: [id])
+  author        User          @relation(fields: [authorId], references: [id])
   destinationId String?
-  destination   Destination? @relation(fields: [destinationId], references: [id])
+  destination   Destination?  @relation(fields: [destinationId], references: [id])
+  // What it's about (copied from the booking so pages can find it fast)
+  packageId     String?
+  package       TourPackage?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  homestayId    String?
+  homestay      Homestay?     @relation(fields: [homestayId], references: [id], onDelete: SetNull)
   rating        Int // 1-5
   title         String?
-  comment       String       @db.Text
-  createdAt     DateTime     @default(now())
+  comment       String        @db.Text
+  // The guide who led the trip, rated separately
+  guideId       String?
+  guide         GuideProfile? @relation(fields: [guideId], references: [id], onDelete: SetNull)
+  guideRating   Int?
+  guideComment  String?       @db.Text
+  status        ReviewStatus  @default(PUBLISHED)
+  hiddenReason  String?
+  // A public answer from the host (homestays) or the DeltaWay team
+  reply         String?       @db.Text
+  replyBy       String? // "HOST" | "TEAM"
+  repliedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
 
   @@index([destinationId])
+  @@index([packageId, status])
+  @@index([homestayId, status])
+  @@index([guideId, status])
 }
 
 // ============================================================
@@ -587,6 +616,7 @@ model GuideProfile {
   blockedDates      GuideBlockedDate[]
   assignments       GuideAssignment[]
   requestedBookings Booking[]          @relation("RequestedGuide")
+  reviews           Review[]
 
   @@index([isActive, isListed])
 }
@@ -679,6 +709,7 @@ model Homestay {
 
   blockedDates HomestayBlockedDate[]
   bookings     Booking[]
+  reviews      Review[]
 
   @@index([isActive, isListed, regionId])
 }
@@ -691,4 +722,17 @@ model HomestayBlockedDate {
   date       DateTime @db.Date
 
   @@unique([homestayId, date])
+}
+
+// Credit for a photo used on the site (author, licence, where it came from).
+// Keyed by the image URL, so any picture anywhere can have one.
+model ImageCredit {
+  id         String   @id @default(cuid())
+  url        String   @unique
+  title      String?
+  author     String
+  license    String
+  licenseUrl String?
+  sourceUrl  String
+  createdAt  DateTime @default(now())
 }

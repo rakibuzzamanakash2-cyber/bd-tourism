@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { GuideAvatar } from "@/components/guides/guide-avatar";
+import { Stars } from "@/components/reviews/stars";
+import { reviewEligibility } from "@/lib/reviews";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -91,6 +93,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         include: { region: { select: { name: true } } },
         orderBy: { createdAt: "asc" },
       },
+      review: { select: { rating: true, createdAt: true, status: true } },
       homestay: {
         select: { name: true, slug: true, photos: true, area: true, district: true, address: true, phone: true, houseRules: true, host: { select: { name: true } }, region: { select: { name: true } } },
       },
@@ -127,6 +130,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const pricePerPerson = booking.package
     ? Number(booking.package.basePriceUSD)
     : 0;
+
+  // Reviews: invite one once the trip is over (or show theirs)
+  const reviewState = reviewEligibility(booking, user.id);
 
   // Homestay bookings: address and the host's number once it's paid
   const stay = booking.homestay;
@@ -235,6 +241,28 @@ export default async function BookingDetailPage({ params }: PageProps) {
       {/* Body — two column */}
       <div className="mt-10 grid gap-10 lg:grid-cols-3 lg:gap-16">
         <div className="lg:col-span-2 space-y-10">
+          {(reviewState.ok || booking.review) && (
+            <section className="flex flex-col gap-4 rounded-lg border border-forest-700/20 bg-forest-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+              {booking.review ? (
+                <div className="flex items-center gap-3">
+                  <Stars value={booking.review.rating} />
+                  <p className="text-sm">
+                    Thanks for your review{booking.review.status === "HIDDEN" ? " (it isn't shown publicly)" : ""}.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium text-forest-900">How was it?</p>
+                  <p className="text-sm text-ink-soft">A few honest lines help other travelers choose.</p>
+                </div>
+              )}
+              {reviewState.ok && (
+                <Link href={`/dashboard/bookings/${booking.id}/review`} className="shrink-0 rounded-full bg-forest-900 px-5 py-2.5 text-center text-sm font-medium text-paper hover:bg-forest-800">
+                  {booking.review ? "Edit review" : "Write a review"}
+                </Link>
+              )}
+            </section>
+          )}
           {stay && (
             <section className="overflow-hidden rounded-lg border border-forest-900/10">
               {stay.photos[0] && (

@@ -23,10 +23,30 @@ const links: {
     ],
   },
   {
+    packageSlug: "bagerhat-heritage-day",
+    days: [{ dayNumber: 1, destinationSlug: "bagerhat-sixty-dome-mosque" }],
+  },
+  {
+    packageSlug: "rangamati-kaptai-3-day",
+    days: [
+      { dayNumber: 1, destinationSlug: "rangamati-kaptai-lake" },
+      { dayNumber: 2, destinationSlug: "rangamati-kaptai-lake" },
+      { dayNumber: 3, destinationSlug: "rangamati-kaptai-lake" },
+    ],
+  },
+  {
+    packageSlug: "sylhet-haor-jaflong-3-day",
+    days: [
+      { dayNumber: 1, destinationSlug: "tanguar-haor" },
+      { dayNumber: 2, destinationSlug: "jaflong" },
+    ],
+  },
+  {
     packageSlug: "sylhet-5-day",
     days: [
       { dayNumber: 2, destinationSlug: "srimangal-tea-gardens" },
       { dayNumber: 4, destinationSlug: "ratargul-swamp-forest" },
+      { dayNumber: 5, destinationSlug: "jaflong" },
     ],
   },
 ];

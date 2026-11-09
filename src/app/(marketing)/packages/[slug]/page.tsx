@@ -1,4 +1,8 @@
 import Image from "next/image";
+import { creditsFor } from "@/lib/image-credits";
+import { PhotoCredit } from "@/components/photo-credit";
+import { publicReviewInclude, ratingSummary } from "@/lib/reviews";
+import { ReviewSection } from "@/components/reviews/review-list";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, MapPin } from "lucide-react";
@@ -48,7 +52,12 @@ export default async function PackageDetailPage({ params }: PageProps) {
   });
 
   if (!pkg || !pkg.isPublished) notFound();
-  const savedState = await getSavedState();
+  const [savedState, rating, reviews] = await Promise.all([
+    getSavedState(),
+    ratingSummary({ packageId: pkg.id }),
+    db.review.findMany({ where: { packageId: pkg.id, status: "PUBLISHED" }, include: publicReviewInclude, orderBy: { createdAt: "desc" }, take: 30 }),
+  ]);
+  const credits = await creditsFor([pkg.featuredImage]);
 
   const priceUSD = Number(pkg.basePriceUSD);
 
@@ -77,6 +86,7 @@ export default async function PackageDetailPage({ params }: PageProps) {
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-forest-950/25 via-forest-950/35 to-forest-950/85" />
+        <PhotoCredit credit={credits.get(pkg.featuredImage)} className="absolute bottom-2 right-3 z-20 text-paper/70" />
 
         <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
           <Link
@@ -253,6 +263,12 @@ export default async function PackageDetailPage({ params }: PageProps) {
               </p>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl border-t border-forest-900/10 px-4 py-16 sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
+          <ReviewSection summary={rating} reviews={reviews} emptyText="No reviews yet. Travelers can review this tour once their trip is over." />
         </div>
       </section>
     </>

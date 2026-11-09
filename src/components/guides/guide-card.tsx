@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RatingBadge } from "@/components/reviews/stars";
 import { BadgeCheck } from "lucide-react";
 import { GuideAvatar } from "@/components/guides/guide-avatar";
 import { bdt } from "@/lib/guide-shared";
@@ -16,7 +17,7 @@ export type GuideCardData = {
   regions: { name: string }[];
 };
 
-export function GuideCard({ guide }: { guide: GuideCardData }) {
+export function GuideCard({ guide, rating }: { guide: GuideCardData; rating?: { average: number; count: number } }) {
   return (
     <Link href={`/guides/${guide.slug}`} className="group block">
       <GuideAvatar name={guide.displayName} photoUrl={guide.photoUrl} className="aspect-[4/5] w-full" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
@@ -29,6 +30,7 @@ export function GuideCard({ guide }: { guide: GuideCardData }) {
         <p className="mt-1 text-sm text-ink-soft">
           {guide.languages.join(", ")} · {guide.yearsExperience} {guide.yearsExperience === 1 ? "year" : "years"} guiding
         </p>
+        <RatingBadge summary={rating} className="mt-2" />
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-soft">{guide.bio}</p>
         <p className="mt-3 text-sm">
           <span className="font-medium">{bdt(guide.dayRateBDT)}</span>

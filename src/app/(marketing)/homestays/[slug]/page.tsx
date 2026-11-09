@@ -1,4 +1,7 @@
 import Image from "next/image";
+import { publicReviewInclude, ratingSummary } from "@/lib/reviews";
+import { RatingBadge } from "@/components/reviews/stars";
+import { ReviewSection } from "@/components/reviews/review-list";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -50,6 +53,10 @@ export default async function HomestayPage({ params, searchParams }: Props) {
       ? db.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true, touristProfile: { select: { phoneNumber: true, nationality: true } } } })
       : null,
   ]);
+  const [rating, reviews] = await Promise.all([
+    ratingSummary({ homestayId: h.id }),
+    db.review.findMany({ where: { homestayId: h.id, status: "PUBLISHED" }, include: publicReviewInclude, orderBy: { createdAt: "desc" }, take: 30 }),
+  ]);
   const nightly = guestNightlyBDT(h.pricePerNightBDT);
   const hostFirst = (h.host.name ?? h.name).split(/\s+/)[0];
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
@@ -68,6 +75,7 @@ export default async function HomestayPage({ params, searchParams }: Props) {
         <Link href="/homestays" className="text-sm text-ink-soft hover:text-forest-800">← All homestays</Link>
         <p className="eyebrow mt-6 text-forest-700">{h.district} · {h.region.name}</p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl md:text-6xl">{h.name}</h1>
+        <RatingBadge summary={rating} className="mt-3" />
 
         {h.photos.length > 0 ? (
           <div className="mt-8 grid gap-2 sm:grid-cols-4 sm:grid-rows-2">
@@ -125,6 +133,10 @@ export default async function HomestayPage({ params, searchParams }: Props) {
             {h.area}, {h.district}. The exact address and directions are shared once your stay is paid.{" "}
             <a href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">See the area on a map</a>
           </p>
+
+          <div className="mt-12">
+            <ReviewSection summary={rating} reviews={reviews} hostReplyLabel={`Response from ${hostFirst}`} emptyText="No reviews yet. Guests can review their stay after check-out." />
+          </div>
 
           <div className="mt-10 rounded-lg border border-forest-900/10 bg-paper-warm p-6">
             <p className="flex items-center gap-2 font-medium"><ShieldCheck className="size-5 text-forest-700" aria-hidden /> Checked by DeltaWay</p>
