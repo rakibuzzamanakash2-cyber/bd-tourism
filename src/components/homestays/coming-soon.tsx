@@ -62,13 +62,12 @@ export function HomestaysComingSoon() {
               <p className="eyebrow mb-3 text-forest-700">Want to host?</p>
               <p className="leading-relaxed text-ink-soft">
                 If you&rsquo;re a Bangladeshi family interested in hosting
-                foreign tourists, we&rsquo;d love to hear from you. Get in
-                touch via{" "}
+                foreign tourists, we&rsquo;d love to hear from you.{" "}
                 <Link
-                  href="/contact"
-                  className="underline underline-offset-4 hover:text-forest-800"
+                  href="/become-a-host"
+                  className="font-medium text-forest-800 underline underline-offset-4"
                 >
-                  the contact page
+                  See how hosting works
                 </Link>
                 .
               </p>

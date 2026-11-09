@@ -115,6 +115,9 @@ export default async function HomestaysPage({ searchParams }: Props) {
             {homestays.map((h) => <HomestayCard key={h.id} h={h} query={cardQuery} rating={ratings.get(h.id)} />)}
           </div>
         )}
+        <p className="mt-16 border-t border-forest-900/10 pt-8 text-sm text-ink-soft">
+          Have a spare room in Bangladesh? <Link href="/become-a-host" className="font-medium text-forest-800 underline underline-offset-4">Become a host</Link> · <Link href="/become-a-host?lang=bn" className="font-bengali underline underline-offset-4">হোস্ট হোন</Link>
+        </p>
       </section>
     </>
   );

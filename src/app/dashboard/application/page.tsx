@@ -20,14 +20,11 @@ export default async function MyApplicationPage({ searchParams }: Props) {
     return (
       <div>
         <p className="eyebrow mb-4 text-forest-700">Work with us</p>
-        <h1 className="font-display text-4xl leading-tight sm:text-5xl">Guide or host with DeltaWay.</h1>
-        <p className="mt-4 max-w-xl text-ink-soft">You haven&rsquo;t started an application yet.</p>
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">Host travelers with DeltaWay.</h1>
+        <p className="mt-4 max-w-xl text-ink-soft">You haven&rsquo;t started an application yet. (Guide applications are invite-only for now.)</p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/apply/guide" className={cn(buttonVariants({ size: "lg" }), "rounded-full bg-forest-900 text-paper hover:bg-forest-800")}>
-            Apply to be a guide
-          </Link>
-          <Link href="/apply/host" className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "rounded-full border border-forest-900/20")}>
-            Apply to host travelers
+          <Link href="/become-a-host" className={cn(buttonVariants({ size: "lg" }), "rounded-full bg-forest-900 text-paper hover:bg-forest-800")}>
+            Become a host
           </Link>
         </div>
       </div>
