@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { MessageCircle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { whatsappLink } from "@/lib/site";
+import { GUIDE_APPLICATIONS_OPEN } from "@/lib/applications";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Invite link", robots: { index: false } };
@@ -68,7 +69,7 @@ export default async function InviteProblemPage({ searchParams }: Props) {
             {t.signIn}
           </Link>
         )}
-        {status !== "used" && (kind !== "host") && (
+        {status !== "used" && kind !== "host" && GUIDE_APPLICATIONS_OPEN && (
           <Link href={`/apply/guide${applyQ}`} className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "rounded-full border border-forest-900/20")}>
             {t.applyGuide}
           </Link>

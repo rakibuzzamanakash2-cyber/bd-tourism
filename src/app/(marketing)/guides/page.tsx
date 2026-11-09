@@ -84,7 +84,7 @@ export default async function GuidesPage({ searchParams }: Props) {
               {params.region || params.language ? (
                 <Link href="/guides" className="underline underline-offset-4">See all guides</Link>
               ) : (
-                <>Every tour still comes with a local guide. <Link href="/become-a-guide" className="underline underline-offset-4">Are you a guide?</Link></>
+                <>Every tour still comes with a local guide.</>
               )}
             </p>
           </div>

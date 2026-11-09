@@ -1,39 +1,34 @@
 import { ContentPage } from "@/components/layout/content-page";
+import { whatsappLink } from "@/lib/site";
 
 export const metadata = {
-  title: "Become a guide",
-  description: "Guide international travelers around Bangladesh with DeltaWay.",
+  title: "Guides",
+  description: "How DeltaWay works with local guides in Bangladesh.",
+  robots: { index: false },
 };
 
+// Guide applications are invite-only for now (GUIDE_APPLICATIONS_OPEN in
+// src/lib/applications.ts). This page explains that to anyone with an old link.
 export default function BecomeAGuidePage() {
   return (
     <ContentPage
-      eyebrow="Become a guide"
-      title="Show the world your Bangladesh."
-      intro="We're building a network of local guides who know their region inside out. Apply online: we review every application within 3 working days."
+      eyebrow="Guides"
+      title="Our guide team is invite-only for now."
+      intro="We're building DeltaWay's guide team ourselves, one region at a time, so every traveler gets a guide we know personally. Public applications will open later."
       sections={[
         {
-          heading: "Who we're looking for",
-          bullets: [
-            "You know a region well — its routes, its food, its people.",
-            "You speak English comfortably (other languages are a big plus).",
-            "You enjoy looking after people and solving problems on the go.",
-            "Government guide certification is required for restricted areas.",
-          ],
+          heading: "Got an invite?",
+          paragraphs: ["Open the invite link we sent you on WhatsApp or email. It takes you straight to the application form."],
         },
         {
-          heading: "What you get",
-          bullets: [
-            "Bookings from international travelers, with payment handled for you.",
-            "Your own profile with reviews, languages and regions.",
-            "We take care of permits and paperwork.",
-          ],
+          heading: "Want to be considered?",
+          paragraphs: ["If you're an experienced guide and would like us to keep you in mind, send us a message. We'll get in touch when we're looking for guides in your area."],
         },
       ]}
       cta={{
-        label: "Apply now",
-        href: "/apply/guide",
-        note: "About 10 minutes, in English or Bangla. You can save and finish later. · বাংলায়ও আবেদন করা যায়।",
+        label: "Message us on WhatsApp",
+        href: whatsappLink("Hi DeltaWay, I'm a tour guide and would like to work with you."),
+        note: "আমাদের হোয়াটসঅ্যাপে বাংলায়ও মেসেজ দিতে পারেন।",
       }}
     />
   );

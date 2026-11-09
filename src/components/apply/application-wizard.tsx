@@ -106,7 +106,7 @@ export function ApplicationWizard({ kind, lang, step, maxStep, uploadsEnabled, r
       const r = await saveApplicationStepAction({ kind, step: current, data: dataFor(current), language: lang });
       if (!r.ok) {
         setErrors(r.fieldErrors ?? {});
-        toast.error(r.error === "fixErrors" ? t.fixErrors : r.error === "signin" ? "Please sign in again." : t.errors.generic);
+        toast.error(r.error === "fixErrors" ? t.fixErrors : r.error === "signin" ? "Please sign in again." : r.error === "inviteOnly" ? t.inviteOnlyTitle : t.errors.generic);
         return;
       }
       setErrors({});
