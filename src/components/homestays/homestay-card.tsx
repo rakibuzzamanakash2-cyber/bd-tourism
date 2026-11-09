@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { RatingBadge } from "@/components/reviews/stars";
 import Link from "next/link";
 import { Home, Users } from "lucide-react";
 import { bdtToUsd } from "@/lib/booking-utils";
@@ -16,7 +17,7 @@ export type HomestayCardData = {
   region: { name: string };
 };
 
-export function HomestayCard({ h, query = "" }: { h: HomestayCardData; query?: string }) {
+export function HomestayCard({ h, query = "", rating }: { h: HomestayCardData; query?: string; rating?: { average: number; count: number } }) {
   const nightly = guestNightlyBDT(h.pricePerNightBDT);
   return (
     <Link href={`/homestays/${h.slug}${query}`} className="group block">
@@ -32,6 +33,7 @@ export function HomestayCard({ h, query = "" }: { h: HomestayCardData; query?: s
       <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-soft">
         <Users className="size-4" aria-hidden /> Up to {h.maxGuests} · {h.rooms} {h.rooms === 1 ? "room" : "rooms"}
       </p>
+      <RatingBadge summary={rating} className="mt-2" />
       <p className="mt-2 text-sm">
         <span className="font-medium">{bdt(nightly)}</span>
         <span className="text-ink-mute"> / night · about ${Math.round(bdtToUsd(nightly))}</span>

@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { creditsFor } from "@/lib/image-credits";
+import { PhotoCredit } from "@/components/photo-credit";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
@@ -58,6 +60,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
     }),
     getSavedState(),
   ]);
+  const credits = await creditsFor([destination.featuredImage, ...destination.images.map((i) => i.url)]);
 
   const mapsUrl =
     destination.latitude && destination.longitude
@@ -77,6 +80,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-forest-950/25 via-forest-950/30 to-forest-950/85" />
+        <PhotoCredit credit={credits.get(destination.featuredImage)} className="absolute bottom-2 right-3 z-20 text-paper/70" />
 
         <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
           <Link
@@ -221,9 +225,10 @@ export default async function DestinationDetailPage({ params }: PageProps) {
                     sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                     className="object-cover"
                   />
-                  {img.caption && (
-                    <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-forest-950/70 to-transparent px-4 py-3 text-xs text-paper">
-                      {img.caption}
+                  {(img.caption || credits.get(img.url)) && (
+                    <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-forest-950/80 to-transparent px-4 pb-3 pt-8 text-xs text-paper">
+                      {img.caption && <span className="line-clamp-2">{img.caption}</span>}
+                      <PhotoCredit credit={credits.get(img.url)} className="mt-1 text-paper/75" />
                     </figcaption>
                   )}
                 </figure>

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { RatingBadge } from "@/components/reviews/stars";
 import Link from "next/link";
 import type { TourPackage } from "@prisma/client";
 import { SaveButton } from "@/components/saved/save-button";
@@ -9,6 +10,7 @@ type Props = {
   /** Whether the visitor has saved it; omit to hide the heart */
   saved?: boolean;
   signedIn?: boolean;
+  rating?: { average: number; count: number };
 };
 
 export function PackageCard({
@@ -16,6 +18,7 @@ export function PackageCard({
   priority = false,
   saved,
   signedIn = false,
+  rating,
 }: Props) {
   return (
     <div className="group relative">
@@ -44,6 +47,7 @@ export function PackageCard({
           <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-soft">
             {pkg.summary}
           </p>
+          <RatingBadge summary={rating} className="mt-2" />
         </div>
       </Link>
       {saved !== undefined && (

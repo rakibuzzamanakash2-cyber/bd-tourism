@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ratingsBy } from "@/lib/reviews";
 import type { Prisma } from "@prisma/client";
 import { GuideCard } from "@/components/guides/guide-card";
 import { db } from "@/lib/db";
@@ -30,6 +31,7 @@ export default async function GuidesPage({ searchParams }: Props) {
     db.guideProfile.findMany({ where: publicGuideWhere, select: { languages: true } }),
   ]);
   const languages = [...new Set(allLanguages.flatMap((g) => g.languages))].sort();
+  const ratings = await ratingsBy("guideId", guides.map((g) => g.id));
   const url = (key: "region" | "language", value?: string) => {
     const q = new URLSearchParams();
     if (key !== "region" && params.region) q.set("region", params.region);
@@ -89,7 +91,7 @@ export default async function GuidesPage({ searchParams }: Props) {
         ) : (
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {guides.map((g) => (
-              <GuideCard key={g.id} guide={g} />
+              <GuideCard key={g.id} guide={g} rating={ratings.get(g.id)} />
             ))}
           </div>
         )}

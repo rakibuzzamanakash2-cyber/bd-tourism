@@ -5,6 +5,7 @@ import { TourDuration } from "@prisma/client";
 import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
 import { getSavedState } from "@/lib/saved";
+import { ratingsBy } from "@/lib/reviews";
 
 
 type SearchParams = Promise<{
@@ -47,6 +48,7 @@ export default async function PackagesPage({
     }),
     getSavedState(),
   ]);
+  const ratings = await ratingsBy("packageId", packages.map((p) => p.id));
 
   const currentLabel = durationOptions.find((d) => d.value === validDuration)?.label;
 
@@ -120,6 +122,7 @@ export default async function PackagesPage({
                   package={p}
                   priority={i < 3}
                   saved={savedState.packageIds.has(p.id)}
+            rating={ratings.get(p.id)}
                   signedIn={savedState.signedIn}
                 />
               ))}
