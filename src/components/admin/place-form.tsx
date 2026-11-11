@@ -8,7 +8,19 @@ import { ImageField } from "@/components/admin/image-field";
 import { savePlaceAction } from "@/lib/actions/admin/districts";
 import { PLACE_KINDS } from "@/lib/places-data/types";
 
-type Place = { id?: string; name: string; kind: string; description: string; tip: string; photo: string; isPublished: boolean };
+type Place = {
+  id?: string;
+  name: string;
+  kind: string;
+  description: string;
+  tip: string;
+  about: string;
+  bestTime: string;
+  gettingThere: string;
+  goodToKnow: string;
+  photo: string;
+  isPublished: boolean;
+};
 
 export function PlaceForm({ districtId, place, uploadsEnabled }: { districtId: string; place: Place; uploadsEnabled: boolean }) {
   const [pending, start] = useTransition();
@@ -54,6 +66,24 @@ export function PlaceForm({ districtId, place, uploadsEnabled }: { districtId: s
         Tip <span className="text-ink-mute">(optional)</span>
         <input name="tip" defaultValue={place.tip} maxLength={300} className={`${inputClass} mt-1`} />
       </label>
+      <label className="block text-sm">
+        About <span className="text-ink-mute">(longer write-up for the place&rsquo;s own page; leave a blank line between paragraphs)</span>
+        <textarea name="about" rows={5} defaultValue={place.about} maxLength={4000} className={`${inputClass} mt-1`} />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block text-sm">
+          Best time to go
+          <input name="bestTime" defaultValue={place.bestTime} maxLength={200} className={`${inputClass} mt-1`} />
+        </label>
+        <label className="block text-sm">
+          Getting there
+          <input name="gettingThere" defaultValue={place.gettingThere} maxLength={500} className={`${inputClass} mt-1`} />
+        </label>
+        <label className="block text-sm">
+          Good to know <span className="text-ink-mute">(fees, hours)</span>
+          <input name="goodToKnow" defaultValue={place.goodToKnow} maxLength={500} className={`${inputClass} mt-1`} />
+        </label>
+      </div>
       <ImageField name="photo" label="Photo" defaultValue={place.photo} folder="destinations" uploadsEnabled={uploadsEnabled} />
       <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 text-sm">

@@ -6,10 +6,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { SaveButton } from "@/components/saved/save-button";
 import { getSavedState } from "@/lib/saved";
+import { BookDialog } from "@/components/booking/book-dialog";
+import { bookOptionsForDestination } from "@/lib/book-options";
+import { auth } from "@/auth";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -44,12 +45,13 @@ export default async function DestinationDetailPage({ params }: PageProps) {
       region: true,
       categories: true,
       images: { orderBy: { order: "asc" } },
+      district: { include: { _count: { select: { places: { where: { isPublished: true } } } } } },
     },
   });
 
   if (!destination || !destination.isPublished) notFound();
 
-  const [relatedPackages, savedState] = await Promise.all([
+  const [relatedPackages, savedState, bookOptions, session] = await Promise.all([
     db.tourPackage.findMany({
       where: {
         isPublished: true,
@@ -59,6 +61,8 @@ export default async function DestinationDetailPage({ params }: PageProps) {
       orderBy: { durationDays: "asc" },
     }),
     getSavedState(),
+    bookOptionsForDestination(destination),
+    auth(),
   ]);
   const credits = await creditsFor([destination.featuredImage, ...destination.images.map((i) => i.url)]);
 
@@ -179,15 +183,24 @@ export default async function DestinationDetailPage({ params }: PageProps) {
                 </a>
               )}
 
-              <Link
-                href={`/contact?subject=${encodeURIComponent(`Visiting ${destination.name}`)}`}
-                className={cn(
-                  buttonVariants(),
-                  "mt-6 w-full rounded-full bg-forest-900 text-paper hover:bg-forest-800",
-                )}
-              >
-                Ask us about visiting
-              </Link>
+              <BookDialog
+                title={destination.name}
+                context={{ destinationId: destination.id, districtId: destination.districtId ?? undefined }}
+                options={bookOptions}
+                defaults={{ name: session?.user?.name ?? undefined, email: session?.user?.email ?? undefined }}
+                explore={
+                  destination.district
+                    ? { href: `/districts/${destination.district.slug}`, districtName: destination.district.name, places: destination.district._count.places }
+                    : undefined
+                }
+                label={`Book a trip to ${destination.name}`}
+                className="mt-6 w-full"
+              />
+              {destination.district && (
+                <Link href={`/districts/${destination.district.slug}`} className="mt-3 block text-center text-sm text-forest-800 underline underline-offset-4">
+                  Explore all of {destination.district.name}
+                </Link>
+              )}
               <div className="mt-4 text-center">
                 <SaveButton
                   kind="destination"

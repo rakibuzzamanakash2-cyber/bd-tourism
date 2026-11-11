@@ -48,6 +48,10 @@ export async function deleteMyAccountAction(input: { confirmEmail: string }): Pr
     db.savedDestination.deleteMany({ where: { userId: user.id } }),
     db.savedPackage.deleteMany({ where: { userId: user.id } }),
     db.contactMessage.deleteMany({ where: { userId: user.id } }),
+    db.savedDistrict.deleteMany({ where: { userId: user.id } }),
+    db.savedPlace.deleteMany({ where: { userId: user.id } }),
+    db.savedHomestay.deleteMany({ where: { userId: user.id } }),
+    db.tripRequest.deleteMany({ where: { userId: user.id } }),
     db.partnerApplication.deleteMany({ where: { userId: user.id } }),
     db.verificationToken.deleteMany({ where: { identifier: { endsWith: user.email } } }),
     db.user.update({

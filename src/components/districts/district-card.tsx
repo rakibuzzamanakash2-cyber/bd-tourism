@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { SaveButton } from "@/components/saved/save-button";
 
 type Props = {
   district: {
+    id: string;
     slug: string;
     name: string;
     nameBn: string;
@@ -14,11 +16,15 @@ type Props = {
   };
   places?: number;
   priority?: boolean;
+  /** Omit to hide the heart */
+  saved?: boolean;
+  signedIn?: boolean;
 };
 
-export function DistrictCard({ district: d, places = 0, priority = false }: Props) {
+export function DistrictCard({ district: d, places = 0, priority = false, saved, signedIn = false }: Props) {
   return (
-    <Link href={`/districts/${d.slug}`} className="group block">
+    <div className="group relative">
+    <Link href={`/districts/${d.slug}`} className="block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-forest-900">
         {d.photo ? (
           <Image
@@ -49,6 +55,10 @@ export function DistrictCard({ district: d, places = 0, priority = false }: Prop
         {places > 0 && <span className="text-forest-700"> · {places} {places === 1 ? "thing" : "things"} to do</span>}
       </p>
     </Link>
+      {saved !== undefined && (
+        <SaveButton kind="district" id={d.id} name={d.name} initialSaved={saved} signedIn={signedIn} className="absolute right-3 top-3" />
+      )}
+    </div>
   );
 }
 

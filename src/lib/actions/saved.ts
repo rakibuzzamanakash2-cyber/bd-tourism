@@ -5,9 +5,10 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { RATE_LIMITS, rateLimit, tooManyMessage } from "@/lib/rate-limit";
+import { publicHomestayWhere } from "@/lib/homestays";
 
 const schema = z.object({
-  kind: z.enum(["destination", "package"]),
+  kind: z.enum(["destination", "package", "district", "place", "homestay"]),
   id: z.string().min(1).max(64),
 });
 
@@ -15,7 +16,9 @@ export type ToggleSavedResult =
   | { ok: true; saved: boolean }
   | { ok: false; needsLogin?: boolean; error: string };
 
-/** Saves or un-saves a destination or tour for the signed-in user. */
+export type SaveKind = z.infer<typeof schema>["kind"];
+
+/** Saves or un-saves a destination, tour, district, place or homestay for the signed-in user. */
 export async function toggleSavedAction(input: z.input<typeof schema>): Promise<ToggleSavedResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, needsLogin: true, error: "Sign in to save" };
@@ -29,7 +32,11 @@ export async function toggleSavedAction(input: z.input<typeof schema>): Promise<
   if (!limited.ok) return { ok: false, error: tooManyMessage(limited.retryAfterSeconds) };
 
   let saved: boolean;
-  if (kind === "destination") {
+  if (kind === "district" || kind === "place" || kind === "homestay") {
+    const result = await toggleOther(kind, userId, id);
+    if (result === null) return { ok: false, error: "This is no longer available" };
+    saved = result;
+  } else if (kind === "destination") {
     const where = { userId_destinationId: { userId, destinationId: id } };
     const existing = await db.savedDestination.findUnique({ where });
     if (existing) {
@@ -57,4 +64,36 @@ export async function toggleSavedAction(input: z.input<typeof schema>): Promise<
 
   revalidatePath("/dashboard/saved");
   return { ok: true, saved };
+}
+
+/** Districts, places and homestays: true = now saved, false = removed, null = not found. */
+async function toggleOther(kind: "district" | "place" | "homestay", userId: string, id: string): Promise<boolean | null> {
+  if (kind === "district") {
+    const where = { userId_districtId: { userId, districtId: id } };
+    if (await db.savedDistrict.findUnique({ where })) {
+      await db.savedDistrict.delete({ where });
+      return false;
+    }
+    if (!(await db.district.findUnique({ where: { id }, select: { id: true } }))) return null;
+    await db.savedDistrict.create({ data: { userId, districtId: id } });
+    return true;
+  }
+  if (kind === "place") {
+    const where = { userId_placeId: { userId, placeId: id } };
+    if (await db.savedPlace.findUnique({ where })) {
+      await db.savedPlace.delete({ where });
+      return false;
+    }
+    if (!(await db.districtPlace.findFirst({ where: { id, isPublished: true }, select: { id: true } }))) return null;
+    await db.savedPlace.create({ data: { userId, placeId: id } });
+    return true;
+  }
+  const where = { userId_homestayId: { userId, homestayId: id } };
+  if (await db.savedHomestay.findUnique({ where })) {
+    await db.savedHomestay.delete({ where });
+    return false;
+  }
+  if (!(await db.homestay.findFirst({ where: { id, ...publicHomestayWhere }, select: { id: true } }))) return null;
+  await db.savedHomestay.create({ data: { userId, homestayId: id } });
+  return true;
 }

@@ -5,6 +5,7 @@ import { DIVISIONS } from "@/lib/districts-data";
 import { isDivision } from "@/lib/district-shared";
 import { DistrictCard } from "@/components/districts/district-card";
 import { cn } from "@/lib/utils";
+import { getSavedState } from "@/lib/saved";
 
 type Props = { searchParams: Promise<{ division?: string }> };
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default async function DistrictsPage({ searchParams }: Props) {
   const { division } = await searchParams;
   const current = isDivision(division) ? division : undefined;
-  const districts = await listDistricts();
+  const [districts, saved] = await Promise.all([listDistricts(), getSavedState()]);
   const groups = DIVISIONS.filter((v) => !current || v.slug === current).map((v) => ({
     ...v,
     districts: districts.filter((d) => d.division === v.slug),
@@ -61,7 +62,7 @@ export default async function DistrictsPage({ searchParams }: Props) {
             </div>
             <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {g.districts.map((d, i) => (
-                <DistrictCard key={d.id} district={d} places={d._count.places} priority={gi === 0 && i < 4} />
+                <DistrictCard key={d.id} district={d} places={d._count.places} priority={gi === 0 && i < 4} saved={saved.districtIds.has(d.id)} signedIn={saved.signedIn} />
               ))}
             </div>
           </section>

@@ -32,12 +32,24 @@ export default async function AdminDistrictPlacesPage({ params }: Props) {
             key={p.id}
             districtId={district.id}
             uploadsEnabled={features.uploads}
-            place={{ id: p.id, name: p.name, kind: p.kind, description: p.description, tip: p.tip ?? "", photo: p.photo ?? "", isPublished: p.isPublished }}
+            place={{
+              id: p.id,
+              name: p.name,
+              kind: p.kind,
+              description: p.description,
+              tip: p.tip ?? "",
+              about: p.about ?? "",
+              bestTime: p.bestTime ?? "",
+              gettingThere: p.gettingThere ?? "",
+              goodToKnow: p.goodToKnow ?? "",
+              photo: p.photo ?? "",
+              isPublished: p.isPublished,
+            }}
           />
         ))}
       </div>
       <h2 className="mb-3 mt-10 font-display text-2xl">Add a place</h2>
-      <PlaceForm districtId={district.id} uploadsEnabled={features.uploads} place={{ name: "", kind: "SIGHT", description: "", tip: "", photo: "", isPublished: true }} />
+      <PlaceForm districtId={district.id} uploadsEnabled={features.uploads} place={{ name: "", kind: "SIGHT", description: "", tip: "", about: "", bestTime: "", gettingThere: "", goodToKnow: "", photo: "", isPublished: true }} />
       <p className="mt-6 text-sm">
         <a href={`/districts/${district.slug}`} target="_blank" className="underline underline-offset-4">View the public page</a>
       </p>

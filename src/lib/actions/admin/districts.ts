@@ -55,6 +55,10 @@ const placeSchema = z.object({
   kind: z.enum(KINDS, "Pick a type"),
   description: z.string().trim().min(10, "Write a sentence or two about the place.").max(600),
   tip: z.string().trim().max(300),
+  about: z.string().trim().max(4000),
+  bestTime: z.string().trim().max(200),
+  gettingThere: z.string().trim().max(500),
+  goodToKnow: z.string().trim().max(500),
   photo: z
     .string()
     .trim()
@@ -72,6 +76,10 @@ export async function savePlaceAction(formData: FormData): Promise<AdminActionRe
     kind: formData.get("kind") ?? "",
     description: formData.get("description") ?? "",
     tip: formData.get("tip") ?? "",
+    about: formData.get("about") ?? "",
+    bestTime: formData.get("bestTime") ?? "",
+    gettingThere: formData.get("gettingThere") ?? "",
+    goodToKnow: formData.get("goodToKnow") ?? "",
     photo: formData.get("photo") ?? "",
     isPublished: formData.get("isPublished") === "on",
   });
@@ -80,7 +88,18 @@ export async function savePlaceAction(formData: FormData): Promise<AdminActionRe
   const district = await db.district.findUnique({ where: { id: v.districtId }, select: { slug: true } });
   if (!district) return { ok: false, error: "District not found." };
 
-  const data = { name: v.name, kind: v.kind, description: v.description, tip: v.tip || null, photo: v.photo || null, isPublished: v.isPublished };
+  const data = {
+    name: v.name,
+    kind: v.kind,
+    description: v.description,
+    tip: v.tip || null,
+    about: v.about || null,
+    bestTime: v.bestTime || null,
+    gettingThere: v.gettingThere || null,
+    goodToKnow: v.goodToKnow || null,
+    photo: v.photo || null,
+    isPublished: v.isPublished,
+  };
   if (v.id) {
     const updated = await db.districtPlace.updateMany({ where: { id: v.id, districtId: v.districtId }, data });
     if (updated.count === 0) return { ok: false, error: "Place not found." };
@@ -93,7 +112,7 @@ export async function savePlaceAction(formData: FormData): Promise<AdminActionRe
     await audit({ actorId: admin.id, action: "content.place.create", targetType: "DistrictPlace", targetId: created.id, details: { name: v.name } });
   }
   revalidatePath(`/admin/districts/${district.slug}`);
-  revalidatePath(`/districts/${district.slug}`);
+  revalidatePath(`/districts/${district.slug}`, "layout");
   revalidatePath("/districts");
   return { ok: true, message: v.id ? `${v.name} saved.` : `${v.name} added.` };
 }

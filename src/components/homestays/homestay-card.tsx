@@ -5,8 +5,10 @@ import { Home, Users } from "lucide-react";
 import { bdtToUsd } from "@/lib/booking-utils";
 import { bdt } from "@/lib/guide-shared";
 import { stayQuote } from "@/lib/homestay-shared";
+import { SaveButton } from "@/components/saved/save-button";
 
 export type HomestayCardData = {
+  id: string;
   slug: string;
   name: string;
   district: string;
@@ -17,10 +19,20 @@ export type HomestayCardData = {
   region: { name: string };
 };
 
-export function HomestayCard({ h, query = "", rating }: { h: HomestayCardData; query?: string; rating?: { average: number; count: number } }) {
+type CardProps = {
+  h: HomestayCardData;
+  query?: string;
+  rating?: { average: number; count: number };
+  /** Omit to hide the heart */
+  saved?: boolean;
+  signedIn?: boolean;
+};
+
+export function HomestayCard({ h, query = "", rating, saved, signedIn = false }: CardProps) {
   const price = stayQuote(h.facilities, 1);
   return (
-    <Link href={`/homestays/${h.slug}${query}`} className="group block">
+    <div className="group relative">
+    <Link href={`/homestays/${h.slug}${query}`} className="block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-forest-100">
         {h.photos[0] ? (
           <Image src={h.photos[0]} alt={h.name} fill sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -39,5 +51,9 @@ export function HomestayCard({ h, query = "", rating }: { h: HomestayCardData; q
         <span className="text-ink-mute"> first night (about ${Math.round(bdtToUsd(price.firstNightBDT))}) · +{bdt(price.extraNightBDT)} each extra night</span>
       </p>
     </Link>
+      {saved !== undefined && (
+        <SaveButton kind="homestay" id={h.id} name={h.name} initialSaved={saved} signedIn={signedIn} className="absolute right-3 top-3" />
+      )}
+    </div>
   );
 }

@@ -14,6 +14,10 @@ import { PackageCard } from "@/components/packages/package-card";
 import { HomestayCard } from "@/components/homestays/homestay-card";
 import { DistrictPlaceholder } from "@/components/districts/district-card";
 import { PlaceCard } from "@/components/districts/place-card";
+import { BookDialog } from "@/components/booking/book-dialog";
+import { SaveButton } from "@/components/saved/save-button";
+import { bookOptionsForDistrict } from "@/lib/book-options";
+import { auth } from "@/auth";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +42,7 @@ export default async function DistrictPage({ params }: Props) {
   if (!page) notFound();
   const { district: d, tours, homestays, nearby } = page;
   const photos = [d.photo, ...d.places.map((x) => x.photo)].filter((u): u is string => Boolean(u));
-  const [credits, saved] = await Promise.all([creditsFor(photos), getSavedState()]);
+  const [credits, saved, options, session] = await Promise.all([creditsFor(photos), getSavedState(), bookOptionsForDistrict(d.id), auth()]);
   const toSee = d.places.filter((x) => x.kind !== "FOOD");
   const food = d.places.filter((x) => x.kind === "FOOD");
   const credit = d.photo ? credits.get(d.photo) : undefined;
@@ -65,6 +69,25 @@ export default async function DistrictPage({ params }: Props) {
           <h1 className="mt-3 font-display text-6xl leading-none sm:text-7xl md:text-8xl">{d.name}</h1>
           <p className="mt-2 font-bengali text-2xl text-paper/70">{d.nameBn}</p>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-paper/85">{d.knownFor}</p>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <BookDialog
+              title={d.name}
+              context={{ districtId: d.id }}
+              options={options}
+              defaults={{ name: session?.user?.name ?? undefined, email: session?.user?.email ?? undefined }}
+              label={`Plan a trip to ${d.name}`}
+              className="bg-paper text-forest-900 hover:bg-forest-100"
+            />
+            <SaveButton
+              kind="district"
+              id={d.id}
+              name={d.name}
+              initialSaved={saved.districtIds.has(d.id)}
+              signedIn={saved.signedIn}
+              variant="inline"
+              className="rounded-full border border-paper/30 px-4 py-2 text-paper hover:bg-paper/10 hover:text-paper hover:no-underline"
+            />
+          </div>
         </div>
         {credit && (
           <div className="mx-auto max-w-7xl px-4 pb-3 sm:px-6 lg:px-8">
@@ -97,7 +120,7 @@ export default async function DistrictPage({ params }: Props) {
           </div>
           <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
             {toSee.map((x) => (
-              <PlaceCard key={x.id} place={x} credit={x.photo ? credits.get(x.photo) : undefined} />
+              <PlaceCard key={x.id} place={x} districtSlug={d.slug} credit={x.photo ? credits.get(x.photo) : undefined} saved={saved.placeIds.has(x.id)} signedIn={saved.signedIn} />
             ))}
           </div>
         </section>
@@ -110,7 +133,7 @@ export default async function DistrictPage({ params }: Props) {
             <h2 className="mb-10 font-display text-4xl sm:text-5xl">What to eat in {d.name}</h2>
             <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {food.map((x) => (
-                <PlaceCard key={x.id} place={x} credit={x.photo ? credits.get(x.photo) : undefined} />
+                <PlaceCard key={x.id} place={x} districtSlug={d.slug} credit={x.photo ? credits.get(x.photo) : undefined} saved={saved.placeIds.has(x.id)} signedIn={saved.signedIn} />
               ))}
             </div>
           </div>
