@@ -122,6 +122,28 @@ model Region {
   homestays    Homestay[]
 }
 
+// One of the 64 districts of Bangladesh (see src/lib/districts-data.ts).
+model District {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String   @unique
+  nameBn         String
+  division       String // "dhaka", "chattogram", …
+  latitude       Float
+  longitude      Float
+  knownFor       String
+  highlights     String[]
+  // Main photo, filled by `npm run photos:wikimedia` (or set in the admin later)
+  photo          String?
+  permitRequired Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  destinations Destination[]
+
+  @@index([division])
+}
+
 model Category {
   id   String  @id @default(cuid())
   name String  @unique // "Beaches", "Hills", "Historical", "Wildlife", "Cultural"
@@ -144,6 +166,8 @@ model Destination {
   averageBudget String? // "$$", "$$$"
   regionId      String
   region        Region   @relation(fields: [regionId], references: [id])
+  districtId    String?
+  district      District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
   isFeatured    Boolean  @default(false)
   isPublished   Boolean  @default(true)
   createdAt     DateTime @default(now())
@@ -156,6 +180,7 @@ model Destination {
   savedBy      SavedDestination[]
 
   @@index([regionId])
+  @@index([districtId])
   @@index([isFeatured, isPublished])
 }
 

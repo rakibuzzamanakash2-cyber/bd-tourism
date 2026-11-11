@@ -9,6 +9,7 @@ import { DestinationCard } from "@/components/destinations/destination-card";
 import { PackageCard } from "@/components/packages/package-card";
 import { getSavedState } from "@/lib/saved";
 import { ratingsBy } from "@/lib/reviews";
+import { DISTRICTS, DIVISIONS } from "@/lib/districts-data";
 
 // ============================================================
 // HERO
@@ -152,6 +153,40 @@ async function FeaturedDestinations() {
 }
 
 // ============================================================
+// ALL 64 DISTRICTS
+// ============================================================
+function DistrictsByDivision() {
+  return (
+    <section className="border-t border-forest-900/10 bg-paper-warm">
+      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+        <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div>
+            <p className="eyebrow mb-3 text-forest-700">Go further</p>
+            <h2 className="max-w-2xl font-display text-4xl sm:text-5xl">All 64 districts, in eight divisions.</h2>
+          </div>
+          <Link href="/districts" className="shrink-0 text-sm underline underline-offset-4 hover:text-forest-800">
+            See every district →
+          </Link>
+        </div>
+        <div className="grid gap-px overflow-hidden rounded-lg border border-forest-900/10 bg-forest-900/10 sm:grid-cols-2 lg:grid-cols-4">
+          {DIVISIONS.map((v) => {
+            const list = DISTRICTS.filter((d) => d.division === v.slug);
+            return (
+              <Link key={v.slug} href={`/districts?division=${v.slug}`} className="group bg-paper p-6 transition-colors hover:bg-forest-100/60">
+                <p className="font-bengali text-sm text-ink-mute">{v.nameBn}</p>
+                <h3 className="mt-1 font-display text-2xl group-hover:text-forest-800">{v.name}</h3>
+                <p className="mt-3 line-clamp-2 text-sm text-ink-soft">{list.map((d) => d.name).join(" · ")}</p>
+                <p className="mt-4 text-xs uppercase tracking-wider text-forest-700">{list.length} districts →</p>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
 // WHY US
 // ============================================================
 function WhyUs() {
@@ -264,6 +299,7 @@ export default function HomePage() {
       <Hero />
       <Facts />
       <FeaturedDestinations />
+      <DistrictsByDivision />
       <WhyUs />
       <FeaturedPackages />
     </>

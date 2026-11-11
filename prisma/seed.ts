@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient, TourDuration } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { DESTINATION_DISTRICT, DISTRICTS } from "../src/lib/districts-data";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
@@ -583,6 +584,33 @@ async function main() {
       },
     },
   });
+
+  // ============================================================
+  // DISTRICTS (all 64) — photos and text edited in the admin are kept
+  // ============================================================
+  for (const d of DISTRICTS) {
+    const data = {
+      name: d.name,
+      nameBn: d.nameBn,
+      division: d.division,
+      latitude: d.latitude,
+      longitude: d.longitude,
+      permitRequired: d.permitRequired ?? false,
+    };
+    // The text can be edited in the admin, so it's only written the first time
+    await db.district.upsert({
+      where: { slug: d.slug },
+      update: data,
+      create: { slug: d.slug, ...data, knownFor: d.knownFor, highlights: d.highlights },
+    });
+  }
+  for (const [destination, district] of Object.entries(DESTINATION_DISTRICT)) {
+    await db.destination.updateMany({
+      where: { slug: destination, districtId: null },
+      data: { districtId: (await db.district.findUniqueOrThrow({ where: { slug: district } })).id },
+    });
+  }
+  console.log(`✅ ${DISTRICTS.length} districts.`);
 
   console.log("✅ Seed complete.");
 }

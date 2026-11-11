@@ -4,19 +4,23 @@
 //   npm run photos:wikimedia -- --dry-run   # show what it would pick
 //   npm run photos:wikimedia                # save them
 //   npm run photos:wikimedia -- --replace   # also replace photos you set yourself
+//   npm run photos:wikimedia -- --districts # only the 64 district photos
 //
 // Run it on a computer with internet access. Destinations whose main photo is
 // still an Unsplash placeholder get a Commons photo; every destination gets up
 // to 4 extra gallery photos. Tours still on a placeholder take the photo of
-// their first destination. Remove any photo you don't like in the admin.
+// their first destination. Each of the 64 districts without a photo gets one.
+// Remove any photo you don't like in the admin.
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { cleanImageUrl, commonsSearchUrl, pickPhotos, type CommonsPage, type PickedPhoto } from "../src/lib/wikimedia";
+import { DISTRICTS } from "../src/lib/districts-data";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const DRY = process.argv.includes("--dry-run");
 const REPLACE = process.argv.includes("--replace");
+const ONLY_DISTRICTS = process.argv.includes("--districts");
 const GALLERY_MAX = 6;
 // Wikimedia asks automated clients to say who they are
 const USER_AGENT = "DeltaWayPhotoBot/1.0 (+https://github.com/rakibuzzamanakash2-cyber/bd-tourism)";
@@ -87,6 +91,12 @@ async function tidySavedUrls() {
       n++;
     }
   }
+  for (const x of await db.district.findMany({ select: { id: true, photo: true } })) {
+    if (x.photo && tidy(x.photo) !== x.photo) {
+      await db.district.update({ where: { id: x.id }, data: { photo: tidy(x.photo) } });
+      n++;
+    }
+  }
   for (const i of await db.destinationImage.findMany({ select: { id: true, url: true } })) {
     if (tidy(i.url) !== i.url) {
       await db.destinationImage.update({ where: { id: i.id }, data: { url: tidy(i.url) } });
@@ -104,9 +114,47 @@ async function tidySavedUrls() {
   if (n) console.log(`🧹 Tidied ${n} saved photo links.\n`);
 }
 
+/** One main photo per district (the 64 districts). */
+async function districtPhotos() {
+  const districts = await db.district.findMany({
+    orderBy: { name: "asc" },
+    include: { destinations: { select: { featuredImage: true }, orderBy: { isFeatured: "desc" } } },
+  });
+  let n = 0;
+  console.log("\n🗺  District photos\n");
+  for (const d of districts) {
+    if (d.photo && !REPLACE) continue;
+    const queries = DISTRICTS.find((x) => x.slug === d.slug)?.photoQueries ?? [`${d.name} Bangladesh`];
+    let pick: PickedPhoto | undefined;
+    try {
+      for (const q of queries) {
+        pick = pickPhotos(await search(q), 1)[0];
+        await sleep(1000);
+        if (pick) break;
+      }
+    } catch (e) {
+      console.log(`  ⚠  ${d.name}: ${(e as Error).message}`);
+      continue;
+    }
+    // Nothing on Commons? Use the photo of a place we feature there.
+    const fallback = d.destinations.map((x) => x.featuredImage).find((u) => !isPlaceholder(u));
+    if (!pick && !fallback) {
+      console.log(`  –  ${d.name}: no suitable free photo found`);
+      continue;
+    }
+    console.log(`  ✓  ${d.name}: ${pick ? `${pick.title} · ${pick.author} · ${pick.license}` : "uses its destination's photo"}`);
+    if (DRY) continue;
+    if (pick) await saveCredit(pick);
+    await db.district.update({ where: { id: d.id }, data: { photo: pick?.url ?? fallback } });
+    n++;
+  }
+  if (!DRY) console.log(`\n✅ ${n} district photos saved.`);
+}
+
 async function main() {
   console.log(DRY ? "🔎 Dry run: nothing will be saved.\n" : "📷 Fetching photos from Wikimedia Commons…\n");
   if (!DRY) await tidySavedUrls();
+  if (ONLY_DISTRICTS) return districtPhotos();
   const destinations = await db.destination.findMany({ include: { images: true }, orderBy: { name: "asc" } });
   let featured = 0;
   let gallery = 0;
@@ -161,6 +209,7 @@ async function main() {
     }
     console.log(`\n✅ Done: ${featured} main photos and ${gallery} gallery photos, all with credits (see /credits).`);
   }
+  await districtPhotos();
 }
 
 main()
