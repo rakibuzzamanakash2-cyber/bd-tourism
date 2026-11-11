@@ -193,6 +193,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
                     ? { href: `/districts/${destination.district.slug}`, districtName: destination.district.name, places: destination.district._count.places }
                     : undefined
                 }
+                continueHref={relatedPackages.length === 1 ? `/book/${relatedPackages[0].slug}` : `/plan?destination=${destination.slug}`}
                 label={`Book a trip to ${destination.name}`}
                 className="mt-6 w-full"
               />
