@@ -7,7 +7,7 @@ import { distanceKm } from "@/lib/district-shared";
 export async function listDistricts() {
   return db.district.findMany({
     orderBy: { name: "asc" },
-    include: { _count: { select: { destinations: { where: { isPublished: true } } } } },
+    include: { _count: { select: { destinations: { where: { isPublished: true } }, places: { where: { isPublished: true } } } } },
   });
 }
 
@@ -17,6 +17,7 @@ export async function getDistrictPage(slug: string) {
     where: { slug },
     include: {
       destinations: { where: { isPublished: true }, include: { region: true }, orderBy: [{ isFeatured: "desc" }, { name: "asc" }] },
+      places: { where: { isPublished: true }, orderBy: [{ order: "asc" }, { name: "asc" }] },
     },
   });
   if (!district) return null;

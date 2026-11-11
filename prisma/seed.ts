@@ -2,6 +2,8 @@ import "dotenv/config";
 import { PrismaClient, TourDuration } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { DESTINATION_DISTRICT, DISTRICTS } from "../src/lib/districts-data";
+import { DISTRICT_PLACES } from "../src/lib/places-data";
+import { slugify } from "../src/lib/slug";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
@@ -611,6 +613,27 @@ async function main() {
     });
   }
   console.log(`✅ ${DISTRICTS.length} districts.`);
+
+  // Places in each district. New ones are added; ones you edited or hid in
+  // the admin are left alone.
+  let placesAdded = 0;
+  for (const [districtSlug, places] of Object.entries(DISTRICT_PLACES)) {
+    const district = await db.district.findUniqueOrThrow({ where: { slug: districtSlug }, select: { id: true } });
+    const { count } = await db.districtPlace.createMany({
+      data: places.map((pl, i) => ({
+        districtId: district.id,
+        slug: slugify(pl.name),
+        name: pl.name,
+        kind: pl.kind,
+        description: pl.description,
+        tip: pl.tip ?? null,
+        order: i,
+      })),
+      skipDuplicates: true,
+    });
+    placesAdded += count;
+  }
+  console.log(`✅ ${placesAdded} new places to visit.`);
 
   console.log("✅ Seed complete.");
 }

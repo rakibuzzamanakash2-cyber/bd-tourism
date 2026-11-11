@@ -46,7 +46,7 @@ export function DistrictCard({ district: d, places = 0, priority = false }: Prop
       <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-ink-soft">{d.knownFor}</p>
       <p className="mt-1.5 line-clamp-1 text-xs text-ink-mute">
         {d.highlights.slice(0, 3).join(" · ")}
-        {places > 0 && <span className="text-forest-700"> · {places} {places === 1 ? "place" : "places"} to book</span>}
+        {places > 0 && <span className="text-forest-700"> · {places} {places === 1 ? "thing" : "things"} to do</span>}
       </p>
     </Link>
   );
