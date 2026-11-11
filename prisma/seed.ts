@@ -2,7 +2,7 @@ import "dotenv/config";
 import { PrismaClient, TourDuration } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { DESTINATION_DISTRICT, DISTRICTS } from "../src/lib/districts-data";
-import { DISTRICT_PLACES } from "../src/lib/places-data";
+import { DISTRICT_PLACES, PLACE_DETAILS } from "../src/lib/places-data";
 import { slugify } from "../src/lib/slug";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -634,6 +634,30 @@ async function main() {
     placesAdded += count;
   }
   console.log(`✅ ${placesAdded} new places to visit.`);
+
+  // The longer write-up on each place's page. Only empty fields are filled,
+  // so anything written in the admin stays as it is.
+  let writeUps = 0;
+  for (const [districtSlug, byName] of Object.entries(PLACE_DETAILS)) {
+    const places = await db.districtPlace.findMany({
+      where: { district: { slug: districtSlug } },
+      select: { id: true, slug: true, about: true, bestTime: true, gettingThere: true, goodToKnow: true },
+    });
+    for (const [name, [about, bestTime, gettingThere, goodToKnow]] of Object.entries(byName)) {
+      const place = places.find((x) => x.slug === slugify(name));
+      if (!place) continue;
+      const data = {
+        ...(place.about ? {} : { about }),
+        ...(place.bestTime ? {} : { bestTime }),
+        ...(place.gettingThere ? {} : { gettingThere }),
+        ...(place.goodToKnow || !goodToKnow ? {} : { goodToKnow }),
+      };
+      if (Object.keys(data).length === 0) continue;
+      await db.districtPlace.update({ where: { id: place.id }, data });
+      writeUps++;
+    }
+  }
+  console.log(`✅ ${writeUps} place write-ups filled in.`);
 
   console.log("✅ Seed complete.");
 }

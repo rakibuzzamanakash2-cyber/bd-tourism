@@ -30,3 +30,6 @@ export const p = (name: string, kind: PlaceKind, description: string, tip?: stri
   ...(tip ? { tip } : {}),
   ...(photoQuery ? { photoQuery } : {}),
 });
+
+/** The longer write-up for a place's own page: [about, best time, getting there, good to know?] */
+export type PlaceDetails = [about: string, bestTime: string, gettingThere: string, goodToKnow?: string];
