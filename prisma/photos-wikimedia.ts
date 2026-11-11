@@ -6,6 +6,7 @@
 //   npm run photos:wikimedia -- --replace   # also replace photos you set yourself
 //   npm run photos:wikimedia -- --districts # only the 64 district photos
 //   npm run photos:wikimedia -- --places    # only the places to visit in each district
+//   npm run photos:wikimedia -- --redo=coxs-bazar-beach   # pick new photos for one destination
 //
 // Run it on a computer with internet access. Destinations whose main photo is
 // still an Unsplash placeholder get a Commons photo; every destination gets up
@@ -26,6 +27,7 @@ const DRY = process.argv.includes("--dry-run");
 const REPLACE = process.argv.includes("--replace");
 const ONLY_DISTRICTS = process.argv.includes("--districts");
 const ONLY_PLACES = process.argv.includes("--places");
+const REDO = process.argv.find((a) => a.startsWith("--redo="))?.slice("--redo=".length);
 const GALLERY_MAX = 6;
 // Wikimedia asks automated clients to say who they are
 const USER_AGENT = "DeltaWayPhotoBot/1.0 (+https://github.com/rakibuzzamanakash2-cyber/bd-tourism)";
@@ -53,11 +55,24 @@ const QUERIES: Record<string, string[]> = {
 const isPlaceholder = (url: string) => new URL(url).hostname === "images.unsplash.com";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function search(query: string): Promise<CommonsPage[]> {
+async function searchOnce(query: string): Promise<CommonsPage[]> {
   const res = await fetch(commonsSearchUrl(query), { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
   if (!res.ok) throw new Error(`Commons said ${res.status} for "${query}"`);
   const json = (await res.json()) as { query?: { pages?: CommonsPage[] } };
-  return json.query?.pages ?? [];
+  return (json.query?.pages ?? []).sort((a, b) => (a.index ?? 999) - (b.index ?? 999));
+}
+
+/**
+ * Photos that Commons reviewers have rated (featured, quality or valued
+ * images) come first: they are well composed and sharp. The ordinary search
+ * results follow.
+ */
+async function search(query: string): Promise<CommonsPage[]> {
+  const rated = await searchOnce(`${query} haswbstatement:P6731`).catch(() => []);
+  await sleep(400);
+  const rest = await searchOnce(query);
+  const seen = new Set<string>();
+  return [...rated, ...rest].filter((p) => !seen.has(p.title) && seen.add(p.title)).map((p, i) => ({ ...p, index: i + 1 }));
 }
 
 async function photosFor(slug: string, name: string): Promise<PickedPhoto[]> {
@@ -65,7 +80,7 @@ async function photosFor(slug: string, name: string): Promise<PickedPhoto[]> {
   const found: PickedPhoto[] = [];
   for (const q of queries) {
     const pages = await search(q);
-    for (const p of pickPhotos(pages, 8)) if (!found.some((f) => f.url === p.url)) found.push(p);
+    for (const p of pickPhotos(pages, 8, q)) if (!found.some((f) => f.url === p.url)) found.push(p);
     await sleep(1000); // be gentle with the API
     if (found.length >= GALLERY_MAX) break;
   }
@@ -139,7 +154,7 @@ async function districtPhotos() {
     let pick: PickedPhoto | undefined;
     try {
       for (const q of queries) {
-        pick = pickPhotos(await search(q), 1)[0];
+        pick = pickPhotos(await search(q), 1, q)[0];
         await sleep(1000);
         if (pick) break;
       }
@@ -177,7 +192,7 @@ async function placePhotos() {
     let pick: PickedPhoto | undefined;
     try {
       for (const q of queries) {
-        pick = pickPhotos(await search(q), 1)[0];
+        pick = pickPhotos(await search(q), 1, q)[0];
         await sleep(800);
         if (pick) break;
       }
@@ -203,7 +218,15 @@ async function main() {
   if (!DRY) await tidySavedUrls();
   if (ONLY_DISTRICTS) return districtPhotos();
   if (ONLY_PLACES) return placePhotos();
-  const destinations = await db.destination.findMany({ include: { images: true }, orderBy: { name: "asc" } });
+  const destinations = await db.destination.findMany({
+    where: REDO ? { slug: REDO } : {},
+    include: { images: true },
+    orderBy: { name: "asc" },
+  });
+  if (REDO && destinations.length === 0) {
+    console.log(`No destination with the slug "${REDO}". The slug is the last part of its page address.`);
+    return;
+  }
   let featured = 0;
   let gallery = 0;
 
@@ -224,10 +247,17 @@ async function main() {
     if (DRY) continue;
 
     let rest = picks;
-    if (REPLACE || isPlaceholder(d.featuredImage)) {
+    if (REDO) {
+      // Start again for this destination: new main photo, new gallery
+      await db.destinationImage.deleteMany({ where: { destinationId: d.id } });
+      d.images = [];
+    }
+    if (REDO || REPLACE || isPlaceholder(d.featuredImage)) {
       const [hero, ...others] = picks;
       await saveCredit(hero);
       await db.destination.update({ where: { id: d.id }, data: { featuredImage: hero.url } });
+      // Tours that showed the old photo follow it
+      await db.tourPackage.updateMany({ where: { featuredImage: d.featuredImage }, data: { featuredImage: hero.url } });
       featured++;
       rest = others;
     }
@@ -242,6 +272,7 @@ async function main() {
     }
   }
 
+  if (REDO) return;
   if (!DRY) {
     // Tours still on a placeholder take the photo of their first destination
     const tours = await db.tourPackage.findMany({

@@ -41,7 +41,7 @@ export default async function DistrictsPage({ searchParams }: Props) {
       </section>
 
       <nav aria-label="Divisions" className="sticky top-16 z-30 border-b border-forest-900/10 bg-paper/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
+        <div className="no-scrollbar mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 md:flex-wrap lg:px-8">
           <Pill href="/districts" active={!current}>All 64</Pill>
           {DIVISIONS.map((v) => (
             <Pill key={v.slug} href={`/districts?division=${v.slug}`} active={current === v.slug}>

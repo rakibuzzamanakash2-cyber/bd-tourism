@@ -90,3 +90,12 @@
     font-weight: 500;
   }
 }
+
+/* A row that scrolls sideways without showing a scrollbar (filter chips on phones) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
