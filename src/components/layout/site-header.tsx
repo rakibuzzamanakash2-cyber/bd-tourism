@@ -24,12 +24,14 @@ import { signOutAction } from "@/lib/actions/auth";
 
 const nav = [
   { href: "/destinations", label: "Destinations" },
+  { href: "/districts", label: "Districts" },
   { href: "/packages", label: "Tours" },
   { href: "/guides", label: "Guides" },
   { href: "/homestays", label: "Homestays" },
   { href: "/permits", label: "Permits" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  // These two hide on narrower desktops (they're in the footer and the mobile menu)
+  { href: "/about", label: "About", wideOnly: true },
+  { href: "/contact", label: "Contact", wideOnly: true },
 ];
 
 function Wordmark() {
@@ -128,12 +130,15 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Wordmark />
 
-        <nav className="hidden items-center gap-7 lg:flex">
+        <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
           {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-ink-soft transition-colors hover:text-forest-900"
+              className={cn(
+                "whitespace-nowrap text-sm text-ink-soft transition-colors hover:text-forest-900",
+                "wideOnly" in item && item.wideOnly && "hidden xl:inline",
+              )}
             >
               {item.label}
             </Link>
@@ -147,7 +152,7 @@ export function SiteHeader() {
             <>
               <Link
                 href="/login"
-                className="text-sm text-ink-soft transition-colors hover:text-forest-900"
+                className="whitespace-nowrap text-sm text-ink-soft transition-colors hover:text-forest-900"
               >
                 Sign in
               </Link>
