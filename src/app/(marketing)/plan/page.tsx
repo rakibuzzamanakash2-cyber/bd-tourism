@@ -3,11 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, ArrowRight, House, Route, UserRound } from "lucide-react";
-import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { bookOptionsForDestination, bookOptionsForDistrict, type BookOptions } from "@/lib/book-options";
 import { bdt } from "@/lib/guide-shared";
-import { PlanRequest } from "@/components/booking/plan-request";
 
 type Props = { searchParams: Promise<{ destination?: string; district?: string; place?: string }> };
 
@@ -17,7 +15,8 @@ type Target = {
   title: string;
   back: { href: string; label: string };
   photo: string | null;
-  context: { districtId?: string; placeId?: string; destinationId?: string };
+  /** The booking wizard for a custom trip to this place */
+  customHref: string;
   options: BookOptions;
 };
 
@@ -30,7 +29,7 @@ async function resolve(sp: Awaited<Props["searchParams"]>): Promise<Target | nul
       title: d.name,
       back: { href: `/destinations/${d.slug}`, label: d.name },
       photo: d.featuredImage,
-      context: { destinationId: d.id, districtId: d.districtId ?? undefined },
+      customHref: `/book/custom?destination=${d.slug}`,
       options: await bookOptionsForDestination(d),
     };
   }
@@ -45,7 +44,7 @@ async function resolve(sp: Awaited<Props["searchParams"]>): Promise<Target | nul
       title: pl.name,
       back: { href: `/districts/${pl.district.slug}/${pl.slug}`, label: pl.name },
       photo: pl.photo,
-      context: { districtId: pl.district.id, placeId: pl.id },
+      customHref: `/book/custom?place=${pl.district.slug}/${pl.slug}`,
       options: await bookOptionsForDistrict(pl.district.id),
     };
   }
@@ -56,7 +55,7 @@ async function resolve(sp: Awaited<Props["searchParams"]>): Promise<Target | nul
       title: d.name,
       back: { href: `/districts/${d.slug}`, label: d.name },
       photo: d.photo,
-      context: { districtId: d.id },
+      customHref: `/book/custom?district=${d.slug}`,
       options: await bookOptionsForDistrict(d.id),
     };
   }
@@ -64,8 +63,7 @@ async function resolve(sp: Awaited<Props["searchParams"]>): Promise<Target | nul
 }
 
 export default async function PlanPage({ searchParams }: Props) {
-  const [sp, session] = await Promise.all([searchParams, auth()]);
-  const t = await resolve(sp);
+  const t = await resolve(await searchParams);
   if (!t) notFound();
   const { tours, homestays, guides } = t.options;
 
@@ -129,13 +127,15 @@ export default async function PlanPage({ searchParams }: Props) {
 
         <aside id="custom" className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-lg border border-forest-900/10 p-6 shadow-sm">
-            <h2 className="font-display text-2xl">Plan a custom trip</h2>
-            <p className="mb-5 mt-1 text-sm text-ink-soft">Your dates, your pace. We reply within 24 hours with a plan and a price.</p>
-            <PlanRequest
-              title={t.title}
-              context={t.context}
-              defaults={{ name: session?.user?.name ?? undefined, email: session?.user?.email ?? undefined }}
-            />
+            <h2 className="font-display text-2xl">Book a custom trip</h2>
+            <p className="mb-5 mt-1 text-sm text-ink-soft">
+              Your dates, your pace. Tell us when you&rsquo;re coming and who&rsquo;s travelling; we plan the route, stays and guide, and send a
+              price within 24 hours. You pay only when you&rsquo;re happy with it.
+            </p>
+            <Link href={t.customHref} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-900 px-6 py-3 text-sm font-medium text-paper hover:bg-forest-800">
+              Start booking <ArrowRight className="size-4" />
+            </Link>
+            <p className="mt-3 text-xs text-ink-mute">Takes about 5 minutes. Have each traveler&rsquo;s passport to hand.</p>
           </div>
         </aside>
       </div>

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, CalendarCheck, Compass, House, MapPinned, Route, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TripRequestForm } from "@/components/booking/trip-request-form";
 import type { BookOptions } from "@/lib/book-options";
 import { bdt } from "@/lib/guide-shared";
 import { cn } from "@/lib/utils";
@@ -13,10 +12,9 @@ import { cn } from "@/lib/utils";
 type Props = {
   /** What they're booking, e.g. "Ratargul swamp forest" */
   title: string;
-  /** Where the request came from */
-  context: { districtId?: string; placeId?: string; destinationId?: string };
   options: BookOptions;
-  defaults?: { name?: string; email?: string };
+  /** The booking wizard for a custom trip here, e.g. /book/custom?district=sylhet */
+  customHref: string;
   /** On a destination page: first suggest exploring the district's places */
   explore?: { href: string; districtName: string; places: number };
   /** Where "Continue to booking" goes (a booking page); without it, the popup moves on */
@@ -25,43 +23,43 @@ type Props = {
   className?: string;
 };
 
-type Step = "explore" | "options" | "form" | "done";
+const trigger = "inline-flex items-center justify-center gap-2 rounded-full bg-forest-900 px-6 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-forest-800";
 
-
-export function BookDialog({ title, context, options, defaults, explore, continueHref, label = "Book", className }: Props) {
+/**
+ * The Book button. Every choice ends in the same booking process: a tour's
+ * booking page, a homestay's, or the custom-trip wizard.
+ */
+export function BookDialog({ title, options, customHref, explore, continueHref, label = "Book", className }: Props) {
   const hasOptions = options.tours.length + options.homestays.length + options.guides.length > 0;
-  const firstStep: Step = explore ? "explore" : hasOptions ? "options" : "form";
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>(firstStep);
+  const [step, setStep] = useState<"explore" | "options">(explore ? "explore" : "options");
   const router = useRouter();
 
-  const onOpenChange = (o: boolean) => {
-    setOpen(o);
-    if (o) setStep(firstStep);
-  };
-
-
+  // Nothing ready-made to choose from: go straight to the booking form
+  if (!explore && !hasOptions) {
+    return (
+      <Link href={customHref} className={cn(trigger, className)}>
+        <CalendarCheck className="size-4" aria-hidden /> {label}
+      </Link>
+    );
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger
-        className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-full bg-forest-900 px-6 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-forest-800",
-          className,
-        )}
-      >
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) setStep(explore ? "explore" : "options");
+      }}
+    >
+      <DialogTrigger className={cn(trigger, className)}>
         <CalendarCheck className="size-4" aria-hidden /> {label}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
-            {step === "done" ? "Request sent" : `Visit ${title}`}
-          </DialogTitle>
+          <DialogTitle className="font-display text-2xl">Visit {title}</DialogTitle>
           <DialogDescription>
-            {step === "explore" && "Before you book, have a look around."}
-            {step === "options" && "Book a ready-made trip, or ask us to plan one around you."}
-            {step === "form" && "Tell us your dates and group. We'll reply within 24 hours with a plan and a price."}
-            {step === "done" && "Thanks! We'll email you within 24 hours."}
+            {step === "explore" ? "Before you book, have a look around." : "Book a ready-made trip, or have us plan one around you."}
           </DialogDescription>
         </DialogHeader>
 
@@ -83,7 +81,7 @@ export function BookDialog({ title, context, options, defaults, explore, continu
               <button
                 type="button"
                 onClick={() => {
-                  if (!continueHref) return setStep(hasOptions ? "options" : "form");
+                  if (!continueHref) return setStep("options");
                   setOpen(false);
                   router.push(continueHref);
                 }}
@@ -100,7 +98,7 @@ export function BookDialog({ title, context, options, defaults, explore, continu
             {options.tours.length > 0 && (
               <OptionGroup icon={Route} title="Tours that go here">
                 {options.tours.map((t) => (
-                  <OptionLink key={t.slug} href={`/packages/${t.slug}`} title={t.title} meta={`${t.days} ${t.days === 1 ? "day" : "days"} · from $${t.fromUSD}`} />
+                  <OptionLink key={t.slug} href={`/book/${t.slug}`} title={t.title} meta={`${t.days} ${t.days === 1 ? "day" : "days"} · from $${t.fromUSD} per person`} />
                 ))}
               </OptionGroup>
             )}
@@ -118,34 +116,14 @@ export function BookDialog({ title, context, options, defaults, explore, continu
                 ))}
               </OptionGroup>
             )}
-            <button type="button" onClick={() => setStep("form")} className="flex w-full items-center gap-4 rounded-lg border border-dashed border-forest-900/30 p-4 text-left hover:bg-forest-100/60">
+            <Link href={customHref} className="flex w-full items-center gap-4 rounded-lg border border-dashed border-forest-900/30 p-4 text-left hover:bg-forest-100/60">
               <Compass className="size-6 shrink-0 text-forest-800" aria-hidden />
-              <span>
-                <span className="block font-medium">Plan a custom trip here</span>
-                <span className="text-sm text-ink-soft">Your dates, your pace. We send a plan and a price.</span>
+              <span className="flex-1">
+                <span className="block font-medium">Book a custom trip here</span>
+                <span className="text-sm text-ink-soft">Your dates, your pace. We send a plan and a price within 24 hours.</span>
               </span>
-            </button>
-          </div>
-        )}
-
-        {step === "form" && (
-          <TripRequestForm
-            title={title}
-            context={context}
-            defaults={defaults}
-            onDone={() => setStep("done")}
-            onBack={hasOptions ? () => setStep("options") : undefined}
-          />
-        )}
-
-        {step === "done" && (
-          <div className="space-y-4">
-            <p className="text-sm text-ink-soft">
-              We&rsquo;ve emailed you a copy. Our team will send a suggested plan and price for {title} within 24 hours.
-            </p>
-            <button type="button" onClick={() => setOpen(false)} className="rounded-full bg-forest-900 px-6 py-2.5 text-sm font-medium text-paper hover:bg-forest-800">
-              Done
-            </button>
+              <ArrowRight className="size-4 shrink-0 text-ink-mute" aria-hidden />
+            </Link>
           </div>
         )}
       </DialogContent>

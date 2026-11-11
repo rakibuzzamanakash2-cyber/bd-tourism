@@ -6,7 +6,18 @@ import { encrypt, isEncrypted, last4 } from "@/lib/crypto";
 /** How long after a trip passport numbers are kept (for permits and any questions). */
 export const PASSPORT_RETENTION_DAYS = 90;
 
-export type TravelerInput = { name: string; email?: string | null; phone?: string | null; nationality?: string | null; passport?: string | null };
+export type TravelerInput = {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  nationality?: string | null;
+  passport?: string | null;
+  dateOfBirth?: Date | null;
+  passportExpiry?: Date | null;
+  visaStatus?: "NOT_REQUIRED" | "HAVE_VISA" | "ON_ARRIVAL" | "APPLYING" | null;
+  visaNumber?: string | null;
+  visaExpiry?: Date | null;
+};
 
 /** Rows for a nested create inside booking.create (no bookingId yet). */
 export function travelerCreates(people: TravelerInput[]): Prisma.BookingTravelerCreateWithoutBookingInput[] {
@@ -20,6 +31,7 @@ export function travelerCreates(people: TravelerInput[]): Prisma.BookingTraveler
 export function travelerRows(bookingId: string, people: TravelerInput[]): Prisma.BookingTravelerCreateManyInput[] {
   return people.map((p, i) => {
     const passport = p.passport?.trim() || null;
+    const visa = p.visaNumber?.trim() || null;
     return {
       bookingId,
       position: i,
@@ -27,8 +39,13 @@ export function travelerRows(bookingId: string, people: TravelerInput[]): Prisma
       email: p.email?.trim() || null,
       phone: p.phone?.trim() || null,
       nationality: p.nationality?.trim() || null,
+      dateOfBirth: p.dateOfBirth ?? null,
       passportEnc: passport ? encrypt(passport) : null,
       passportLast4: passport ? last4(passport) : null,
+      passportExpiry: p.passportExpiry ?? null,
+      visaStatus: p.visaStatus ?? null,
+      visaNumberEnc: visa ? encrypt(visa) : null,
+      visaExpiry: p.visaExpiry ?? null,
     };
   });
 }
@@ -93,12 +110,12 @@ export async function migrateLegacyTravelerData(): Promise<{ bookings: number; p
   return { bookings, profiles };
 }
 
-/** Delete passport numbers once a trip is long over. Last 4 digits are kept for reference. */
+/** Delete passport and visa numbers (and birth dates) once a trip is long over. Last 4 digits are kept for reference. */
 export async function purgeOldPassports(now = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - PASSPORT_RETENTION_DAYS * 86_400_000);
   const { count } = await db.bookingTraveler.updateMany({
-    where: { passportEnc: { not: null }, booking: { endDate: { lt: cutoff } } },
-    data: { passportEnc: null, passportPurgedAt: now },
+    where: { OR: [{ passportEnc: { not: null } }, { visaNumberEnc: { not: null } }], booking: { endDate: { lt: cutoff } } },
+    data: { passportEnc: null, visaNumberEnc: null, dateOfBirth: null, passportPurgedAt: now },
   });
   return count;
 }

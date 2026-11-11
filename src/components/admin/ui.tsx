@@ -237,6 +237,7 @@ const tones = {
 
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   DRAFT: "Draft",
+  QUOTE_REQUESTED: "Quote requested",
   PAYMENT_PENDING: "Payment pending",
   PAID: "Paid",
   CONFIRMED: "Confirmed",
@@ -247,6 +248,7 @@ export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
 };
 const bookingTone: Record<BookingStatus, keyof typeof tones> = {
   DRAFT: "grey",
+  QUOTE_REQUESTED: "red",
   PAYMENT_PENDING: "amber",
   PAID: "green",
   CONFIRMED: "green",

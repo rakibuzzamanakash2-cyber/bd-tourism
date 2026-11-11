@@ -11,6 +11,7 @@ export const metadata = {
 
 const statusStyles: Record<string, string> = {
   DRAFT: "border-ink-mute/30 text-ink-mute",
+  QUOTE_REQUESTED: "border-forest-700/30 text-forest-700",
   PAYMENT_PENDING: "border-clay-600/40 text-clay-700",
   PAID: "border-forest-700/30 text-forest-700",
   CONFIRMED: "border-forest-700/30 bg-forest-100 text-forest-800",
@@ -22,6 +23,7 @@ const statusStyles: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Draft",
+  QUOTE_REQUESTED: "Waiting for our price",
   PAYMENT_PENDING: "Payment pending",
   PAID: "Paid",
   CONFIRMED: "Confirmed",

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CalendarDays, ChevronRight, Info, Lightbulb, Navigation, ShieldAlert } from "lucide-react";
-import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { bookOptionsForDistrict } from "@/lib/book-options";
 import { creditsFor } from "@/lib/image-credits";
@@ -42,7 +41,7 @@ export default async function PlacePage({ params }: Props) {
   if (!place) notFound();
   const d = place.district;
 
-  const [more, saved, options, session] = await Promise.all([
+  const [more, saved, options] = await Promise.all([
     db.districtPlace.findMany({
       where: { districtId: d.id, isPublished: true, NOT: { id: place.id } },
       orderBy: [{ order: "asc" }, { name: "asc" }],
@@ -50,7 +49,6 @@ export default async function PlacePage({ params }: Props) {
     }),
     getSavedState(),
     bookOptionsForDistrict(d.id),
-    auth(),
   ]);
   const photos = [place.photo, ...place.gallery, ...more.map((m) => m.photo)].filter((u): u is string => Boolean(u));
   const credits = await creditsFor(photos);
@@ -98,9 +96,8 @@ export default async function PlacePage({ params }: Props) {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <BookDialog
               title={place.name}
-              context={{ districtId: d.id, placeId: place.id }}
               options={options}
-              defaults={{ name: session?.user?.name ?? undefined, email: session?.user?.email ?? undefined }}
+              customHref={`/book/custom?place=${d.slug}/${place.slug}`}
               label="Plan a visit"
             />
             <SaveButton

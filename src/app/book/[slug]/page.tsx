@@ -74,13 +74,14 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <BookingWizard
-          package={{
-            id: pkg.id,
+          trip={{
+            kind: "tour",
             slug: pkg.slug,
             title: pkg.title,
-            durationDays: pkg.durationDays,
-            basePriceUSD: Number(pkg.basePriceUSD),
+            days: pkg.durationDays,
+            priceUSD: Number(pkg.basePriceUSD),
             maxTravelers: pkg.maxTravelers,
+            backHref: `/packages/${pkg.slug}`,
           }}
           user={{
             name: user.name,

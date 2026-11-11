@@ -34,6 +34,11 @@ const statusConfig: Record<
     className: "border-ink-mute/30 bg-paper text-ink-mute",
     description: "This booking hasn't been submitted yet.",
   },
+  QUOTE_REQUESTED: {
+    label: "Waiting for our price",
+    className: "border-forest-700/40 bg-forest-100 text-forest-800",
+    description: "We're planning your trip. You'll get an email with the plan and the price within 24 hours, and can pay here once it arrives.",
+  },
   PAYMENT_PENDING: {
     label: "Payment pending",
     className: "border-clay-600/40 bg-clay-500/10 text-clay-700",
@@ -126,7 +131,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         totalUSD: Number(booking.totalAmountUSD),
         serviceFeeUSD: serviceFeeFromDetails(booking.specialRequests),
         startDate: booking.startDate,
-        paid: booking.status !== "PAYMENT_PENDING",
+        paid: booking.status !== "PAYMENT_PENDING" && booking.status !== "QUOTE_REQUESTED",
       })
     : null;
   const priceUSD = Number(booking.totalAmountUSD);
@@ -443,12 +448,20 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div className="rounded-lg border border-forest-900/10 bg-paper p-6">
             <p className="eyebrow text-forest-700">Price</p>
             <div className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between text-ink-soft">
-                <span>
-                  {stay ? `${stayNights} ${stayNights === 1 ? "night" : "nights"}` : `${booking.travelerCount} × $${pricePerPerson.toFixed(0)}`}
-                </span>
-                <span>${priceUSD.toFixed(0)}</span>
-              </div>
+              {booking.status === "QUOTE_REQUESTED" ? (
+                <p className="text-ink-soft">We&rsquo;re working out the price for your dates and group. Nothing is charged until you accept it.</p>
+              ) : (
+                <div className="flex justify-between text-ink-soft">
+                  <span>
+                    {stay
+                      ? `${stayNights} ${stayNights === 1 ? "night" : "nights"}`
+                      : booking.package
+                        ? `${booking.travelerCount} × $${pricePerPerson.toFixed(0)}`
+                        : `Custom trip · ${booking.travelerCount} ${booking.travelerCount === 1 ? "traveler" : "travelers"}`}
+                  </span>
+                  <span>${priceUSD.toFixed(0)}</span>
+                </div>
+              )}
               {booking.payment && ["SUCCEEDED", "REFUNDED", "PARTIAL_REFUND"].includes(booking.payment.status) && (
                 <a href={`/dashboard/bookings/${booking.id}/receipt`} className="block text-right text-xs underline underline-offset-4">
                   Download receipt (PDF)
@@ -457,7 +470,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <div className="flex items-baseline justify-between border-t border-forest-900/10 pt-3">
                 <span className="font-medium">Total</span>
                 <span className="font-display text-3xl text-forest-900">
-                  ${priceUSD.toFixed(0)}
+                  {booking.status === "QUOTE_REQUESTED" ? "To be confirmed" : `$${priceUSD.toFixed(0)}`}
                 </span>
               </div>
             </div>

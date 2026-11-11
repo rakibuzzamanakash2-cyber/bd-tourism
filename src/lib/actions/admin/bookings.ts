@@ -18,6 +18,7 @@ import {
   formatDateRange,
 } from "@/lib/booking-utils";
 import { bookingTitle } from "@/lib/homestay-shared";
+import { QUOTE_VALID_DAYS } from "@/lib/booking-utils";
 
 export type AdminActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -35,6 +36,55 @@ async function loadBooking(id: string) {
     where: { id },
     include: { package: { select: { title: true } }, homestay: { select: { name: true } }, tourist: { select: { name: true, email: true } }, payment: true },
   });
+}
+
+// ============================================================
+// Custom trips: set the price, which lets the traveler pay
+// ============================================================
+const quoteSchema = z.object({
+  bookingId: z.string().min(1),
+  totalUSD: z.coerce.number().min(1, "Enter the total price in US dollars").max(100_000),
+  plan: z.string().trim().max(4000),
+});
+
+export async function adminQuoteBooking(input: z.input<typeof quoteSchema>): Promise<AdminActionResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Not allowed." };
+  const parsed = quoteSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request." };
+  const { bookingId, plan } = parsed.data;
+  const totalUSD = Math.round(parsed.data.totalUSD * 100) / 100;
+
+  const booking = await loadBooking(bookingId);
+  if (!booking) return { ok: false, error: "Booking not found." };
+  if (booking.status !== "QUOTE_REQUESTED" && !(booking.status === "PAYMENT_PENDING" && booking.quotedAt && !booking.payment)) {
+    return { ok: false, error: "A price can only be set while the booking is waiting for a quote or for payment." };
+  }
+
+  // Only if nothing changed meanwhile (the traveler may have cancelled)
+  const { count } = await db.booking.updateMany({
+    where: { id: bookingId, status: booking.status },
+    data: { status: "PAYMENT_PENDING", totalAmountUSD: totalUSD, quotedAt: new Date() },
+  });
+  if (count === 0) return { ok: false, error: "This booking just changed. Reload the page." };
+
+  await audit({ actorId: admin.id, action: "booking.quote", targetType: "Booking", targetId: bookingId, details: { totalUSD } });
+  await sendEmail({
+    to: booking.tourist.email,
+    subject: `Your trip plan and price (${booking.bookingCode})`,
+    html: simpleEmail(
+      "Your trip is planned.",
+      [
+        `Hi ${booking.tourist.name?.split(/\s+/)[0] ?? "there"}, here is our plan for ${bookingTitle(booking).replace(/^Custom trip: /, "")}.`,
+        ...(plan ? plan.split(/\n{2,}/) : []),
+        `Total price: $${totalUSD.toFixed(2)} for ${booking.travelerCount} traveler${booking.travelerCount === 1 ? "" : "s"}.`,
+        `The price is held for ${QUOTE_VALID_DAYS} days. Pay online to confirm your booking, or reply to this email to change anything.`,
+      ],
+      { label: "See the booking and pay", url: bookingUrl(bookingId) },
+    ),
+  }).catch(() => undefined);
+  refresh(bookingId);
+  return { ok: true, message: `Price set to $${totalUSD.toFixed(2)}. The traveler has been emailed.` };
 }
 
 // ============================================================

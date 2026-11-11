@@ -17,7 +17,6 @@ import { PlaceCard } from "@/components/districts/place-card";
 import { BookDialog } from "@/components/booking/book-dialog";
 import { SaveButton } from "@/components/saved/save-button";
 import { bookOptionsForDistrict } from "@/lib/book-options";
-import { auth } from "@/auth";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +41,7 @@ export default async function DistrictPage({ params }: Props) {
   if (!page) notFound();
   const { district: d, tours, homestays, nearby } = page;
   const photos = [d.photo, ...d.places.map((x) => x.photo)].filter((u): u is string => Boolean(u));
-  const [credits, saved, options, session] = await Promise.all([creditsFor(photos), getSavedState(), bookOptionsForDistrict(d.id), auth()]);
+  const [credits, saved, options] = await Promise.all([creditsFor(photos), getSavedState(), bookOptionsForDistrict(d.id)]);
   const toSee = d.places.filter((x) => x.kind !== "FOOD");
   const food = d.places.filter((x) => x.kind === "FOOD");
   const credit = d.photo ? credits.get(d.photo) : undefined;
@@ -72,9 +71,8 @@ export default async function DistrictPage({ params }: Props) {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <BookDialog
               title={d.name}
-              context={{ districtId: d.id }}
               options={options}
-              defaults={{ name: session?.user?.name ?? undefined, email: session?.user?.email ?? undefined }}
+              customHref={`/book/custom?district=${d.slug}`}
               label={`Plan a trip to ${d.name}`}
               className="bg-paper text-forest-900 hover:bg-forest-100"
             />

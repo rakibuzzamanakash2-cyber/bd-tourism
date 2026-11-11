@@ -9,6 +9,7 @@ import {
   adminChangeBookingStatus,
   adminMarkBookingPaid,
   adminMarkRefundPaid,
+  adminQuoteBooking,
   adminSaveBookingNotes,
   type AdminActionResult,
 } from "@/lib/actions/admin/bookings";
@@ -313,5 +314,35 @@ export function RefundStatusButton({ bookingId }: { bookingId: string }) {
     >
       {pending ? "Checking…" : "Check refund status"}
     </button>
+  );
+}
+
+/** Custom trips: set the total price and send the plan, which lets the traveler pay. */
+export function QuoteForm({ bookingId, currentUSD }: { bookingId: string; currentUSD?: number }) {
+  const { pending, run } = useAction();
+  const [total, setTotal] = useState(currentUSD ? String(currentUSD) : "");
+  const [plan, setPlan] = useState("");
+  return (
+    <form
+      className="space-y-3 rounded-md border border-forest-700/30 bg-forest-100/60 p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        run(() => adminQuoteBooking({ bookingId, totalUSD: total, plan }));
+      }}
+    >
+      <p className="text-sm font-medium">{currentUSD ? "Change the price" : "Set the price for this custom trip"}</p>
+      <label className="block text-xs text-ink-mute">
+        Total price for the whole group (USD)
+        <input name="totalUSD" type="number" min={1} step="0.01" required value={total} onChange={(e) => setTotal(e.target.value)} className={cn(input, "mt-1")} />
+      </label>
+      <label className="block text-xs text-ink-mute">
+        The plan, emailed to the traveler (route, stays, what&rsquo;s included)
+        <textarea name="plan" rows={5} maxLength={4000} value={plan} onChange={(e) => setPlan(e.target.value)} className={cn(input, "mt-1")} />
+      </label>
+      <button type="submit" disabled={pending} className={primary}>
+        {pending ? "Sending…" : currentUSD ? "Update price and email again" : "Send price to traveler"}
+      </button>
+      <p className="text-xs text-ink-mute">The traveler gets an email with the plan, the price and a link to pay. The price is held for 7 days.</p>
+    </form>
   );
 }

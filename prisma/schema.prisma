@@ -147,6 +147,7 @@ model District {
   places       DistrictPlace[]
   savedBy      SavedDistrict[]
   tripRequests TripRequest[]
+  bookings     Booking[]
 
   @@index([division])
 }
@@ -177,6 +178,7 @@ model DistrictPlace {
 
   savedBy      SavedPlace[]
   tripRequests TripRequest[]
+  bookings     Booking[]
 
   @@unique([districtId, slug])
   @@index([districtId, isPublished])
@@ -217,6 +219,7 @@ model Destination {
   reviews      Review[]
   savedBy      SavedDestination[]
   tripRequests TripRequest[]
+  bookings     Booking[]
 
   @@index([regionId])
   @@index([districtId])
@@ -289,6 +292,8 @@ model TourPackageDay {
 
 enum BookingStatus {
   DRAFT
+  // A custom trip: the team still has to set the price
+  QUOTE_REQUESTED
   PAYMENT_PENDING
   PAID
   CONFIRMED
@@ -320,6 +325,21 @@ model Booking {
 
   // Private notes for the DeltaWay team (never shown to the tourist)
   adminNotes String? @db.Text
+
+  // A custom trip (no tour package): what the traveler asked to visit. The
+  // team sets the price (quotedAt), then it is paid like any other booking.
+  customTitle   String?
+  districtId    String?
+  district      District?      @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  placeId       String?
+  place         DistrictPlace? @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  destinationId String?
+  destination   Destination?   @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  quotedAt      DateTime?
+
+  // Who to call if something happens during the trip
+  emergencyName  String?
+  emergencyPhone String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -884,6 +904,13 @@ model ImageCredit {
 
 // Each person on a booking. Passport numbers are encrypted (see src/lib/crypto.ts),
 // shown masked, and deleted 90 days after the trip.
+enum VisaStatus {
+  NOT_REQUIRED // Bangladeshi citizen
+  HAVE_VISA
+  ON_ARRIVAL // will get a visa on arrival
+  APPLYING // has applied or will apply before travel
+}
+
 model BookingTraveler {
   id               String    @id @default(cuid())
   bookingId        String
@@ -894,9 +921,14 @@ model BookingTraveler {
   email            String?
   phone            String?
   nationality      String?
+  dateOfBirth      DateTime?
   passportEnc      String?
   passportLast4    String?
+  passportExpiry   DateTime?
   passportPurgedAt DateTime?
+  visaStatus       VisaStatus?
+  visaNumberEnc    String?
+  visaExpiry       DateTime?
   createdAt        DateTime  @default(now())
 
   @@index([bookingId])
