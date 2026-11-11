@@ -70,9 +70,9 @@ export function stayNightKeys(checkIn: Date, checkOut: Date): string[] {
   return out;
 }
 
-/** "Hasina's home" for stays, the tour title for tours. */
-export function bookingTitle(b: { package: { title: string } | null; homestay: { name: string } | null }): string {
-  return b.homestay?.name ?? b.package?.title ?? "Custom trip";
+/** "Hasina's home" for stays, the tour title for tours, "Custom trip: Sylhet" for custom trips. */
+export function bookingTitle(b: { package: { title: string } | null; homestay: { name: string } | null; customTitle?: string | null }): string {
+  return b.homestay?.name ?? b.package?.title ?? (b.customTitle ? `Custom trip: ${b.customTitle}` : "Custom trip");
 }
 
 // ============================================================

@@ -74,6 +74,8 @@ export default async function AdminOverviewPage() {
     }),
   ]);
 
+  const quotesToSend = await db.booking.count({ where: { status: "QUOTE_REQUESTED" } });
+
   return (
     <div>
       <AdminPageHeader title="Overview" description="What needs attention today, and how things are going." />
@@ -128,6 +130,13 @@ export default async function AdminOverviewPage() {
           hint="Finished stays not paid out"
           href="/admin/homestays"
           tone={hostsToPay > 0 ? "attention" : "default"}
+        />
+        <StatCard
+          label="Quotes to send"
+          value={quotesToSend}
+          hint="Custom trips waiting for a price"
+          href="/admin/bookings?status=QUOTE_REQUESTED"
+          tone={quotesToSend > 0 ? "attention" : "default"}
         />
         <StatCard
           label="Awaiting payment"

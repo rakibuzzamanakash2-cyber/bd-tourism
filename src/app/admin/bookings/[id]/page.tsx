@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import {
   AdminCancelForm,
   MarkPaidForm,
+  QuoteForm,
   NotesForm,
   RefundPaidForm,
   GatewayRefundButton,
@@ -19,6 +20,7 @@ import {
   ADMIN_CANCELLABLE_STATUSES,
   ADMIN_STATUS_TRANSITIONS,
   calculateRefund,
+  formatDate,
   formatDateRange,
   serviceFeeFromDetails,
 } from "@/lib/booking-utils";
@@ -30,6 +32,7 @@ import { bookingTitle, stayNightKeys } from "@/lib/homestay-shared";
 import { MarkHostPaidForm } from "@/components/admin/homestay-actions";
 import { RevealPassport } from "@/components/admin/reveal-passport";
 import { maskedPassport } from "@/lib/travelers";
+import { visaPending, visaStatusLabel } from "@/lib/travel-docs";
 
 export const metadata = { title: "Booking" };
 
@@ -161,6 +164,16 @@ export default async function AdminBookingDetailPage({ params }: Props) {
         <BookingStatusBadge status={booking.status} />
       </div>
 
+      {booking.status === "QUOTE_REQUESTED" && (
+        <p className="mt-4 rounded-md border border-clay-600/30 bg-clay-500/10 px-4 py-3 text-sm text-clay-700">
+          This is a custom trip. Plan it, then set the price on the right so the traveler can pay.
+        </p>
+      )}
+      {booking.status !== "CANCELLED" && booking.travelers.some((t) => visaPending(t.visaStatus)) && (
+        <p className="mt-4 rounded-md border border-clay-600/30 bg-clay-500/10 px-4 py-3 text-sm text-clay-700">
+          Visa pending for {booking.travelers.filter((t) => visaPending(t.visaStatus)).map((t) => t.name).join(", ")}. Ask to see the visa before the trip starts.
+        </p>
+      )}
       {booking.status === "CANCELLED" && (
         <p className="mt-4 rounded-md border border-forest-900/10 bg-paper-warm px-4 py-3 text-sm text-ink-soft">
           Cancelled {dateTime(booking.cancelledAt)}. Reason: {booking.cancellationReason ?? "—"}
@@ -194,11 +207,29 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                 <Item key={t.id} label={t.position === 0 ? "Lead traveler" : `Traveler #${t.position + 1}`}>
                   {t.name}
                   {t.nationality && <span className="text-ink-mute"> · {t.nationality}</span>}
+                  {t.dateOfBirth && <span className="text-ink-mute"> · born {formatDate(t.dateOfBirth)}</span>}
                   {maskedPassport(t) && (
                     <>
                       <br />
-                      Passport{" "}
+                      {t.passportExpiry || !t.visaStatus ? "Passport" : "Passport / NID"}{" "}
                       {t.passportEnc ? <RevealPassport travelerId={t.id} masked={maskedPassport(t)!} /> : <span className="font-mono">{maskedPassport(t)}</span>}
+                      {t.passportExpiry && <span className="text-ink-mute"> · valid to {formatDate(t.passportExpiry)}</span>}
+                    </>
+                  )}
+                  {t.visaStatus && (
+                    <>
+                      <br />
+                      <span className={visaPending(t.visaStatus) ? "font-medium text-clay-700" : undefined}>
+                        Visa: {visaPending(t.visaStatus) ? "pending · " : ""}
+                        {visaStatusLabel(t.visaStatus)}
+                      </span>
+                      {t.visaNumberEnc && (
+                        <>
+                          {" "}
+                          <RevealPassport travelerId={t.id} masked="••••" what="visa" />
+                        </>
+                      )}
+                      {t.visaExpiry && <span className="text-ink-mute"> · valid to {formatDate(t.visaExpiry)}</span>}
                     </>
                   )}
                 </Item>
@@ -207,8 +238,16 @@ export default async function AdminBookingDetailPage({ params }: Props) {
                 details.additionalTravelers?.map((t, i) => (
                   <Item key={i} label={`Traveler #${i + 2}`}>{t.name}</Item>
                 ))}
-              {booking.tourist.touristProfile?.emergencyContact && (
-                <Item label="Emergency contact">{booking.tourist.touristProfile.emergencyContact}</Item>
+              {booking.emergencyName ? (
+                <Item label="Emergency contact">
+                  {booking.emergencyName}
+                  <br />
+                  {booking.emergencyPhone}
+                </Item>
+              ) : (
+                booking.tourist.touristProfile?.emergencyContact && (
+                  <Item label="Emergency contact">{booking.tourist.touristProfile.emergencyContact}</Item>
+                )
               )}
               {booking.tourist.touristProfile?.dietaryPrefs && (
                 <Item label="Dietary needs">{booking.tourist.touristProfile.dietaryPrefs}</Item>
@@ -319,12 +358,21 @@ export default async function AdminBookingDetailPage({ params }: Props) {
               {booking.payment && ["SUCCEEDED", "REFUNDED", "PARTIAL_REFUND"].includes(booking.payment.status) && (
                 <a href={`/dashboard/bookings/${booking.id}/receipt`} className="block text-center text-sm underline underline-offset-4">Download receipt (PDF)</a>
               )}
+              {booking.status === "QUOTE_REQUESTED" && <QuoteForm bookingId={booking.id} />}
+              {booking.status === "PAYMENT_PENDING" && booking.quotedAt && !booking.payment && (
+                <details className="text-sm">
+                  <summary className="cursor-pointer underline underline-offset-4">Change the quoted price</summary>
+                  <div className="mt-3">
+                    <QuoteForm bookingId={booking.id} currentUSD={Number(booking.totalAmountUSD)} />
+                  </div>
+                </details>
+              )}
               {booking.status === "PAYMENT_PENDING" && <MarkPaidForm bookingId={booking.id} />}
               <StatusButtons bookingId={booking.id} allowed={allowed} />
               {canCancel && (
                 <AdminCancelForm bookingId={booking.id} paid={paid} paidAmount={paidAmount} suggestedRefund={quote.refundUSD} />
               )}
-              {!refundOwed && booking.status !== "PAYMENT_PENDING" && allowed.length === 0 && !canCancel && (
+              {!refundOwed && booking.status !== "PAYMENT_PENDING" && booking.status !== "QUOTE_REQUESTED" && allowed.length === 0 && !canCancel && (
                 <p className="text-sm text-ink-mute">No actions for a {booking.status.toLowerCase()} booking.</p>
               )}
             </div>

@@ -97,9 +97,11 @@ export function usdToBdt(usd: number, rate = BDT_PER_USD): number {
 /** Unpaid bookings are cancelled automatically after this many hours. */
 export const UNPAID_BOOKING_TTL_HOURS = 24;
 export const EXPIRED_BOOKING_REASON = "Payment not received within 24 hours";
+/** A price we quote for a custom trip is held this long before the booking lapses. */
+export const QUOTE_VALID_DAYS = 7;
 
 /** Statuses a tourist can still cancel from. */
-export const CANCELLABLE_STATUSES = ["PAYMENT_PENDING", "PAID", "CONFIRMED"] as const;
+export const CANCELLABLE_STATUSES = ["QUOTE_REQUESTED", "PAYMENT_PENDING", "PAID", "CONFIRMED"] as const;
 
 export type RefundQuote = {
   tier: "unpaid" | "full" | "half" | "none";
@@ -163,4 +165,4 @@ export const ADMIN_STATUS_TRANSITIONS: Record<string, readonly string[]> = {
 };
 
 /** Statuses an admin can cancel from (tourists have a narrower list). */
-export const ADMIN_CANCELLABLE_STATUSES = ["PAYMENT_PENDING", "PAID", "CONFIRMED", "IN_PROGRESS", "DISPUTED"] as const;
+export const ADMIN_CANCELLABLE_STATUSES = ["QUOTE_REQUESTED", "PAYMENT_PENDING", "PAID", "CONFIRMED", "IN_PROGRESS", "DISPUTED"] as const;

@@ -10,7 +10,6 @@ import { SaveButton } from "@/components/saved/save-button";
 import { getSavedState } from "@/lib/saved";
 import { BookDialog } from "@/components/booking/book-dialog";
 import { bookOptionsForDestination } from "@/lib/book-options";
-import { auth } from "@/auth";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -51,7 +50,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
 
   if (!destination || !destination.isPublished) notFound();
 
-  const [relatedPackages, savedState, bookOptions, session] = await Promise.all([
+  const [relatedPackages, savedState, bookOptions] = await Promise.all([
     db.tourPackage.findMany({
       where: {
         isPublished: true,
@@ -62,7 +61,6 @@ export default async function DestinationDetailPage({ params }: PageProps) {
     }),
     getSavedState(),
     bookOptionsForDestination(destination),
-    auth(),
   ]);
   const credits = await creditsFor([destination.featuredImage, ...destination.images.map((i) => i.url)]);
 
@@ -185,9 +183,8 @@ export default async function DestinationDetailPage({ params }: PageProps) {
 
               <BookDialog
                 title={destination.name}
-                context={{ destinationId: destination.id, districtId: destination.districtId ?? undefined }}
                 options={bookOptions}
-                defaults={{ name: session?.user?.name ?? undefined, email: session?.user?.email ?? undefined }}
+                customHref={`/book/custom?destination=${destination.slug}`}
                 explore={
                   destination.district
                     ? { href: `/districts/${destination.district.slug}`, districtName: destination.district.name, places: destination.district._count.places }
