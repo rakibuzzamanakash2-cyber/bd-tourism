@@ -26,6 +26,10 @@ export async function GET() {
       savedDestinations: { select: { destination: { select: { name: true } }, createdAt: true } },
       savedPackages: { select: { package: { select: { title: true } }, createdAt: true } },
       contactMessages: { select: { subject: true, message: true, createdAt: true } },
+      savedDistricts: { select: { district: { select: { name: true } }, createdAt: true } },
+      savedPlaces: { select: { place: { select: { name: true } }, createdAt: true } },
+      savedHomestays: { select: { homestay: { select: { name: true } }, createdAt: true } },
+      tripRequests: { select: { travelers: true, startDate: true, days: true, message: true, status: true, createdAt: true } },
       applications: { select: { kind: true, status: true, fullName: true, phone: true, details: true, createdAt: true, submittedAt: true } },
     },
   });
@@ -48,8 +52,9 @@ export async function GET() {
       travelers: travelers.map(({ passportEnc, ...t }) => ({ ...t, passportNumber: decrypt(passportEnc) })),
     })),
     reviews: u.reviews,
-    saved: { destinations: u.savedDestinations, tours: u.savedPackages },
+    saved: { destinations: u.savedDestinations, tours: u.savedPackages, districts: u.savedDistricts, places: u.savedPlaces, homestays: u.savedHomestays },
     messages: u.contactMessages,
+    tripRequests: u.tripRequests,
     applications: u.applications,
   };
   return new NextResponse(JSON.stringify(data, null, 2), {

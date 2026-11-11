@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ratingsBy } from "@/lib/reviews";
 import type { Prisma } from "@prisma/client";
 import { HomestayCard } from "@/components/homestays/homestay-card";
+import { getSavedState } from "@/lib/saved";
 import { HomestaysComingSoon } from "@/components/homestays/coming-soon";
 import { FACILITY_OPTIONS } from "@/lib/applications";
 import { db } from "@/lib/db";
@@ -55,7 +56,7 @@ export default async function HomestaysPage({ searchParams }: Props) {
       ).filter((h): h is (typeof found)[number] => h !== null)
     : found;
 
-  const ratings = await ratingsBy("homestayId", homestays.map((h) => h.id));
+  const [ratings, saved] = await Promise.all([ratingsBy("homestayId", homestays.map((h) => h.id)), getSavedState()]);
   const keep = (overrides: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
     const all = { region, facility, guests: guests ? String(guests) : undefined, checkIn, checkOut, ...overrides };
@@ -112,7 +113,7 @@ export default async function HomestaysPage({ searchParams }: Props) {
           </div>
         ) : (
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-            {homestays.map((h) => <HomestayCard key={h.id} h={h} query={cardQuery} rating={ratings.get(h.id)} />)}
+            {homestays.map((h) => <HomestayCard key={h.id} h={h} query={cardQuery} rating={ratings.get(h.id)} saved={saved.homestayIds.has(h.id)} signedIn={saved.signedIn} />)}
           </div>
         )}
         <p className="mt-16 border-t border-forest-900/10 pt-8 text-sm text-ink-soft">

@@ -4,11 +4,11 @@ import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
-import { toggleSavedAction } from "@/lib/actions/saved";
+import { toggleSavedAction, type SaveKind } from "@/lib/actions/saved";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  kind: "destination" | "package";
+  kind: SaveKind;
   id: string;
   name: string;
   initialSaved: boolean;

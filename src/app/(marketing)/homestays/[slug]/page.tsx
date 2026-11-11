@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { SaveButton } from "@/components/saved/save-button";
 import { publicReviewInclude, ratingSummary } from "@/lib/reviews";
 import { RatingBadge } from "@/components/reviews/stars";
 import { ReviewSection } from "@/components/reviews/review-list";
@@ -53,6 +54,9 @@ export default async function HomestayPage({ params, searchParams }: Props) {
       ? db.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true, touristProfile: { select: { phoneNumber: true, nationality: true } } } })
       : null,
   ]);
+  const savedByMe = session?.user?.id
+    ? Boolean(await db.savedHomestay.findUnique({ where: { userId_homestayId: { userId: session.user.id, homestayId: h.id } } }))
+    : false;
   const [rating, reviews] = await Promise.all([
     ratingSummary({ homestayId: h.id }),
     db.review.findMany({ where: { homestayId: h.id, status: "PUBLISHED" }, include: publicReviewInclude, orderBy: { createdAt: "desc" }, take: 30 }),
@@ -178,6 +182,11 @@ export default async function HomestayPage({ params, searchParams }: Props) {
               />
             ) : (
               <p className="text-sm text-ink-mute">Not taking bookings right now.</p>
+            )}
+            {isPublic && (
+              <div className="mt-4 text-center">
+                <SaveButton kind="homestay" id={h.id} name={h.name} initialSaved={savedByMe} signedIn={Boolean(session?.user)} variant="inline" />
+              </div>
             )}
           </div>
         </aside>
