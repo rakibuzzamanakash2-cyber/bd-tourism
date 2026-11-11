@@ -35,6 +35,23 @@ const BAD_LICENSE = /\b(nc|nd|non-?commercial|no-?deriv)/i;
 // Not a photo of the place
 const BAD_TITLE = /\b(map|maps|locator|logo|flag|emblem|seal|diagram|chart|plan|stamp|coin|banknote|poster|banner|screenshot|svg|drawing|painting|illustration)\b/i;
 
+// Close-ups and details that make a poor main photo of a place. A word is only
+// held against a photo when the search itself didn't ask for it ("flower" is
+// fine for "Godkhali flower fields").
+const CLOSE_UP_WORDS = [
+  "crab", "sand", "shell", "seashell", "footprint", "footprints", "closeup", "close-up", "macro", "detail", "details", "texture", "pattern",
+  "insect", "butterfly", "spider", "bird", "flower", "flowers", "leaf", "leaves", "fruit", "fish", "dog", "cat", "cow",
+  "portrait", "selfie", "man", "woman", "boy", "girl", "child", "children", "people", "vendor", "seller", "hawker",
+  "sign", "signboard", "plaque", "inscription", "board", "ticket", "food", "garbage", "trash", "litter", "night",
+];
+
+/** True when the title or caption suggests a close-up rather than a view of the place. */
+export function looksLikeCloseUp(text: string, query = ""): boolean {
+  const words = new Set(text.toLowerCase().split(/[^a-z-]+/));
+  const asked = query.toLowerCase();
+  return CLOSE_UP_WORDS.some((w) => words.has(w) && !asked.includes(w));
+}
+
 /** "<a href=...>Jane Doe</a>" → "Jane Doe" */
 export function stripHtml(html: string | undefined): string {
   return (html ?? "")
@@ -61,8 +78,11 @@ export function cleanImageUrl(url: string): string {
   }
 }
 
-/** The search results of one Commons API call → the usable photos, best first. */
-export function pickPhotos(pages: CommonsPage[], max: number): PickedPhoto[] {
+/**
+ * The search results of one Commons API call → the usable photos, best first.
+ * Pass the search query to skip close-ups (a crab on the sand for "Cox's Bazar beach").
+ */
+export function pickPhotos(pages: CommonsPage[], max: number, query?: string): PickedPhoto[] {
   const out: PickedPhoto[] = [];
   const sorted = [...pages].sort((a, b) => (a.index ?? 999) - (b.index ?? 999));
   for (const p of sorted) {
@@ -81,6 +101,7 @@ export function pickPhotos(pages: CommonsPage[], max: number): PickedPhoto[] {
     // CC licences need a named author; skip files where we can't credit anyone
     if (!author && !/^(public domain|pd|cc0)/i.test(license)) continue;
     const caption = stripHtml(meta.ImageDescription?.value || meta.ObjectName?.value).slice(0, 140) || null;
+    if (query !== undefined && looksLikeCloseUp(`${p.title.replace(/^File:/, "").replace(/\.[a-z]+$/i, "")} ${caption ?? ""}`, query)) continue;
     const url = cleanImageUrl(info.thumburl);
     if (out.some((x) => x.url === url)) continue;
     out.push({

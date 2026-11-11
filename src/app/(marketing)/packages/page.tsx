@@ -78,7 +78,7 @@ export default async function PackagesPage({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 py-3">
             <span className="eyebrow shrink-0 text-ink-mute">Duration</span>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
               <FilterPill href="/packages" active={!validDuration}>
                 All
               </FilterPill>

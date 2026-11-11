@@ -82,8 +82,8 @@ export default async function DestinationsPage({
               >
                 {r.name}
                 {r.isRestricted && (
-                  <span className="ml-1 text-clay-600" aria-label="Permit required">
-                    ·
+                  <span className={cn("ml-1.5 text-[10px] uppercase tracking-wider", regionSlug === r.slug ? "text-paper/70" : "text-clay-700")}>
+                    Permit
                   </span>
                 )}
               </FilterPill>
@@ -173,9 +173,10 @@ function FilterRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4 border-b border-forest-900/5 py-3 last:border-b-0">
-      <span className="eyebrow shrink-0 text-ink-mute">{label}</span>
-      <div className="flex gap-2 overflow-x-auto pb-1">{children}</div>
+    <div className="flex items-center gap-4 border-b border-forest-900/5 py-2.5 last:border-b-0 md:items-start">
+      <span className="eyebrow w-14 shrink-0 text-ink-mute md:pt-2">{label}</span>
+      {/* Phones: swipe sideways (no scrollbar). Wider screens: wrap onto more lines. */}
+      <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">{children}</div>
     </div>
   );
 }

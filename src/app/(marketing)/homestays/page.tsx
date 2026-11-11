@@ -128,7 +128,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="flex items-center gap-4 border-b border-forest-900/5 py-3 last:border-b-0">
       <span className="eyebrow shrink-0 text-ink-mute">{label}</span>
-      <div className="flex gap-2 overflow-x-auto pb-1">{children}</div>
+      <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">{children}</div>
     </div>
   );
 }
