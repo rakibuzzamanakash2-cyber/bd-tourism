@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { isAllowedImageUrl } from "@/lib/image-hosts";
+import { slugify } from "@/lib/slug";
 import { getAdminOrNull } from "@/lib/session";
 import type { AdminActionResult } from "@/lib/actions/admin/bookings";
 
@@ -41,4 +42,58 @@ export async function saveDistrictAction(formData: FormData): Promise<AdminActio
   revalidatePath("/districts");
   revalidatePath(`/districts/${updated.slug}`);
   return { ok: true, message: `${updated.name} saved.` };
+}
+
+// ---- Places to visit ----------------------------------------------
+
+const KINDS = ["SIGHT", "NATURE", "RELIGIOUS", "MARKET", "FOOD", "EXPERIENCE"] as const;
+
+const placeSchema = z.object({
+  id: z.string().optional(),
+  districtId: z.string().min(1),
+  name: z.string().trim().min(2, "Name is too short").max(100),
+  kind: z.enum(KINDS, "Pick a type"),
+  description: z.string().trim().min(10, "Write a sentence or two about the place.").max(600),
+  tip: z.string().trim().max(300),
+  photo: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || isAllowedImageUrl(v), "Use a photo from Cloudinary, Unsplash, Pexels or Wikimedia."),
+  isPublished: z.boolean(),
+});
+
+export async function savePlaceAction(formData: FormData): Promise<AdminActionResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Not allowed." };
+  const parsed = placeSchema.safeParse({
+    id: (formData.get("id") as string) || undefined,
+    districtId: formData.get("districtId") ?? "",
+    name: formData.get("name") ?? "",
+    kind: formData.get("kind") ?? "",
+    description: formData.get("description") ?? "",
+    tip: formData.get("tip") ?? "",
+    photo: formData.get("photo") ?? "",
+    isPublished: formData.get("isPublished") === "on",
+  });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form." };
+  const v = parsed.data;
+  const district = await db.district.findUnique({ where: { id: v.districtId }, select: { slug: true } });
+  if (!district) return { ok: false, error: "District not found." };
+
+  const data = { name: v.name, kind: v.kind, description: v.description, tip: v.tip || null, photo: v.photo || null, isPublished: v.isPublished };
+  if (v.id) {
+    const updated = await db.districtPlace.updateMany({ where: { id: v.id, districtId: v.districtId }, data });
+    if (updated.count === 0) return { ok: false, error: "Place not found." };
+    await audit({ actorId: admin.id, action: "content.place.update", targetType: "DistrictPlace", targetId: v.id, details: { name: v.name } });
+  } else {
+    let slug = slugify(v.name);
+    if (await db.districtPlace.findUnique({ where: { districtId_slug: { districtId: v.districtId, slug } } })) slug = `${slug}-${Date.now().toString(36)}`;
+    const last = await db.districtPlace.aggregate({ where: { districtId: v.districtId }, _max: { order: true } });
+    const created = await db.districtPlace.create({ data: { ...data, districtId: v.districtId, slug, order: (last._max.order ?? -1) + 1 } });
+    await audit({ actorId: admin.id, action: "content.place.create", targetType: "DistrictPlace", targetId: created.id, details: { name: v.name } });
+  }
+  revalidatePath(`/admin/districts/${district.slug}`);
+  revalidatePath(`/districts/${district.slug}`);
+  revalidatePath("/districts");
+  return { ok: true, message: v.id ? `${v.name} saved.` : `${v.name} added.` };
 }

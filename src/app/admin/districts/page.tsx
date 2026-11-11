@@ -11,7 +11,7 @@ export default async function AdminDistrictsPage() {
   await requireAdmin();
   const districts = await db.district.findMany({
     orderBy: { name: "asc" },
-    include: { _count: { select: { destinations: true } } },
+    include: { _count: { select: { destinations: true, places: true } } },
   });
   const withPhoto = districts.filter((d) => d.photo).length;
   return (
@@ -39,6 +39,7 @@ export default async function AdminDistrictsPage() {
                     knownFor: d.knownFor,
                     highlights: d.highlights,
                     places: d._count.destinations,
+                    things: d._count.places,
                     permitRequired: d.permitRequired,
                   }}
                 />

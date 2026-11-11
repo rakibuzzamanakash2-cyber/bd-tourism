@@ -5,22 +5,27 @@
 //   npm run photos:wikimedia                # save them
 //   npm run photos:wikimedia -- --replace   # also replace photos you set yourself
 //   npm run photos:wikimedia -- --districts # only the 64 district photos
+//   npm run photos:wikimedia -- --places    # only the places to visit in each district
 //
 // Run it on a computer with internet access. Destinations whose main photo is
 // still an Unsplash placeholder get a Commons photo; every destination gets up
 // to 4 extra gallery photos. Tours still on a placeholder take the photo of
-// their first destination. Each of the 64 districts without a photo gets one.
+// their first destination. Each of the 64 districts and every place to visit
+// without a photo gets one (the places take a few minutes).
 // Remove any photo you don't like in the admin.
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { cleanImageUrl, commonsSearchUrl, pickPhotos, type CommonsPage, type PickedPhoto } from "../src/lib/wikimedia";
 import { DISTRICTS } from "../src/lib/districts-data";
+import { DISTRICT_PLACES } from "../src/lib/places-data";
+import { slugify } from "../src/lib/slug";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const DRY = process.argv.includes("--dry-run");
 const REPLACE = process.argv.includes("--replace");
 const ONLY_DISTRICTS = process.argv.includes("--districts");
+const ONLY_PLACES = process.argv.includes("--places");
 const GALLERY_MAX = 6;
 // Wikimedia asks automated clients to say who they are
 const USER_AGENT = "DeltaWayPhotoBot/1.0 (+https://github.com/rakibuzzamanakash2-cyber/bd-tourism)";
@@ -97,6 +102,12 @@ async function tidySavedUrls() {
       n++;
     }
   }
+  for (const x of await db.districtPlace.findMany({ select: { id: true, photo: true } })) {
+    if (x.photo && tidy(x.photo) !== x.photo) {
+      await db.districtPlace.update({ where: { id: x.id }, data: { photo: tidy(x.photo) } });
+      n++;
+    }
+  }
   for (const i of await db.destinationImage.findMany({ select: { id: true, url: true } })) {
     if (tidy(i.url) !== i.url) {
       await db.destinationImage.update({ where: { id: i.id }, data: { url: tidy(i.url) } });
@@ -151,10 +162,47 @@ async function districtPhotos() {
   if (!DRY) console.log(`\n✅ ${n} district photos saved.`);
 }
 
+/** One photo per place to visit (sights, markets, food…). */
+async function placePhotos() {
+  const places = await db.districtPlace.findMany({
+    where: REPLACE ? {} : { photo: null },
+    orderBy: [{ district: { name: "asc" } }, { order: "asc" }],
+    include: { district: { select: { slug: true, name: true } } },
+  });
+  console.log(`\n📍 Places to visit: ${places.length} need a photo\n`);
+  let n = 0;
+  for (const pl of places) {
+    const seed = DISTRICT_PLACES[pl.district.slug]?.find((x) => slugify(x.name) === pl.slug);
+    const queries = [seed?.photoQuery, `${pl.name} ${pl.district.name}`, pl.name].filter((q, i, a): q is string => !!q && a.indexOf(q) === i);
+    let pick: PickedPhoto | undefined;
+    try {
+      for (const q of queries) {
+        pick = pickPhotos(await search(q), 1)[0];
+        await sleep(800);
+        if (pick) break;
+      }
+    } catch (e) {
+      console.log(`  ⚠  ${pl.district.name} · ${pl.name}: ${(e as Error).message}`);
+      continue;
+    }
+    if (!pick) {
+      console.log(`  –  ${pl.district.name} · ${pl.name}: no free photo found`);
+      continue;
+    }
+    console.log(`  ✓  ${pl.district.name} · ${pl.name}: ${pick.title}`);
+    if (DRY) continue;
+    await saveCredit(pick);
+    await db.districtPlace.update({ where: { id: pl.id }, data: { photo: pick.url } });
+    n++;
+  }
+  if (!DRY) console.log(`\n✅ ${n} place photos saved. Swap any you don't like in /admin/districts.`);
+}
+
 async function main() {
   console.log(DRY ? "🔎 Dry run: nothing will be saved.\n" : "📷 Fetching photos from Wikimedia Commons…\n");
   if (!DRY) await tidySavedUrls();
   if (ONLY_DISTRICTS) return districtPhotos();
+  if (ONLY_PLACES) return placePhotos();
   const destinations = await db.destination.findMany({ include: { images: true }, orderBy: { name: "asc" } });
   let featured = 0;
   let gallery = 0;
@@ -210,6 +258,7 @@ async function main() {
     console.log(`\n✅ Done: ${featured} main photos and ${gallery} gallery photos, all with credits (see /credits).`);
   }
   await districtPhotos();
+  await placePhotos();
 }
 
 main()

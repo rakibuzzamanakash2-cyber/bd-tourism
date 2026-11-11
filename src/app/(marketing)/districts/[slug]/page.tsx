@@ -13,6 +13,7 @@ import { DestinationCard } from "@/components/destinations/destination-card";
 import { PackageCard } from "@/components/packages/package-card";
 import { HomestayCard } from "@/components/homestays/homestay-card";
 import { DistrictPlaceholder } from "@/components/districts/district-card";
+import { PlaceCard } from "@/components/districts/place-card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,10 @@ export default async function DistrictPage({ params }: Props) {
   const page = await getDistrictPage(slug);
   if (!page) notFound();
   const { district: d, tours, homestays, nearby } = page;
-  const [credits, saved] = await Promise.all([creditsFor(d.photo ? [d.photo] : []), getSavedState()]);
+  const photos = [d.photo, ...d.places.map((x) => x.photo)].filter((u): u is string => Boolean(u));
+  const [credits, saved] = await Promise.all([creditsFor(photos), getSavedState()]);
+  const toSee = d.places.filter((x) => x.kind !== "FOOD");
+  const food = d.places.filter((x) => x.kind === "FOOD");
   const credit = d.photo ? credits.get(d.photo) : undefined;
 
   return (
@@ -81,21 +85,55 @@ export default async function DistrictPage({ params }: Props) {
         </div>
       )}
 
-      {/* Top places */}
-      <section className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_1.4fr] lg:px-8">
-        <div>
-          <p className="eyebrow mb-4 text-forest-700">Don&rsquo;t miss</p>
-          <h2 className="font-display text-4xl sm:text-5xl">Top places in {d.name}</h2>
-        </div>
-        <ol className="divide-y divide-forest-900/10 border-y border-forest-900/10">
-          {d.highlights.map((h, i) => (
-            <li key={h} className="flex items-baseline gap-5 py-4">
-              <span className="font-display text-2xl text-forest-700">{String(i + 1).padStart(2, "0")}</span>
-              <span className="text-lg">{h}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {/* Things to do */}
+      {toSee.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow mb-4 text-forest-700">Things to do</p>
+              <h2 className="font-display text-4xl sm:text-5xl">Places to visit in {d.name}</h2>
+            </div>
+            <p className="text-sm text-ink-mute">{toSee.length} places</p>
+          </div>
+          <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            {toSee.map((x) => (
+              <PlaceCard key={x.id} place={x} credit={x.photo ? credits.get(x.photo) : undefined} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {food.length > 0 && (
+        <section className="border-t border-forest-900/10 bg-clay-500/5">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+            <p className="eyebrow mb-4 text-clay-700">Eat like a local</p>
+            <h2 className="mb-10 font-display text-4xl sm:text-5xl">What to eat in {d.name}</h2>
+            <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+              {food.map((x) => (
+                <PlaceCard key={x.id} place={x} credit={x.photo ? credits.get(x.photo) : undefined} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Short list, for a district with no places added yet */}
+      {d.places.length === 0 && (
+        <section className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_1.4fr] lg:px-8">
+          <div>
+            <p className="eyebrow mb-4 text-forest-700">Don&rsquo;t miss</p>
+            <h2 className="font-display text-4xl sm:text-5xl">Top places in {d.name}</h2>
+          </div>
+          <ol className="divide-y divide-forest-900/10 border-y border-forest-900/10">
+            {d.highlights.map((h, i) => (
+              <li key={h} className="flex items-baseline gap-5 py-4">
+                <span className="font-display text-2xl text-forest-700">{String(i + 1).padStart(2, "0")}</span>
+                <span className="text-lg">{h}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {d.destinations.length > 0 && (
         <section className="border-t border-forest-900/10 bg-paper-warm">

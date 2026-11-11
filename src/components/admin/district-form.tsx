@@ -8,7 +8,7 @@ import { ImageField } from "@/components/admin/image-field";
 import { saveDistrictAction } from "@/lib/actions/admin/districts";
 
 type Props = {
-  district: { id: string; slug: string; name: string; nameBn: string; photo: string; knownFor: string; highlights: string[]; places: number; permitRequired: boolean };
+  district: { id: string; slug: string; name: string; nameBn: string; photo: string; knownFor: string; highlights: string[]; places: number; things: number; permitRequired: boolean };
   uploadsEnabled: boolean;
 };
 
@@ -23,7 +23,7 @@ export function DistrictForm({ district: d, uploadsEnabled }: Props) {
           {d.permitRequired && <span className="ml-2 text-xs text-clay-700">permit</span>}
         </span>
         <span className="flex items-center gap-3 text-xs text-ink-mute">
-          {d.places > 0 && <span>{d.places} places</span>}
+          <span>{d.things} to do</span>
           <span className={d.photo ? "text-forest-700" : "text-clay-700"}>{d.photo ? "photo ✓" : "no photo"}</span>
         </span>
       </summary>
@@ -54,6 +54,7 @@ export function DistrictForm({ district: d, uploadsEnabled }: Props) {
           <button type="submit" disabled={pending} className="rounded-full bg-forest-900 px-5 py-2 text-sm text-paper hover:bg-forest-800 disabled:opacity-50">
             {pending ? "Saving…" : "Save"}
           </button>
+          <a href={`/admin/districts/${d.slug}`} className="text-sm underline underline-offset-4">Edit the {d.things} places</a>
           <a href={`/districts/${d.slug}`} target="_blank" className="text-sm underline underline-offset-4">View page</a>
         </div>
       </form>

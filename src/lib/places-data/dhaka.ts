@@ -1,0 +1,96 @@
+import { p, type PlaceSeed } from "./types";
+
+// Dhaka division (13 districts)
+export const DHAKA_PLACES: Record<string, PlaceSeed[]> = {
+  dhaka: [
+    p("Ahsan Manzil", "SIGHT", "The pink palace of the Dhaka Nawabs on the bank of the Buriganga, now a museum of their life and the city's history.", "Closed on Thursdays. Go in the late afternoon and walk down to the river after."),
+    p("Lalbagh Fort", "SIGHT", "An unfinished 17th-century Mughal fort with gardens, a mosque, an audience hall and the tomb of Pari Bibi.", "Come early in the morning, before the crowds and the heat."),
+    p("Star Mosque", "RELIGIOUS", "A small mosque in Armanitola covered inside and out with mosaic stars made from pieces of Japanese and English china.", "Dress modestly; women can visit outside prayer times.", "Star Mosque Dhaka"),
+    p("Armenian Church of the Holy Resurrection", "RELIGIOUS", "A quiet church from 1781 and its graveyard, left by the Armenian merchants who once traded in Old Dhaka.", undefined, "Armenian Church Dhaka"),
+    p("Dhakeshwari Temple", "RELIGIOUS", "The national temple of Bangladesh, said to give Dhaka its name, busiest during Durga Puja.", undefined, "Dhakeshwari Temple"),
+    p("Sadarghat river port", "EXPERIENCE", "One of the busiest river ports in the world: huge launches, wooden ferries and hundreds of small boats on the Buriganga.", "Hire a rowboat for a short trip across the river for the best view.", "Sadarghat"),
+    p("Shankhari Bazar", "MARKET", "A narrow, centuries-old Hindu lane where families still carve bangles from conch shells.", undefined, "Shankhari Bazar"),
+    p("Bangladesh National Museum", "SIGHT", "The country's largest museum at Shahbagh: history, art, crafts and natural history across four floors.", "Closed on Thursdays.", "Bangladesh National Museum"),
+    p("Liberation War Museum", "SIGHT", "The story of the 1971 war of independence, told through photographs, letters and personal objects.", undefined, "Liberation War Museum Dhaka"),
+    p("National Parliament House", "SIGHT", "Louis Kahn's concrete masterpiece, one of the great buildings of the 20th century, best seen from the lake and lawns around it.", undefined, "Jatiya Sangsad Bhaban"),
+    p("Haji Biryani", "FOOD", "Old Dhaka's famous mutton kacchi biryani, cooked the same way since 1939 in Nazira Bazar and served on a leaf.", "Goes fast at lunchtime; get there before noon.", "Haji Biryani"),
+    p("Beauty Lassi & Faluda", "FOOD", "A tiny Johnson Road shop that has served lassi and faluda for about a hundred years.", undefined, "Lassi Bangladesh"),
+    p("Old Dhaka bakarkhani", "FOOD", "Flaky, crisp bread baked in clay ovens in the lanes around Lalbagh and Chawkbazar. Eat it warm with tea.", undefined, "Bakarkhani"),
+  ],
+  faridpur: [
+    p("Mathurapur Deul", "SIGHT", "A tall 17th-century terracotta temple tower near Madhukhali, covered in carved figures.", undefined, "Mathurapur Deul"),
+    p("Jasimuddin's house", "SIGHT", "The village home of Palli Kabi Jasimuddin, the 'poet of rural Bengal', with a small museum.", "The Jasim Mela fair is held here every January."),
+    p("Pathrail Mosque", "RELIGIOUS", "A small Sultanate-era mosque at Bhanga with fine brickwork.", undefined, "Pathrail Mosque"),
+    p("Padma riverbank", "NATURE", "Wide views of the Padma and its sandbank islands; boats can take you out to the chars.", undefined, "Padma river Faridpur"),
+  ],
+  gazipur: [
+    p("Bhawal National Park", "NATURE", "Sal forest an hour from Dhaka with walking trails, picnic spots and small lakes.", "Weekdays are much quieter than Fridays."),
+    p("Safari Park", "NATURE", "A large drive-through safari park at Sreepur with tigers, lions and a bird park.", undefined, "Bangabandhu Sheikh Mujib Safari Park"),
+    p("Nuhash Polli", "SIGHT", "The garden estate of writer Humayun Ahmed, with sculptures, ponds and his resting place.", undefined, "Nuhash Polli"),
+    p("Bhawal Rajbari", "SIGHT", "The old palace of the Bhawal rajas in Joydebpur, famous for the 'Bhawal Sannyasi' case.", undefined, "Bhawal Rajbari"),
+    p("Jackfruit season", "FOOD", "In summer, Kapasia and Sreepur are full of jackfruit sold by the roadside.", undefined, "Jackfruit Bangladesh"),
+  ],
+  gopalganj: [
+    p("Tungipara", "SIGHT", "Home village of Sheikh Mujibur Rahman, Bangladesh's founding leader, with his mausoleum complex and museum.", undefined, "Tungipara"),
+    p("Orakandi Thakurbari", "RELIGIOUS", "Holy place of the Matua community, which fills with pilgrims during the Baruni festival.", undefined, "Orakandi"),
+    p("Madhumati river", "NATURE", "A gentle river for a boat ride past villages and paddy fields.", undefined, "Madhumati river"),
+  ],
+  kishoreganj: [
+    p("Nikli haor", "NATURE", "In the monsoon the land becomes an inland sea. Boats leave from Nikli bridge for village islands.", "Best from July to October, when the water is high.", "Nikli haor"),
+    p("Mithamoin haor road", "EXPERIENCE", "An all-weather road running for kilometres across the haor, with water on both sides in the monsoon.", undefined, "Mithamoin"),
+    p("Jangalbari Fort", "SIGHT", "Remains of Isa Khan's fort, one of the Baro Bhuiyan chiefs of 16th-century Bengal.", undefined, "Jangalbari Fort"),
+    p("Egarosindur Fort", "SIGHT", "Earthworks of another Isa Khan stronghold at Pakundia, beside the Old Brahmaputra.", undefined, "Egarosindur"),
+    p("Sholakia Eidgah", "RELIGIOUS", "Home of the biggest Eid prayer in Bangladesh, with hundreds of thousands of worshippers.", undefined, "Sholakia"),
+    p("Pagla Mosque", "RELIGIOUS", "A riverside mosque in Kishoreganj town famous for its donation boxes, opened every few months.", undefined, "Pagla Masjid Kishoreganj"),
+    p("Haor fish", "FOOD", "Fresh fish straight from the haor: try rui, koi and small fish fried in mustard oil.", undefined, "Bangladeshi fish curry"),
+  ],
+  madaripur: [
+    p("Shakuni Lake", "NATURE", "A large lake in the middle of Madaripur town, nice for an evening walk.", undefined, "Madaripur"),
+    p("Arial Khan river", "NATURE", "A wide, busy river with ferries and fishing boats.", undefined, "Arial Khan river"),
+    p("Madaripur date molasses", "FOOD", "In winter Madaripur is known for its khejur gur (date palm molasses), used in pitha and sweets.", "Season is December to February.", "Khejur gur"),
+  ],
+  manikganj: [
+    p("Baliati Zamindar Palace", "SIGHT", "A complex of grand 19th-century zamindar buildings with columns and courtyards.", "Closed on Sundays.", "Baliati Palace"),
+    p("Teota Zamindar Bari", "SIGHT", "A crumbling zamindar estate linked to the family of poet Nazrul Islam's wife, Pramila.", undefined, "Teota Zamindar Bari"),
+    p("Aricha ghat", "EXPERIENCE", "Where the Padma and Jamuna meet: watch ferries and enormous skies.", undefined, "Aricha"),
+    p("Jhitka hajari gur", "FOOD", "Prized date molasses made in Harirampur, famous across the country.", "Winter only.", "Khejur gur"),
+  ],
+  munshiganj: [
+    p("Idrakpur Fort", "SIGHT", "A round Mughal river fort from around 1660, built to defend Dhaka from pirates.", undefined, "Idrakpur Fort"),
+    p("Sonarang twin temples", "RELIGIOUS", "Two tall temple towers side by side at Tongibari.", undefined, "Sonarang Jora Math"),
+    p("Atish Dipankar's birthplace", "SIGHT", "A memorial at Bajrayogini to the 11th-century Buddhist scholar who taught in Tibet.", undefined, "Atish Dipankar"),
+    p("Padma Bridge views", "SIGHT", "The country's longest bridge, seen from Mawa on the north bank.", undefined, "Padma Bridge"),
+    p("Mawa ghat ilish fry", "FOOD", "Riverside restaurants at Mawa fry fresh ilish (hilsa) with its eggs, served with rice and fried eggplant.", undefined, "Hilsa fry"),
+    p("Bhagyakul sweets", "FOOD", "Bhagyakul in Sreenagar is known for its sweets, especially in winter.", undefined, "Bangladeshi sweets"),
+  ],
+  narayanganj: [
+    p("Panam Nagar", "SIGHT", "A single street of 52 old merchant houses, part of Sonargaon, the medieval capital of Bengal.", "Go on a weekday morning; it gets crowded on Fridays.", "Panam Nagar"),
+    p("Folk Art and Crafts Museum, Sonargaon", "SIGHT", "A museum of Bengali crafts in an old palace, with gardens and a lake.", undefined, "Sonargaon Folk Art Museum"),
+    p("Goaldi Mosque", "RELIGIOUS", "A beautiful single-dome mosque from 1519, one of the best Sultanate buildings in the country.", undefined, "Goaldi Mosque"),
+    p("Hajiganj Fort", "SIGHT", "A Mughal water fort on the Shitalakshya river.", undefined, "Hajiganj Fort"),
+    p("Sonakanda Fort", "SIGHT", "Another Mughal river fort, across the river at Bandar.", undefined, "Sonakanda Fort"),
+    p("Jamdani weavers of Rupganj", "MARKET", "Watch Jamdani saris, a UNESCO-listed weaving art, being made by hand in Rupganj villages.", "Buy straight from the weavers on the weekly market day.", "Jamdani"),
+  ],
+  narsingdi: [
+    p("Wari-Bateshwar", "SIGHT", "An ancient fort city around 2,500 years old, with excavated walls and a small museum.", undefined, "Wari-Bateshwar"),
+    p("Baburhat cloth market", "MARKET", "One of the biggest wholesale cloth markets in Bangladesh, at its busiest on market days.", undefined, "Baburhat"),
+    p("Meghna riverbank", "NATURE", "Quiet river views and fishing boats on the Meghna.", undefined, "Meghna river"),
+    p("Lotkon and sagor bananas", "FOOD", "Narsingdi's orchards are famous for lotkon (Burmese grape) in summer and sagor bananas all year.", undefined, "Baccaurea ramiflora"),
+  ],
+  rajbari: [
+    p("Goalanda and Daulatdia ghats", "EXPERIENCE", "Historic ferry ghats where the Padma and Jamuna meet.", undefined, "Daulatdia"),
+    p("Padma river chars", "NATURE", "Sandbank islands in the Padma with farming villages, reached by country boat.", undefined, "Padma river char"),
+  ],
+  shariatpur: [
+    p("Padma Bridge at Jajira", "SIGHT", "The south end of the Padma Bridge, with riverside viewpoints.", undefined, "Padma Bridge"),
+    p("Kirtinasha river", "NATURE", "A powerful river known as the 'destroyer of monuments' for how it has moved over the centuries.", undefined, "Kirtinasha"),
+  ],
+  tangail: [
+    p("Atia Mosque", "RELIGIOUS", "A mosque from 1609, once pictured on the ten-taka note.", undefined, "Atia Mosque"),
+    p("Mohera Zamindar Bari", "SIGHT", "Elegant zamindar buildings with lakes and gardens, now a police training centre open to visitors.", undefined, "Mohera Zamindar Bari"),
+    p("Dhanbari Nawab Palace", "SIGHT", "The old Nawab palace and mosque at Dhanbari.", undefined, "Dhanbari"),
+    p("Madhupur forest", "NATURE", "A large sal forest with Garo villages and walking trails.", undefined, "Madhupur National Park"),
+    p("Tangail sari weavers", "MARKET", "Pathrail's handloom villages weave the famous Tangail saris; buy straight from the looms.", undefined, "Tangail sari"),
+    p("Porabari chomchom", "FOOD", "Tangail's famous sweet, a soft brown chomchom first made in Porabari.", undefined, "Chomchom"),
+  ],
+};

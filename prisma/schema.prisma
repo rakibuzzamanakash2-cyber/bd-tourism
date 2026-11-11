@@ -140,8 +140,31 @@ model District {
   updatedAt      DateTime @updatedAt
 
   destinations Destination[]
+  places       DistrictPlace[]
 
   @@index([division])
+}
+
+// A place to visit in a district: a sight, a market, a famous food shop…
+model DistrictPlace {
+  id          String   @id @default(cuid())
+  districtId  String
+  district    District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  // SIGHT, NATURE, RELIGIOUS, MARKET, FOOD or EXPERIENCE
+  kind        String
+  description String
+  tip         String?
+  // Filled by `npm run photos:wikimedia`, or chosen in the admin
+  photo       String?
+  order       Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([districtId, slug])
+  @@index([districtId, isPublished])
 }
 
 model Category {

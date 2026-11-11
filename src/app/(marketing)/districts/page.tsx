@@ -61,7 +61,7 @@ export default async function DistrictsPage({ searchParams }: Props) {
             </div>
             <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {g.districts.map((d, i) => (
-                <DistrictCard key={d.id} district={d} places={d._count.destinations} priority={gi === 0 && i < 4} />
+                <DistrictCard key={d.id} district={d} places={d._count.places} priority={gi === 0 && i < 4} />
               ))}
             </div>
           </section>
