@@ -123,7 +123,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
                   {destination.categories.map((c) => (
                     <Link
                       key={c.id}
-                      href={`/destinations?category=${c.slug}`}
+                      href="/destinations"
                       className="rounded-full border border-forest-900/15 bg-paper-warm px-3 py-1 text-xs uppercase tracking-wider text-forest-800 transition-colors hover:border-forest-900/40"
                     >
                       {c.name}

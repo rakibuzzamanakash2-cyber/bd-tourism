@@ -10,7 +10,7 @@ export default function Loading() {
       </section>
 
       {/* Filter bar skeleton */}
-      <section className="border-b border-forest-900/10 bg-paper/85">
+      <section className="overflow-hidden border-b border-forest-900/10 bg-paper/85">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 py-3">
             <div className="h-3 w-14 animate-pulse rounded bg-forest-900/10" />
