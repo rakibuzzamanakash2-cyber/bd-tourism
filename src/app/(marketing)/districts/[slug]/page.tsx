@@ -59,10 +59,10 @@ export default async function DistrictPage({ params }: Props) {
           <div className="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/50 to-forest-950/10" />
         </div>
         <div className="mx-auto flex min-h-[420px] max-w-7xl flex-col justify-end px-4 pb-12 pt-10 sm:min-h-[520px] sm:px-6 lg:px-8">
-          <Link href="/districts" className="mb-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-paper/10 px-3 py-1.5 text-sm backdrop-blur hover:bg-paper/20">
+          <Link href="/destinations?view=districts" className="mb-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-paper/10 px-3 py-1.5 text-sm backdrop-blur hover:bg-paper/20">
             <ArrowLeft className="size-4" /> All districts
           </Link>
-          <Link href={`/districts?division=${d.division}`} className="eyebrow mt-10 text-forest-200 hover:text-paper">
+          <Link href={`/destinations?view=districts&division=${d.division}`} className="eyebrow mt-10 text-forest-200 hover:text-paper">
             {divisionName(d.division)} division · <span className="font-bengali normal-case tracking-normal">{divisionNameBn(d.division)} বিভাগ</span>
           </Link>
           <h1 className="mt-3 font-display text-6xl leading-none sm:text-7xl md:text-8xl">{d.name}</h1>

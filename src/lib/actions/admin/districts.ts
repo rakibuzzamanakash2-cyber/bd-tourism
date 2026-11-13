@@ -39,7 +39,7 @@ export async function saveDistrictAction(formData: FormData): Promise<AdminActio
   if (!updated) return { ok: false, error: "District not found." };
   await audit({ actorId: admin.id, action: "content.district.update", targetType: "District", targetId: d.id, details: { name: updated.name } });
   revalidatePath("/admin/districts");
-  revalidatePath("/districts");
+  revalidatePath("/destinations");
   revalidatePath(`/districts/${updated.slug}`);
   return { ok: true, message: `${updated.name} saved.` };
 }
@@ -113,6 +113,6 @@ export async function savePlaceAction(formData: FormData): Promise<AdminActionRe
   }
   revalidatePath(`/admin/districts/${district.slug}`);
   revalidatePath(`/districts/${district.slug}`, "layout");
-  revalidatePath("/districts");
+  revalidatePath("/destinations");
   return { ok: true, message: v.id ? `${v.name} saved.` : `${v.name} added.` };
 }

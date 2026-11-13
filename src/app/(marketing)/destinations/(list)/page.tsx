@@ -11,8 +11,10 @@ import { creditsFor } from "@/lib/image-credits";
 import { getSavedState } from "@/lib/saved";
 import { DestinationCard } from "@/components/destinations/destination-card";
 import { PlaceCard } from "@/components/districts/place-card";
+import { DistrictCard } from "@/components/districts/district-card";
+import { listDistricts } from "@/lib/districts";
 
-type Params = { division?: string; district?: string; type?: string; q?: string; page?: string };
+type Params = { view?: string; division?: string; district?: string; type?: string; q?: string; page?: string };
 
 const PER_PAGE = 24;
 
@@ -29,8 +31,10 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
   const type = PLACE_KINDS.find((k) => k.value.toLowerCase() === params.type?.toLowerCase())?.value;
   const q = (params.q ?? "").trim().slice(0, 60);
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
+  // Two ways to browse the same country: every place, or district by district
+  const view = params.view === "districts" ? "districts" : "places";
 
-  const districts = await db.district.findMany({ orderBy: { name: "asc" }, select: { id: true, slug: true, name: true, division: true } });
+  const districts = await listDistricts();
   // A district only counts when it belongs to the chosen division
   const district = districts.find((d) => d.slug === params.district && (!division || d.division === division));
   const activeDivision = division ?? (district?.division as typeof division);
@@ -42,7 +46,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
     ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }, { district: { name: { contains: q, mode: "insensitive" } } }] } : {}),
   };
   // The hand-picked destinations with ready tours lead the first page
-  const showFeatured = !type && !q && page === 1;
+  const showFeatured = view === "places" && !type && !q && page === 1;
 
   const [total, places, featured, saved, totals] = await Promise.all([
     db.districtPlace.count({ where }),
@@ -70,16 +74,26 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
   const filtered = Boolean(activeDivision || district || type || q);
 
-  const current: Params = { division: activeDivision, district: district?.slug, type: type?.toLowerCase(), q: q || undefined };
+  const current: Params = {
+    view: view === "districts" ? "districts" : undefined,
+    division: activeDivision,
+    district: view === "places" ? district?.slug : undefined,
+    type: view === "places" ? type?.toLowerCase() : undefined,
+    q: q || undefined,
+  };
+  // District view: the districts of the chosen division, matching the search
+  const shownDistricts = districts.filter(
+    (d) => (!activeDivision || d.division === activeDivision) && (!q || `${d.name} ${d.knownFor} ${d.highlights.join(" ")}`.toLowerCase().includes(q.toLowerCase())),
+  );
   const url = (change: Partial<Params>) => {
     const next = { ...current, ...change };
     const sp = new URLSearchParams();
-    for (const key of ["division", "district", "type", "q", "page"] as const) if (next[key]) sp.set(key, next[key]!);
+    for (const key of ["view", "division", "district", "type", "q", "page"] as const) if (next[key]) sp.set(key, next[key]!);
     const qs = sp.toString();
     return qs ? `/destinations?${qs}` : "/destinations";
   };
 
-  const title = district
+  const title = district && view === "places"
     ? district.name
     : activeDivision
       ? `${divisionName(activeDivision)} division`
@@ -89,12 +103,13 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
     <>
       <section className="border-b border-forest-900/10 bg-paper-warm">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-          <p className="eyebrow mb-4 text-forest-700">{district ? `${divisionName(district.division)} division` : activeDivision ? "Division" : "All destinations"}</p>
+          <p className="eyebrow mb-4 text-forest-700">{district && view === "places" ? `${divisionName(district.division)} division` : activeDivision ? "Division" : "All destinations"}</p>
           <h1 className="max-w-4xl font-display text-5xl leading-[0.98] sm:text-6xl md:text-7xl">{title}</h1>
           <form action="/destinations" className="mt-8 flex max-w-xl gap-2">
+            {view === "districts" && <input type="hidden" name="view" value="districts" />}
             {activeDivision && <input type="hidden" name="division" value={activeDivision} />}
-            {district && <input type="hidden" name="district" value={district.slug} />}
-            {type && <input type="hidden" name="type" value={type.toLowerCase()} />}
+            {view === "places" && district && <input type="hidden" name="district" value={district.slug} />}
+            {view === "places" && type && <input type="hidden" name="type" value={type.toLowerCase()} />}
             <label className="relative flex-1">
               <span className="sr-only">Search places</span>
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink-mute" aria-hidden />
@@ -102,7 +117,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
                 type="search"
                 name="q"
                 defaultValue={q}
-                placeholder="Search a place, food or district"
+                placeholder={view === "districts" ? "Search a district" : "Search a place, food or district"}
                 className="w-full rounded-full border border-forest-900/15 bg-paper py-2.5 pl-11 pr-4 text-sm outline-none focus:border-forest-700 focus:ring-2 focus:ring-forest-700/15"
               />
             </label>
@@ -116,6 +131,14 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
       {/* Filters */}
       <section id="filters" className="scroll-mt-20 border-b border-forest-900/10 bg-paper">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-1 border-b border-forest-900/10 pt-3" role="tablist" aria-label="Browse by">
+            <ViewTab href={url({ view: undefined, page: undefined })} active={view === "places"}>
+              Places <span className="text-ink-mute">{totals}</span>
+            </ViewTab>
+            <ViewTab href={url({ view: "districts", district: undefined, type: undefined, page: undefined })} active={view === "districts"}>
+              Districts <span className="text-ink-mute">{districts.length}</span>
+            </ViewTab>
+          </div>
           <FilterRow label="Region">
             <Pill href={url({ division: undefined, district: undefined, page: undefined })} active={!activeDivision}>All regions</Pill>
             {DIVISIONS.map((v) => (
@@ -124,7 +147,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
               </Pill>
             ))}
           </FilterRow>
-          {activeDivision && (
+          {view === "places" && activeDivision && (
             <FilterRow label="District">
               <Pill href={url({ district: undefined, page: undefined })} active={!district}>All of {divisionName(activeDivision)}</Pill>
               {districts
@@ -136,14 +159,16 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
                 ))}
             </FilterRow>
           )}
-          <FilterRow label="Type">
-            <Pill href={url({ type: undefined, page: undefined })} active={!type}>All types</Pill>
-            {PLACE_KINDS.map((k) => (
-              <Pill key={k.value} href={url({ type: k.value.toLowerCase(), page: undefined })} active={type === k.value}>
-                {k.label}
-              </Pill>
-            ))}
-          </FilterRow>
+          {view === "places" && (
+            <FilterRow label="Type">
+              <Pill href={url({ type: undefined, page: undefined })} active={!type}>All types</Pill>
+              {PLACE_KINDS.map((k) => (
+                <Pill key={k.value} href={url({ type: k.value.toLowerCase(), page: undefined })} active={type === k.value}>
+                  {k.label}
+                </Pill>
+              ))}
+            </FilterRow>
+          )}
         </div>
       </section>
 
@@ -161,6 +186,39 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
         </section>
       )}
 
+      {view === "districts" && (
+        <div className="mx-auto max-w-7xl space-y-16 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+          {shownDistricts.length === 0 && (
+            <div className="rounded-lg border border-forest-900/10 bg-paper-warm px-8 py-16 text-center">
+              <p className="font-display text-3xl">No district matches.</p>
+              <p className="mt-3 text-ink-soft">
+                <Link href="/destinations?view=districts" className="underline underline-offset-4 hover:text-forest-800">See all 64 districts</Link>
+              </p>
+            </div>
+          )}
+          {DIVISIONS.map((v, gi) => {
+            const list = shownDistricts.filter((d) => d.division === v.slug);
+            if (list.length === 0) return null;
+            return (
+              <section key={v.slug} aria-labelledby={`div-${v.slug}`}>
+                <div className="mb-8 flex flex-wrap items-baseline justify-between gap-3 border-b border-forest-900/10 pb-4">
+                  <h2 id={`div-${v.slug}`} className="font-display text-3xl sm:text-4xl">
+                    {v.name} division <span className="font-bengali text-xl text-ink-mute">{v.nameBn} বিভাগ</span>
+                  </h2>
+                  <p className="text-sm text-ink-mute">{list.length} {list.length === 1 ? "district" : "districts"}</p>
+                </div>
+                <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                  {list.map((d, i) => (
+                    <DistrictCard key={d.id} district={d} places={d._count.places} priority={gi === 0 && i < 4} saved={saved.districtIds.has(d.id)} signedIn={saved.signedIn} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {view === "places" && (
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mb-8 flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-display text-3xl sm:text-4xl">
@@ -218,6 +276,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
           </nav>
         )}
       </section>
+      )}
     </>
   );
 }
@@ -229,6 +288,23 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
       {/* Phones: swipe sideways (no scrollbar). Wider screens: wrap onto more lines. */}
       <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">{children}</div>
     </div>
+  );
+}
+
+function ViewTab({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      role="tab"
+      aria-selected={active}
+      className={cn(
+        "-mb-px rounded-t-md border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
+        active ? "border-forest-900 text-forest-900" : "border-transparent text-ink-mute hover:text-ink",
+      )}
+    >
+      {children}
+    </Link>
   );
 }
 

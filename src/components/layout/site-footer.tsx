@@ -6,7 +6,7 @@ const columns = [
     title: "Explore",
     links: [
       { href: "/destinations", label: "Destinations" },
-      { href: "/districts", label: "All 64 districts" },
+      { href: "/destinations?view=districts", label: "All 64 districts" },
       { href: "/packages", label: "Tours" },
       { href: "/guides", label: "Local guides" },
       { href: "/homestays", label: "Homestays" },

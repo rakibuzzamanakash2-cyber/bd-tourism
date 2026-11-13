@@ -64,7 +64,7 @@ export default async function PlacePage({ params }: Props) {
     <>
       <nav aria-label="Breadcrumb" className="border-b border-forest-900/10 bg-paper-warm">
         <ol className="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-4 py-3 text-sm text-ink-mute sm:px-6 lg:px-8">
-          <li><Link href="/districts" className="hover:text-forest-800">Districts</Link></li>
+          <li><Link href="/destinations?view=districts" className="hover:text-forest-800">Destinations</Link></li>
           <ChevronRight className="size-3.5" aria-hidden />
           <li><Link href={`/districts/${d.slug}`} className="hover:text-forest-800">{d.name}</Link></li>
           <ChevronRight className="size-3.5" aria-hidden />

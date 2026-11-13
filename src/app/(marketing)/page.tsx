@@ -164,7 +164,7 @@ function DistrictsByDivision() {
             <p className="eyebrow mb-3 text-forest-700">Go further</p>
             <h2 className="max-w-2xl font-display text-4xl sm:text-5xl">All 64 districts, in eight divisions.</h2>
           </div>
-          <Link href="/districts" className="shrink-0 text-sm underline underline-offset-4 hover:text-forest-800">
+          <Link href="/destinations?view=districts" className="shrink-0 text-sm underline underline-offset-4 hover:text-forest-800">
             See every district →
           </Link>
         </div>
@@ -172,7 +172,7 @@ function DistrictsByDivision() {
           {DIVISIONS.map((v) => {
             const list = DISTRICTS.filter((d) => d.division === v.slug);
             return (
-              <Link key={v.slug} href={`/districts?division=${v.slug}`} className="group bg-paper p-6 transition-colors hover:bg-forest-100/60">
+              <Link key={v.slug} href={`/destinations?view=districts&division=${v.slug}`} className="group bg-paper p-6 transition-colors hover:bg-forest-100/60">
                 <p className="font-bengali text-sm text-ink-mute">{v.nameBn}</p>
                 <h3 className="mt-1 font-display text-2xl group-hover:text-forest-800">{v.name}</h3>
                 <p className="mt-3 line-clamp-2 text-sm text-ink-soft">{list.map((d) => d.name).join(" · ")}</p>
