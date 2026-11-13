@@ -24,7 +24,6 @@ import { signOutAction } from "@/lib/actions/auth";
 
 const nav = [
   { href: "/destinations", label: "Destinations" },
-  { href: "/districts", label: "Districts" },
   { href: "/packages", label: "Tours" },
   { href: "/guides", label: "Guides" },
   { href: "/homestays", label: "Homestays" },

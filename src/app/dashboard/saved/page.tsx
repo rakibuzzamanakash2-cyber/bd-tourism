@@ -54,7 +54,7 @@ export default async function SavedPage() {
         <EmptyState
           title="Nothing saved yet."
           body="Tap the heart on a district, place, homestay or tour and it will appear here."
-          cta={{ label: "Explore the 64 districts", href: "/districts" }}
+          cta={{ label: "Explore the 64 districts", href: "/destinations?view=districts" }}
           alt={{ label: "Or see tours", href: "/packages" }}
         />
       ) : (
