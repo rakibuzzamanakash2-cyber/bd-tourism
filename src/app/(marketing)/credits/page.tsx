@@ -57,6 +57,7 @@ export default async function CreditsPage() {
                     {c.license}
                   </p>
                   {where && <p className="mt-1 text-xs text-ink-mute">Used on <Link href={where.href} className="underline underline-offset-4">{where.label}</Link></p>}
+                  {c.sourceUrl.startsWith("http") && (
                   <p className="mt-1 text-xs text-ink-mute">
                     Original on Wikimedia Commons:{" "}
                     <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">source</a>
@@ -68,6 +69,7 @@ export default async function CreditsPage() {
                     )}{" "}
                     (opens another site)
                   </p>
+                  )}
                 </div>
               </li>
             );

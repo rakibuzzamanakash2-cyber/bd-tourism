@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { dayKey } from "@/lib/guide-shared";
+import { removeTravelerPhoto } from "@/lib/traveler-photos";
 
 export type DeleteResult = { ok: true } | { ok: false; error: string };
 
@@ -24,6 +25,11 @@ export async function deleteMyAccountAction(input: { confirmEmail: string }): Pr
   const upcoming = await db.booking.count({ where: { touristId: user.id, status: { in: ["PAID", "CONFIRMED", "IN_PROGRESS", "DISPUTED"] }, endDate: { gte: today } } });
   if (upcoming) return { ok: false, error: "You have a trip coming up. Cancel it first (or message us), then delete your account." };
 
+  // Photos they shared come off the site, files included
+  for (const photo of await db.travelerPhoto.findMany({ where: { userId: user.id }, select: { id: true, url: true, publicId: true } })) {
+    await removeTravelerPhoto(photo);
+  }
+
   const bookings = await db.booking.findMany({ where: { touristId: user.id }, select: { id: true, specialRequests: true } });
   const scrub = (json: string | null) => {
     try {
@@ -37,10 +43,22 @@ export async function deleteMyAccountAction(input: { confirmEmail: string }): Pr
   await db.$transaction([
     // Unpaid bookings just go away as cancelled
     db.booking.updateMany({ where: { touristId: user.id, status: "PAYMENT_PENDING" }, data: { status: "CANCELLED", cancelledAt: new Date(), cancellationReason: "Account deleted" } }),
-    ...bookings.map((b) => db.booking.update({ where: { id: b.id }, data: { specialRequests: scrub(b.specialRequests) } })),
+    ...bookings.map((b) => db.booking.update({ where: { id: b.id }, data: { specialRequests: scrub(b.specialRequests), emergencyName: null, emergencyPhone: null } })),
     db.bookingTraveler.updateMany({
       where: { booking: { touristId: user.id } },
-      data: { name: "Deleted traveler", email: null, phone: null, nationality: null, passportEnc: null, passportLast4: null },
+      data: {
+        name: "Deleted traveler",
+        email: null,
+        phone: null,
+        nationality: null,
+        dateOfBirth: null,
+        passportEnc: null,
+        passportLast4: null,
+        passportExpiry: null,
+        visaStatus: null,
+        visaNumberEnc: null,
+        visaExpiry: null,
+      },
     }),
     db.account.deleteMany({ where: { userId: user.id } }),
     db.session.deleteMany({ where: { userId: user.id } }),

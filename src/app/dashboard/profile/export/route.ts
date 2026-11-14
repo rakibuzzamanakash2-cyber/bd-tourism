@@ -17,7 +17,10 @@ export async function GET() {
         select: {
           bookingCode: true, status: true, startDate: true, endDate: true, travelerCount: true, totalAmountUSD: true, createdAt: true, cancelledAt: true, cancellationReason: true, refundAmountUSD: true, specialRequests: true,
           package: { select: { title: true } }, homestay: { select: { name: true } },
-          travelers: { select: { name: true, email: true, phone: true, nationality: true, passportEnc: true, passportPurgedAt: true }, orderBy: { position: "asc" } },
+          travelers: {
+            select: { name: true, email: true, phone: true, nationality: true, dateOfBirth: true, passportEnc: true, passportExpiry: true, passportPurgedAt: true, visaStatus: true, visaNumberEnc: true, visaExpiry: true },
+            orderBy: { position: "asc" },
+          },
           payment: { select: { amountUSD: true, currency: true, amountBDT: true, status: true, paidAt: true, refundedAt: true, method: true } },
         },
         orderBy: { createdAt: "asc" },
@@ -30,6 +33,9 @@ export async function GET() {
       savedPlaces: { select: { place: { select: { name: true } }, createdAt: true } },
       savedHomestays: { select: { homestay: { select: { name: true } }, createdAt: true } },
       tripRequests: { select: { travelers: true, startDate: true, days: true, message: true, status: true, createdAt: true } },
+      travelerPhotos: {
+        select: { url: true, caption: true, creditName: true, status: true, placeName: true, createdAt: true, district: { select: { name: true } }, place: { select: { name: true } } },
+      },
       applications: { select: { kind: true, status: true, fullName: true, phone: true, details: true, createdAt: true, submittedAt: true } },
     },
   });
@@ -49,12 +55,13 @@ export async function GET() {
           return specialRequests;
         }
       })(),
-      travelers: travelers.map(({ passportEnc, ...t }) => ({ ...t, passportNumber: decrypt(passportEnc) })),
+      travelers: travelers.map(({ passportEnc, visaNumberEnc, ...t }) => ({ ...t, passportNumber: decrypt(passportEnc), visaNumber: decrypt(visaNumberEnc) })),
     })),
     reviews: u.reviews,
     saved: { destinations: u.savedDestinations, tours: u.savedPackages, districts: u.savedDistricts, places: u.savedPlaces, homestays: u.savedHomestays },
     messages: u.contactMessages,
     tripRequests: u.tripRequests,
+    sharedPhotos: u.travelerPhotos,
     applications: u.applications,
   };
   return new NextResponse(JSON.stringify(data, null, 2), {
