@@ -14,6 +14,8 @@ import { PackageCard } from "@/components/packages/package-card";
 import { HomestayCard } from "@/components/homestays/homestay-card";
 import { DistrictPlaceholder } from "@/components/districts/district-card";
 import { PlaceCard } from "@/components/districts/place-card";
+import { TravelerPhotos } from "@/components/traveler-photos/traveler-photos";
+import { approvedPhotosForDistrict } from "@/lib/traveler-photos";
 import { BookDialog } from "@/components/booking/book-dialog";
 import { SaveButton } from "@/components/saved/save-button";
 import { bookOptionsForDistrict } from "@/lib/book-options";
@@ -41,7 +43,12 @@ export default async function DistrictPage({ params }: Props) {
   if (!page) notFound();
   const { district: d, tours, homestays, nearby } = page;
   const photos = [d.photo, ...d.places.map((x) => x.photo)].filter((u): u is string => Boolean(u));
-  const [credits, saved, options] = await Promise.all([creditsFor(photos), getSavedState(), bookOptionsForDistrict(d.id)]);
+  const [credits, saved, options, travelerPhotos] = await Promise.all([
+    creditsFor(photos),
+    getSavedState(),
+    bookOptionsForDistrict(d.id),
+    approvedPhotosForDistrict(d.id),
+  ]);
   const toSee = d.places.filter((x) => x.kind !== "FOOD");
   const food = d.places.filter((x) => x.kind === "FOOD");
   const credit = d.photo ? credits.get(d.photo) : undefined;
@@ -193,6 +200,8 @@ export default async function DistrictPage({ params }: Props) {
           </div>
         </section>
       )}
+
+      <TravelerPhotos photos={travelerPhotos} subject={d.name} shareHref={`/share?district=${d.slug}`} districtSlug={d.slug} />
 
       {/* Plan */}
       <section className="bg-forest-900 text-paper">

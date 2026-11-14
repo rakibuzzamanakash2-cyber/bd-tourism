@@ -75,6 +75,7 @@ export default async function AdminOverviewPage() {
   ]);
 
   const quotesToSend = await db.booking.count({ where: { status: "QUOTE_REQUESTED" } });
+  const photosToReview = await db.travelerPhoto.count({ where: { status: "PENDING" } });
 
   return (
     <div>
@@ -130,6 +131,13 @@ export default async function AdminOverviewPage() {
           hint="Finished stays not paid out"
           href="/admin/homestays"
           tone={hostsToPay > 0 ? "attention" : "default"}
+        />
+        <StatCard
+          label="Photos to review"
+          value={photosToReview}
+          hint="Shared by travelers"
+          href="/admin/traveler-photos"
+          tone={photosToReview > 0 ? "attention" : "default"}
         />
         <StatCard
           label="Quotes to send"

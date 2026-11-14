@@ -50,6 +50,7 @@ model User {
   savedDistricts       SavedDistrict[]
   savedPlaces          SavedPlace[]
   savedHomestays       SavedHomestay[]
+  travelerPhotos       TravelerPhoto[]
   tripRequests         TripRequest[]
   contactMessages      ContactMessage[]
   auditLogs            AuditLog[]
@@ -148,6 +149,7 @@ model District {
   savedBy      SavedDistrict[]
   tripRequests TripRequest[]
   bookings     Booking[]
+  travelerPhotos TravelerPhoto[]
 
   @@index([division])
 }
@@ -179,6 +181,7 @@ model DistrictPlace {
   savedBy      SavedPlace[]
   tripRequests TripRequest[]
   bookings     Booking[]
+  travelerPhotos TravelerPhoto[]
 
   @@unique([districtId, slug])
   @@index([districtId, isPublished])
@@ -891,6 +894,40 @@ model HomestayBlockedDate {
 
 // Credit for a photo used on the site (author, licence, where it came from).
 // Keyed by the image URL, so any picture anywhere can have one.
+// A photo a traveler shared of a place they visited, with their own
+// description. Nothing is public until the team approves it.
+enum TravelerPhotoStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model TravelerPhoto {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  districtId  String
+  district    District            @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  // One of our listed places, or the traveler's own name for somewhere new
+  placeId     String?
+  place       DistrictPlace?      @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  placeName   String?
+  url         String              @unique
+  publicId    String // the Cloudinary id, to delete the file later
+  caption     String
+  // The name shown under the photo ("Anna M.")
+  creditName  String
+  status      TravelerPhotoStatus @default(PENDING)
+  reviewNote  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@index([status, createdAt])
+  @@index([districtId, status])
+  @@index([placeId, status])
+  @@index([userId])
+}
+
 model ImageCredit {
   id         String   @id @default(cuid())
   url        String   @unique

@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { cloudinary } from "@/lib/env";
 
-export const UPLOAD_FOLDERS = ["destinations", "tours", "gallery", "applications", "documents", "guides", "homestays"] as const;
+export const UPLOAD_FOLDERS = ["destinations", "tours", "gallery", "applications", "documents", "guides", "homestays", "travelers"] as const;
 /** Folders whose uploads are private (ID documents): never publicly viewable. */
 const PRIVATE_FOLDERS: readonly string[] = ["documents"];
 export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];
@@ -83,6 +83,23 @@ export function privateDownloadUrl(publicId: string, format: string, ttlSeconds 
     signature: sign(params),
   });
   return `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudinary.cloudName)}/image/download?${q.toString()}`;
+}
+
+/** Delete an uploaded photo from Cloudinary. Best effort: returns false if it couldn't. */
+export async function destroyUpload(publicId: string, now = Date.now()): Promise<boolean> {
+  if (!cloudinary.configured) return false;
+  const params = { public_id: publicId, timestamp: Math.floor(now / 1000) };
+  const body = new URLSearchParams({ public_id: publicId, timestamp: String(params.timestamp), api_key: cloudinary.apiKey, signature: sign(params) });
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudinary.cloudName)}/image/destroy`, {
+      method: "POST",
+      body,
+      signal: AbortSignal.timeout(10_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export type ConnectionTest = { ok: true; detail: string } | { ok: false; error: string };

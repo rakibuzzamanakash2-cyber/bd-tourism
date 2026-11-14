@@ -11,6 +11,8 @@ import { PhotoCredit } from "@/components/photo-credit";
 import { BookDialog } from "@/components/booking/book-dialog";
 import { SaveButton } from "@/components/saved/save-button";
 import { PlaceCard, placeKindLabel } from "@/components/districts/place-card";
+import { TravelerPhotos } from "@/components/traveler-photos/traveler-photos";
+import { approvedPhotosForPlace } from "@/lib/traveler-photos";
 
 type Props = { params: Promise<{ slug: string; place: string }> };
 
@@ -41,7 +43,7 @@ export default async function PlacePage({ params }: Props) {
   if (!place) notFound();
   const d = place.district;
 
-  const [more, saved, options] = await Promise.all([
+  const [more, saved, options, travelerPhotos] = await Promise.all([
     db.districtPlace.findMany({
       where: { districtId: d.id, isPublished: true, NOT: { id: place.id } },
       orderBy: [{ order: "asc" }, { name: "asc" }],
@@ -49,6 +51,7 @@ export default async function PlacePage({ params }: Props) {
     }),
     getSavedState(),
     bookOptionsForDistrict(d.id),
+    approvedPhotosForPlace(place.id),
   ]);
   const photos = [place.photo, ...place.gallery, ...more.map((m) => m.photo)].filter((u): u is string => Boolean(u));
   const credits = await creditsFor(photos);
@@ -167,6 +170,8 @@ export default async function PlacePage({ params }: Props) {
           </div>
         </section>
       )}
+
+      <TravelerPhotos photos={travelerPhotos} subject={place.name} shareHref={`/share?place=${d.slug}/${place.slug}`} />
 
       {more.length > 0 && (
         <section className="border-t border-forest-900/10">

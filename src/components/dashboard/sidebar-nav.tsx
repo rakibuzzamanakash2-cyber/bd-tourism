@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookMarked,
+  BookMarked, Camera,
   Calendar,
   CalendarDays,
   ClipboardList,
@@ -21,6 +21,7 @@ const items = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/bookings", label: "Bookings", icon: Calendar },
   { href: "/dashboard/saved", label: "Saved", icon: BookMarked },
+  { href: "/dashboard/photos", label: "My photos", icon: Camera },
   { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
