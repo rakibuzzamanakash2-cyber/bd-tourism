@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import { auth } from "@/auth";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 // Fonts are self-hosted (files in ./fonts, SIL Open Font License) so the build
@@ -33,6 +34,8 @@ const hindSiliguri = localFont({
 });
 
 export const metadata: Metadata = {
+  // Makes every canonical, Open Graph and sitemap URL absolute
+  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
   title: {
     default: "DeltaWay · Bangladesh, guided.",
     template: "%s · DeltaWay",
