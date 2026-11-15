@@ -293,9 +293,13 @@ async function FeaturedPackages() {
 // ============================================================
 // HOMEPAGE
 // ============================================================
+import { JsonLd } from "@/components/seo/json-ld";
+import { organizationLd, webSiteLd } from "@/lib/structured-data";
+
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={[organizationLd(), webSiteLd()]} />
       <Hero />
       <Facts />
       <FeaturedDestinations />
