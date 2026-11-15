@@ -14,6 +14,8 @@ import { PackageCard } from "@/components/packages/package-card";
 import { HomestayCard } from "@/components/homestays/homestay-card";
 import { DistrictPlaceholder } from "@/components/districts/district-card";
 import { PlaceCard } from "@/components/districts/place-card";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbLd, districtLd } from "@/lib/structured-data";
 import { TravelerPhotos } from "@/components/traveler-photos/traveler-photos";
 import { approvedPhotosForDistrict } from "@/lib/traveler-photos";
 import { BookDialog } from "@/components/booking/book-dialog";
@@ -55,6 +57,15 @@ export default async function DistrictPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          districtLd(d),
+          breadcrumbLd([
+            { name: "Destinations", path: "/destinations" },
+            { name: `${d.name} district`, path: `/districts/${d.slug}` },
+          ]),
+        ]}
+      />
       {/* Hero */}
       <section className="relative isolate overflow-hidden bg-forest-950 text-paper">
         <div className="absolute inset-0 -z-10">

@@ -11,6 +11,8 @@ import { PhotoCredit } from "@/components/photo-credit";
 import { BookDialog } from "@/components/booking/book-dialog";
 import { SaveButton } from "@/components/saved/save-button";
 import { PlaceCard, placeKindLabel } from "@/components/districts/place-card";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbLd, placeLd } from "@/lib/structured-data";
 import { TravelerPhotos } from "@/components/traveler-photos/traveler-photos";
 import { approvedPhotosForPlace } from "@/lib/traveler-photos";
 
@@ -65,6 +67,16 @@ export default async function PlacePage({ params }: Props) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          placeLd(place),
+          breadcrumbLd([
+            { name: "Destinations", path: "/destinations" },
+            { name: `${d.name} district`, path: `/districts/${d.slug}` },
+            { name: place.name, path: `/districts/${d.slug}/${place.slug}` },
+          ]),
+        ]}
+      />
       <nav aria-label="Breadcrumb" className="border-b border-forest-900/10 bg-paper-warm">
         <ol className="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-4 py-3 text-sm text-ink-mute sm:px-6 lg:px-8">
           <li><Link href="/destinations?view=districts" className="hover:text-forest-800">Destinations</Link></li>

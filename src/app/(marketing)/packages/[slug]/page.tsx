@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { creditsFor } from "@/lib/image-credits";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbLd, tourLd } from "@/lib/structured-data";
 import { PhotoCredit } from "@/components/photo-credit";
 import { publicReviewInclude, ratingSummary } from "@/lib/reviews";
 import { ReviewSection } from "@/components/reviews/review-list";
@@ -75,6 +77,15 @@ export default async function PackageDetailPage({ params }: PageProps) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          tourLd({ ...pkg, priceUSD, itinerary: pkg.itinerary }, rating),
+          breadcrumbLd([
+            { name: "Tours", path: "/packages" },
+            { name: pkg.title, path: `/packages/${pkg.slug}` },
+          ]),
+        ]}
+      />
       {/* Hero */}
       <section className="relative h-[min(72vh,620px)] w-full overflow-hidden">
         <Image
