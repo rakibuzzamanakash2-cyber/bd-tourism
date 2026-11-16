@@ -16,6 +16,7 @@ import { DistrictPlaceholder } from "@/components/districts/district-card";
 import { PlaceCard } from "@/components/districts/place-card";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbLd, districtLd } from "@/lib/structured-data";
+import { PlanYourVisit } from "@/components/districts/plan-your-visit";
 import { TravelerPhotos } from "@/components/traveler-photos/traveler-photos";
 import { approvedPhotosForDistrict } from "@/lib/traveler-photos";
 import { BookDialog } from "@/components/booking/book-dialog";
@@ -211,6 +212,8 @@ export default async function DistrictPage({ params }: Props) {
           </div>
         </section>
       )}
+
+      <PlanYourVisit d={d} />
 
       <TravelerPhotos photos={travelerPhotos} subject={d.name} shareHref={`/share?district=${d.slug}`} districtSlug={d.slug} />
 

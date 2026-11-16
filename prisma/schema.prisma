@@ -141,6 +141,18 @@ model District {
   // Main photo, filled by `npm run photos:wikimedia` (or set in the admin later)
   photo          String?
   permitRequired Boolean  @default(false)
+
+  // The practical layer, filled in from the admin. Anything left blank is
+  // simply not shown, so a half-filled district still reads well.
+  gettingThere   String? // how to get here from Dhaka
+  travelTime     String? // short label, e.g. "6-7 hours by bus"
+  bestMonths     String? // e.g. "November to February"
+  whereToStay    String? // which town or area to base yourself in
+  moneyNotes     String? // ATMs, cards, how much cash to carry
+  connectivity   String? // mobile data and wifi
+  safetyNotes    String? // anything specific to this district
+  permitNote     String? // detail shown when permitRequired is true
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
