@@ -6,9 +6,14 @@ import { toast } from "sonner";
 import { inputClass } from "@/components/admin/form";
 import { ImageField } from "@/components/admin/image-field";
 import { saveDistrictAction } from "@/lib/actions/admin/districts";
+import { PRACTICAL_FIELDS, practicalFilled, type PracticalField } from "@/lib/district-practical";
+
 
 type Props = {
-  district: { id: string; slug: string; name: string; nameBn: string; photo: string; knownFor: string; highlights: string[]; places: number; things: number; permitRequired: boolean };
+  district: {
+    id: string; slug: string; name: string; nameBn: string; photo: string; knownFor: string;
+    highlights: string[]; places: number; things: number; permitRequired: boolean;
+  } & Record<PracticalField, string>;
   uploadsEnabled: boolean;
 };
 
@@ -25,6 +30,7 @@ export function DistrictForm({ district: d, uploadsEnabled }: Props) {
         <span className="flex items-center gap-3 text-xs text-ink-mute">
           <span>{d.things} to do</span>
           <span className={d.photo ? "text-forest-700" : "text-clay-700"}>{d.photo ? "photo ✓" : "no photo"}</span>
+          <span className={practicalFilled(d) === 8 ? "text-forest-700" : "text-clay-700"}>{practicalFilled(d)}/8 info</span>
         </span>
       </summary>
       <form
@@ -50,6 +56,26 @@ export function DistrictForm({ district: d, uploadsEnabled }: Props) {
           Top places <span className="text-ink-mute">(one per line)</span>
           <textarea name="highlights" rows={4} defaultValue={d.highlights.join("\n")} className={`${inputClass} mt-1`} />
         </label>
+        <fieldset className="rounded-md border border-forest-900/10 p-4">
+          <legend className="px-1 text-xs uppercase tracking-wider text-forest-700">Before you go</legend>
+          <p className="mb-3 text-xs text-ink-mute">
+            Shown on the public page. Leave a box empty and that line is left out.
+          </p>
+          <div className="space-y-3">
+            {PRACTICAL_FIELDS.map((f) => (
+              <label key={f.name} className="block text-sm">
+                {f.label}
+                {f.hint && <span className="block text-xs text-ink-mute">{f.hint}</span>}
+                {f.rows ? (
+                  <textarea name={f.name} rows={f.rows} defaultValue={d[f.name]} className={`${inputClass} mt-1`} />
+                ) : (
+                  <input name={f.name} defaultValue={d[f.name]} className={`${inputClass} mt-1`} />
+                )}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
         <div className="flex items-center gap-4">
           <button type="submit" disabled={pending} className="rounded-full bg-forest-900 px-5 py-2 text-sm text-paper hover:bg-forest-800 disabled:opacity-50">
             {pending ? "Saving…" : "Save"}

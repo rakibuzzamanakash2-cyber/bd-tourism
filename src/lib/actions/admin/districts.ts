@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { isAllowedImageUrl } from "@/lib/image-hosts";
+import { PRACTICAL_FIELDS } from "@/lib/district-practical";
 import { slugify } from "@/lib/slug";
 import { getAdminOrNull } from "@/lib/session";
 import type { AdminActionResult } from "@/lib/actions/admin/bookings";
@@ -20,7 +21,18 @@ const schema = z.object({
     .string()
     .transform((v) => v.split("\n").map((x) => x.trim()).filter(Boolean))
     .pipe(z.array(z.string().max(80)).min(1, "Add at least one place.").max(8, "Up to 8 places.")),
+  // The practical layer. All optional — an empty box just isn't shown.
+  travelTime: z.string().trim().max(120),
+  bestMonths: z.string().trim().max(120),
+  whereToStay: z.string().trim().max(300),
+  moneyNotes: z.string().trim().max(300),
+  connectivity: z.string().trim().max(300),
+  gettingThere: z.string().trim().max(1200),
+  safetyNotes: z.string().trim().max(600),
+  permitNote: z.string().trim().max(600),
 });
+
+const PRACTICAL = PRACTICAL_FIELDS.map((f) => f.name);
 
 export async function saveDistrictAction(formData: FormData): Promise<AdminActionResult> {
   const admin = await getAdminOrNull();
@@ -30,11 +42,20 @@ export async function saveDistrictAction(formData: FormData): Promise<AdminActio
     photo: formData.get("photo") ?? "",
     knownFor: formData.get("knownFor") ?? "",
     highlights: formData.get("highlights") ?? "",
+    ...Object.fromEntries(PRACTICAL.map((k) => [k, formData.get(k) ?? ""])),
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form." };
   const d = parsed.data;
   const updated = await db.district
-    .update({ where: { id: d.id }, data: { photo: d.photo || null, knownFor: d.knownFor, highlights: d.highlights } })
+    .update({
+      where: { id: d.id },
+      data: {
+        photo: d.photo || null,
+        knownFor: d.knownFor,
+        highlights: d.highlights,
+        ...Object.fromEntries(PRACTICAL.map((k) => [k, d[k] || null])),
+      },
+    })
     .catch(() => null);
   if (!updated) return { ok: false, error: "District not found." };
   await audit({ actorId: admin.id, action: "content.district.update", targetType: "District", targetId: d.id, details: { name: updated.name } });
