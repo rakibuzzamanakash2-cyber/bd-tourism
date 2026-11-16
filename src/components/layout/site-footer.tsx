@@ -75,7 +75,7 @@ export function SiteFooter() {
 
           {columns.map((col) => (
             <div key={col.title}>
-              <h4 className="eyebrow text-forest-300">{col.title}</h4>
+              <h2 className="eyebrow text-forest-300">{col.title}</h2>
               <ul className="mt-5 space-y-3 text-sm text-forest-100">
                 {col.links.map((link) => (
                   <li key={link.href}>

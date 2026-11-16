@@ -48,9 +48,9 @@ export function HomestaysComingSoon() {
 
           <div className="lg:pt-14">
             <div className="rounded-lg border border-forest-900/10 bg-paper-warm p-8 sm:p-10">
-              <h3 className="font-display text-2xl leading-tight">
+              <h2 className="font-display text-2xl leading-tight">
                 Tell us when it&rsquo;s live.
-              </h3>
+              </h2>
               <p className="mt-3 text-sm text-ink-soft leading-relaxed">
                 We&rsquo;ll email you once &mdash; when the first homestays are
                 open for booking. No newsletters.
