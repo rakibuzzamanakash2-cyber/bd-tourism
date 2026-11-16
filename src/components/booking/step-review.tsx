@@ -1,5 +1,6 @@
 "use client";
 
+import { cancellationPolicy, permitRefundNote } from "@/lib/policy";
 import Link from "next/link";
 import { calculateEndDate, formatDate, formatDateRange } from "@/lib/booking-utils";
 import { isNationalId, needsVisa, parseDate, visaStatusLabel } from "@/lib/travel-docs";
@@ -138,6 +139,20 @@ export function StepReview({ data, setData, trip, tourPrice, serviceFee, restric
           </ReviewBlock>
         )}
 
+        {/* The checkbox below says they understand the cancellation policy,
+            so show it here rather than making them hunt through the terms. */}
+        <ReviewBlock title="If you need to cancel">
+          <ul className="space-y-1.5 text-sm leading-relaxed text-ink-soft">
+            {cancellationPolicy.map((r) => (
+              <li key={r.when} className="flex justify-between gap-4">
+                <span>{r.when}</span>
+                <span className="shrink-0 font-medium text-ink">{r.refund}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs leading-relaxed text-ink-mute">{permitRefundNote}</p>
+        </ReviewBlock>
+
         <div className="rounded-lg border border-forest-900/10 bg-paper-warm p-6">
           <label className="flex cursor-pointer items-start gap-3">
             <input
@@ -148,7 +163,7 @@ export function StepReview({ data, setData, trip, tourPrice, serviceFee, restric
             />
             <span className="text-sm leading-relaxed text-ink">
               The passport and visa details I gave are correct and match the travelers&rsquo; documents. I agree to the{" "}
-              <Link href="/terms" target="_blank" className="underline underline-offset-4">booking terms</Link> and understand the cancellation policy.
+              <Link href="/terms" target="_blank" className="underline underline-offset-4">booking terms</Link> and the cancellation policy above.
             </span>
           </label>
         </div>

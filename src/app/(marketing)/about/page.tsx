@@ -1,3 +1,4 @@
+import { team } from "@/lib/site";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -113,9 +114,37 @@ export default function AboutPage() {
               Small, Bangladeshi, obsessed with the details.
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-ink-soft">
-              We&rsquo;re a team based in Dhaka, working with vetted guides
-              and host families across the country. Team page coming soon.
+              We&rsquo;re based in Dhaka, working with guides and host
+              families across the country. We check every one of them
+              ourselves &mdash;{" "}
+              <Link href="/how-it-works" className="underline underline-offset-4 hover:text-forest-800">
+                here&rsquo;s how
+              </Link>
+              .
             </p>
+
+            <ul className="mt-10 space-y-8">
+              {team.map((m) => (
+                <li key={m.name} className="flex items-start gap-5">
+                  {m.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.photo} alt="" className="size-16 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="flex size-16 shrink-0 items-center justify-center rounded-full bg-forest-900 font-display text-xl text-paper"
+                    >
+                      {m.name.split(" ").filter(Boolean).slice(-2).map((w) => w[0]).join("")}
+                    </span>
+                  )}
+                  <div>
+                    <p className="font-display text-2xl leading-tight">{m.name}</p>
+                    <p className="eyebrow mt-1 text-forest-700">{m.role}</p>
+                    <p className="mt-3 leading-relaxed text-ink-soft">{m.bio}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="rounded-lg border border-forest-900/10 bg-paper-warm p-8 sm:p-10">
             <p className="eyebrow mb-4 text-forest-700">Get started</p>
