@@ -1,3 +1,4 @@
+import { cancellationPolicy, permitRefundNote } from "@/lib/policy";
 import { ContentPage } from "@/components/layout/content-page";
 import { site } from "@/lib/site";
 
@@ -37,11 +38,11 @@ export default function TermsPage() {
         },
         {
           heading: "Cancellations and refunds",
+          // Shared with /how-it-works and the last step of a booking, so the
+          // traveller can never be shown one set of rules and held to another.
           bullets: [
-            "More than 14 days before the start date: full refund.",
-            "Within 14 days of the start date: 50% refund.",
-            "Within 48 hours of the start date: no refund.",
-            "Permit fees are non-refundable once the application has been submitted.",
+            ...cancellationPolicy.map((r) => `${r.when}: ${r.refund.toLowerCase()}.`),
+            permitRefundNote,
           ],
         },
         {
