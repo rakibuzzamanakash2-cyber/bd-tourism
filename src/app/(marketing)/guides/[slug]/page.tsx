@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${g.displayName}, local guide`,
     description: `${g.displayName} guides in ${g.regions.map((r) => r.name).join(", ")}. Speaks ${g.languages.join(", ")}. ${g.bio.slice(0, 120)}`,
-    openGraph: g.photoUrl ? { images: [g.photoUrl] } : undefined,
+    ...(g.photoUrl && { openGraph: { images: [g.photoUrl] } }),
   };
 }
 

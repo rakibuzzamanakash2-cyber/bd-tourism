@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
@@ -42,6 +42,13 @@ export const metadata: Metadata = {
   },
   description:
     "Small-group tours, verified local guides, and homestays across Bangladesh's most remarkable places — the Sundarbans, the Chittagong Hill Tracts, and the tea gardens of Sylhet. Restricted-area permits handled.",
+  // Show the big picture card rather than a thumbnail when a link is shared
+  twitter: { card: "summary_large_image" },
+  appleWebApp: { capable: true, title: "DeltaWay", statusBarStyle: "black-translucent" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1B3D2F",
 };
 
 export default async function RootLayout({
