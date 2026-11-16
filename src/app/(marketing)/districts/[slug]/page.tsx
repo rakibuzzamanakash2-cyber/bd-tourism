@@ -243,7 +243,7 @@ export default async function DistrictPage({ params }: Props) {
                 {n.photo ? (
                   <Image src={n.photo} alt="" fill sizes="64px" className="object-cover" />
                 ) : (
-                  <span className="absolute inset-0 flex items-center justify-center px-1 text-center font-bengali text-xs leading-tight text-paper/50">{n.nameBn}</span>
+                  <span className="absolute inset-0 flex items-center justify-center px-1 text-center font-bengali text-xs leading-tight text-paper/85">{n.nameBn}</span>
                 )}
               </div>
               <div>

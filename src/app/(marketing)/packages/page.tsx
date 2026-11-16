@@ -102,6 +102,9 @@ export default async function PackagesPage({
           <EmptyState />
         ) : (
           <>
+            {/* Names the list for screen readers, so the card headings
+                follow the page heading instead of skipping a level. */}
+            <h2 className="sr-only">{currentLabel ?? "All tours"}</h2>
             <div className="mb-8 flex items-baseline justify-between">
               <p className="text-sm text-ink-mute">
                 {packages.length} {packages.length === 1 ? "tour" : "tours"}

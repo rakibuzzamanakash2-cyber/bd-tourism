@@ -17,7 +17,7 @@ export default async function AuthLayout({
       {/* Left — form column */}
       <div className="relative flex flex-col bg-paper">
         {/* Top brand strip */}
-        <div className="border-b border-forest-900/10 px-6 py-5 sm:px-10">
+        <header className="border-b border-forest-900/10 px-6 py-5 sm:px-10">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-900 text-paper">
               <span className="font-display text-sm leading-none">DW</span>
@@ -29,26 +29,26 @@ export default async function AuthLayout({
               বাংলাদেশ
             </span>
           </Link>
-        </div>
+        </header>
 
         {/* Form area — centered */}
-        <div className="flex flex-1 items-center justify-center px-6 py-16 sm:px-10">
+        <main className="flex flex-1 items-center justify-center px-6 py-16 sm:px-10">
           <div className="w-full max-w-md">{children}</div>
-        </div>
+        </main>
 
         {/* Bottom link */}
-        <div className="border-t border-forest-900/10 px-6 py-5 text-center text-xs text-ink-mute sm:px-10">
+        <footer className="border-t border-forest-900/10 px-6 py-5 text-center text-xs text-ink-mute sm:px-10">
           <Link
             href="/"
             className="underline underline-offset-4 hover:text-forest-800"
           >
             ← Back to home
           </Link>
-        </div>
+        </footer>
       </div>
 
       {/* Right — brand column (desktop only) */}
-      <div className="relative hidden lg:block">
+      <aside aria-label="About DeltaWay" className="relative hidden lg:block">
         <Image
           src="https://images.unsplash.com/photo-1602800458591-eddda28a498b?w=1800&q=85"
           alt=""
@@ -73,7 +73,7 @@ export default async function AuthLayout({
             Photograph: Sundarbans mangrove waterway
           </p>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

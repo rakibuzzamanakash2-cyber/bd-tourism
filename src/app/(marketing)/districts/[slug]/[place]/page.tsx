@@ -139,12 +139,13 @@ export default async function PlacePage({ params }: Props) {
           {facts.length > 0 && (
             <dl className="mt-8 space-y-5 border-t border-forest-900/10 pt-6">
               {facts.map((f) => (
-                <div key={f.label} className="flex gap-3">
+                // A grid, not nested divs: a dl may hold div > dt + dd, but
+                // dt and dd two levels down is invalid and screen readers
+                // stop pairing the label with its value.
+                <div key={f.label} className="grid grid-cols-[auto_1fr] gap-x-3">
                   <f.icon className="mt-0.5 size-5 shrink-0 text-forest-700" aria-hidden />
-                  <div>
-                    <dt className="text-xs uppercase tracking-wider text-ink-mute">{f.label}</dt>
-                    <dd className="mt-1 text-sm leading-relaxed">{f.value}</dd>
-                  </div>
+                  <dt className="text-xs uppercase tracking-wider text-ink-mute">{f.label}</dt>
+                  <dd className="col-start-2 mt-1 text-sm leading-relaxed">{f.value}</dd>
                 </div>
               ))}
             </dl>
