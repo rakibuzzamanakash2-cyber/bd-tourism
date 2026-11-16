@@ -24,7 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: h.name,
     description: `Homestay in ${h.district}, ${h.region.name}. Sleeps ${h.maxGuests}. ${h.description.slice(0, 130)}`,
-    openGraph: h.photos[0] ? { images: [h.photos[0]] } : undefined,
+    // Spread, not `: undefined` — an explicit undefined openGraph stops
+    // Next falling back to the site-wide share card in app/opengraph-image.
+    ...(h.photos[0] && { openGraph: { images: [h.photos[0]] } }),
   };
 }
 

@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${d.name} district: things to do and places to visit`,
     description: `${d.knownFor} Top places in ${d.name}: ${d.highlights.slice(0, 3).join(", ")}.`,
     alternates: { canonical: `/districts/${d.slug}` },
-    openGraph: d.photo ? { images: [d.photo] } : undefined,
+    ...(d.photo && { openGraph: { images: [d.photo] } }),
   };
 }
 
