@@ -165,6 +165,7 @@ model District {
   tripRequests TripRequest[]
   bookings     Booking[]
   travelerPhotos TravelerPhoto[]
+  articles       Article[]
 
   @@index([division])
 }
@@ -1043,4 +1044,23 @@ model ErrorLog {
   resolvedAt  DateTime?
 
   @@index([resolvedAt, lastSeen(sort: Desc)])
+}
+
+/// A written answer to something travellers ask before they book.
+model Article {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String
+  photo       String?
+  /// [{ heading, paragraphs: string[], bullets: string[] }]
+  body        Json
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  districtId  String?
+  district    District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isPublished, publishedAt(sort: Desc)])
 }
