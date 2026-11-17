@@ -26,12 +26,26 @@ import { cn } from "@/lib/utils";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-export const metadata: Metadata = {
-  title: "Become a host",
-  description:
-    "Host travelers in your home with DeltaWay. Receive 85% of every booking, get paid after every stay, and welcome verified guests from around the world.",
-  alternates: { canonical: "/become-a-host" },
-};
+/**
+ * The Bangla version is a different page to Google, not a variant of the
+ * English one — its readers search in Bangla. So each language declares
+ * itself canonical and points at the other with hreflang.
+ */
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const bn = (await searchParams).lang === "bn";
+  const t = becomeHostText[bn ? "bn" : "en"];
+  return {
+    title: bn ? t.metaTitle : "Become a host",
+    description: bn ? t.metaDescription : "Host travelers in your home with DeltaWay. Receive 85% of every booking, get paid after every stay, and welcome verified guests from around the world.",
+    alternates: {
+      canonical: bn ? "/become-a-host?lang=bn" : "/become-a-host",
+      languages: {
+        en: "/become-a-host",
+        bn: "/become-a-host?lang=bn",
+      },
+    },
+  };
+}
 
 const FALLBACK_PHOTO = "https://images.unsplash.com/photo-1602800458591-eddda28a498b?w=1600&q=80";
 const OFFER_ICONS = [BedDouble, CookingPot, Sunrise];

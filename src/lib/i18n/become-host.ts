@@ -4,6 +4,10 @@
 export type HostPageLang = "en" | "bn";
 
 const en = {
+  // Page title and description, so each language is findable on its own.
+  metaTitle: "Become a host",
+  metaDescription:
+    "Open your home to travellers from around the world. DeltaWay handles the booking, the money and the guests; you keep 85% of what your room earns.",
   switchTo: "বাংলায় দেখুন",
   eyebrow: "Become a host",
   heroTitle: ["Your home could be", "someone's best memory of Bangladesh."],
@@ -82,6 +86,9 @@ const en = {
 };
 
 const bn: typeof en = {
+  metaTitle: "হোস্ট হোন",
+  metaDescription:
+    "আপনার বাড়ির খালি ঘরটি বিদেশি পর্যটকদের জন্য খুলে দিন। বুকিং, টাকা আর অতিথিদের দায়িত্ব DeltaWay নেবে; ঘরের আয়ের ৮৫% আপনারই থাকবে।",
   switchTo: "View in English",
   eyebrow: "হোস্ট হোন",
   heroTitle: ["আপনার বাড়িই হতে পারে", "কারও কাছে বাংলাদেশের সেরা স্মৃতি।"],

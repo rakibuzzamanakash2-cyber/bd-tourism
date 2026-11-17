@@ -18,6 +18,8 @@ const STATIC: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: "/permits", priority: 0.7, changeFrequency: "monthly" },
   { path: "/share", priority: 0.6, changeFrequency: "monthly" },
   { path: "/become-a-host", priority: 0.6, changeFrequency: "monthly" },
+  // The Bangla version is where hosts actually come from.
+  { path: "/become-a-host?lang=bn", priority: 0.6, changeFrequency: "monthly" },
   { path: "/become-a-guide", priority: 0.6, changeFrequency: "monthly" },
   { path: "/about", priority: 0.5, changeFrequency: "monthly" },
   { path: "/safety", priority: 0.5, changeFrequency: "monthly" },
