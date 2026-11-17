@@ -1,3 +1,4 @@
+import { readLaunchMode, takesPaymentNow } from "@/lib/launch-mode";
 import Image from "next/image";
 import { creditsFor } from "@/lib/image-credits";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -54,10 +55,11 @@ export default async function PackageDetailPage({ params }: PageProps) {
   });
 
   if (!pkg || !pkg.isPublished) notFound();
-  const [savedState, rating, reviews] = await Promise.all([
+  const [savedState, rating, reviews, payOnline] = await Promise.all([
     getSavedState(),
     ratingSummary({ packageId: pkg.id }),
     db.review.findMany({ where: { packageId: pkg.id, status: "PUBLISHED" }, include: publicReviewInclude, orderBy: { createdAt: "desc" }, take: 30 }),
+    readLaunchMode().then(takesPaymentNow),
   ]);
   const credits = await creditsFor([pkg.featuredImage]);
 
@@ -247,8 +249,13 @@ export default async function PackageDetailPage({ params }: PageProps) {
                   "mt-6 w-full rounded-full bg-forest-900 text-paper hover:bg-forest-800",
                 )}
               >
-                Book this tour
+                {payOnline ? "Book this tour" : "Request this tour"}
               </Link>
+              {!payOnline && (
+                <p className="mt-2 text-center text-xs text-ink-mute">
+                  We&rsquo;ll confirm the dates and send you the full price. Nothing is charged now.
+                </p>
+              )}
               <a
                 href={whatsappLink(`Hi DeltaWay, I have a question about the "${pkg.title}" tour.`)}
                 target="_blank"

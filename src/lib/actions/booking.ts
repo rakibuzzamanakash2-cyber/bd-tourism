@@ -1,5 +1,6 @@
 "use server";
 
+import { readLaunchMode, takesPaymentNow } from "@/lib/launch-mode";
 import { z } from "zod";
 import { verificationRequired } from "@/lib/email-verification";
 import { travelerCreates, type TravelerInput } from "@/lib/travelers";
@@ -159,6 +160,9 @@ export async function createBookingAction(data: BookingData): Promise<CreateBook
     ? await db.guideProfile.findFirst({ where: { slug: v.requestedGuideSlug, ...publicGuideWhere }, select: { id: true } })
     : null;
 
+  // Until the live payment store exists, every trip is a request we reply to.
+  const paysNow = what.kind === "tour" && takesPaymentNow(await readLaunchMode());
+
   // Booking codes are random; on the rare clash with an existing code, retry
   let booking: { id: string; bookingCode: string } | null = null;
   for (let attempt = 0; attempt < 5 && !booking; attempt++) {
@@ -175,8 +179,9 @@ export async function createBookingAction(data: BookingData): Promise<CreateBook
           startDate,
           endDate,
           travelerCount: v.travelerCount,
-          // A tour has its price, so it waits for payment. A custom trip waits for our quote.
-          status: what.kind === "tour" ? "PAYMENT_PENDING" : "QUOTE_REQUESTED",
+          // A tour has its price, so it waits for payment — but only once
+          // we're actually taking payments. Everything else waits for a quote.
+          status: paysNow ? "PAYMENT_PENDING" : "QUOTE_REQUESTED",
           totalAmountUSD,
           specialRequests: JSON.stringify(detailsPayload),
           emergencyName: v.emergency.name,
@@ -195,14 +200,14 @@ export async function createBookingAction(data: BookingData): Promise<CreateBook
     return { success: false, error: "Couldn't create the booking. Please try again." };
   }
 
-  if (what.kind === "custom") {
+  if (!paysNow) {
     const when = formatDateRange(startDate, endDate);
     await Promise.all([
       notifyTeam({
         subject: `Quote needed: ${what.title} (${booking.bookingCode})`,
         replyTo: v.contact.email,
         lines: [
-          `${lead.name.trim()} asked for a custom trip to ${what.title}.`,
+          `${lead.name.trim()} asked for ${what.kind === "tour" ? "the tour" : "a custom trip to"} ${what.title}.`,
           `${when} · ${v.travelerCount} traveler${v.travelerCount === 1 ? "" : "s"} · ${v.contact.phone}`,
           v.specialRequests ?? "",
           `Set the price in the admin: /admin/bookings/${booking.id}`,
@@ -220,7 +225,7 @@ export async function createBookingAction(data: BookingData): Promise<CreateBook
     ]).catch(() => undefined);
   }
 
-  return { success: true, bookingId: booking.id, bookingCode: booking.bookingCode, quote: what.kind === "custom" };
+  return { success: true, bookingId: booking.id, bookingCode: booking.bookingCode, quote: !paysNow };
 }
 
 type Resolved =

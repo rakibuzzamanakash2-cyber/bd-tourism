@@ -1,5 +1,6 @@
 "use server";
 
+import { readLaunchMode, takesPaymentNow } from "@/lib/launch-mode";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import type { BookingStatus } from "@prisma/client";
@@ -61,6 +62,9 @@ export async function adminQuoteBooking(input: z.input<typeof quoteSchema>): Pro
     return { ok: false, error: "A price can only be set while the booking is waiting for a quote or for payment." };
   }
 
+  // What the email can promise depends on whether cards work yet.
+  const paysOnline = takesPaymentNow(await readLaunchMode());
+
   // Only if nothing changed meanwhile (the traveler may have cancelled)
   const { count } = await db.booking.updateMany({
     where: { id: bookingId, status: booking.status },
@@ -78,7 +82,9 @@ export async function adminQuoteBooking(input: z.input<typeof quoteSchema>): Pro
         `Hi ${booking.tourist.name?.split(/\s+/)[0] ?? "there"}, here is our plan for ${bookingTitle(booking).replace(/^Custom trip: /, "")}.`,
         ...(plan ? plan.split(/\n{2,}/) : []),
         `Total price: $${totalUSD.toFixed(2)} for ${booking.travelerCount} traveler${booking.travelerCount === 1 ? "" : "s"}.`,
-        `The price is held for ${QUOTE_VALID_DAYS} days. Pay online to confirm your booking, or reply to this email to change anything.`,
+        paysOnline
+          ? `The price is held for ${QUOTE_VALID_DAYS} days. Pay online to confirm your booking, or reply to this email to change anything.`
+          : `The price is held for ${QUOTE_VALID_DAYS} days. Reply to this email to confirm or to change anything, and we'll arrange payment with you directly.`,
       ],
       { label: "See the booking and pay", url: bookingUrl(bookingId) },
     ),
