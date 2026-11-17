@@ -9,6 +9,7 @@ import {
   Compass,
   House,
   Star,
+  TriangleAlert,
   CreditCard,
   FileCheck,
   Inbox, Send,
@@ -41,6 +42,7 @@ const items = [
   { href: "/admin/regions", label: "Regions & types", icon: Map },
   { href: "/admin/waitlist", label: "Waitlist", icon: ListChecks },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/errors", label: "Errors", icon: TriangleAlert },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

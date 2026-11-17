@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { reportError } from "@/lib/report-error";
 import { expireUnpaidBookings } from "@/lib/booking-expiry";
 import { remindStaleDrafts } from "@/lib/application-reminders";
 import { remindUnansweredTrips } from "@/lib/guide-reminders";
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     try {
       results[name] = await job();
     } catch (e) {
-      console.error(`[cron/daily] ${name} failed`, e);
+      await reportError(e, { where: "cron", path: `/api/cron/daily#${name}` });
       results[name] = "failed";
     }
   }
