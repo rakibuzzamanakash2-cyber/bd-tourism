@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { listOr } from "@/lib/safe-list";
 
 // Next revalidates this once a day; new places don't need a deploy to appear.
 export const revalidate = 86400;
@@ -34,16 +35,18 @@ const STATIC: { path: string; priority: number; changeFrequency: MetadataRoute.S
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [districts, places, destinations, packages, homestays, guides, articles] = await Promise.all([
-    db.district.findMany({ select: { slug: true, updatedAt: true }, orderBy: { name: "asc" } }),
-    db.districtPlace.findMany({
+    listOr("districts", () => db.district.findMany({ select: { slug: true, updatedAt: true }, orderBy: { name: "asc" } })),
+    listOr("places", () =>
+      db.districtPlace.findMany({
       where: { isPublished: true },
       select: { slug: true, updatedAt: true, district: { select: { slug: true } } },
-    }),
-    db.destination.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
-    db.tourPackage.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
-    db.homestay.findMany({ where: { isActive: true, isListed: true }, select: { slug: true, updatedAt: true } }),
-    db.guideProfile.findMany({ where: { isActive: true, isListed: true }, select: { slug: true, updatedAt: true } }),
-    db.article.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
+    })
+    ),
+    listOr("destinations", () => db.destination.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } })),
+    listOr("tours", () => db.tourPackage.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } })),
+    listOr("homestays", () => db.homestay.findMany({ where: { isActive: true, isListed: true }, select: { slug: true, updatedAt: true } })),
+    listOr("guides", () => db.guideProfile.findMany({ where: { isActive: true, isListed: true }, select: { slug: true, updatedAt: true } })),
+    listOr("articles", () => db.article.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } })),
   ]);
 
   const now = new Date();
