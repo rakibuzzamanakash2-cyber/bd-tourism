@@ -13,6 +13,7 @@ type Props = {
   district: {
     id: string; slug: string; name: string; nameBn: string; photo: string; knownFor: string;
     highlights: string[]; places: number; things: number; permitRequired: boolean;
+    costMultiplier: number;
   } & Record<PracticalField, string>;
   uploadsEnabled: boolean;
 };
@@ -56,6 +57,22 @@ export function DistrictForm({ district: d, uploadsEnabled }: Props) {
           Top places <span className="text-ink-mute">(one per line)</span>
           <textarea name="highlights" rows={4} defaultValue={d.highlights.join("\n")} className={`${inputClass} mt-1`} />
         </label>
+        <label className="block text-sm">
+          Cost multiplier
+          <span className="block text-xs text-ink-mute">
+            1.0 is ordinary. Raise it where boats, flights or fuel make a trip here dearer — it scales the daily estimate on the public page.
+          </span>
+          <input
+            name="costMultiplier"
+            type="number"
+            min={0.5}
+            max={5}
+            step={0.05}
+            defaultValue={d.costMultiplier}
+            className={`${inputClass} mt-1 w-32 tabular-nums`}
+          />
+        </label>
+
         <fieldset className="rounded-md border border-forest-900/10 p-4">
           <legend className="px-1 text-xs uppercase tracking-wider text-forest-700">Before you go</legend>
           <p className="mb-3 text-xs text-ink-mute">

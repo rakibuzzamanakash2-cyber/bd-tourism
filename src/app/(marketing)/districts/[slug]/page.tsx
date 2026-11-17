@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, MapPin, MessageCircle, ShieldAlert } from "lucide-react";
+import { db } from "@/lib/db";
 import { getDistrictPage } from "@/lib/districts";
 import { divisionName, divisionNameBn } from "@/lib/district-shared";
 import { creditsFor } from "@/lib/image-credits";
@@ -17,6 +18,7 @@ import { PlaceCard } from "@/components/districts/place-card";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbLd, districtLd } from "@/lib/structured-data";
 import { PlanYourVisit } from "@/components/districts/plan-your-visit";
+import { readSettings } from "@/lib/settings";
 import { TravelerPhotos } from "@/components/traveler-photos/traveler-photos";
 import { approvedPhotosForDistrict } from "@/lib/traveler-photos";
 import { BookDialog } from "@/components/booking/book-dialog";
@@ -46,11 +48,13 @@ export default async function DistrictPage({ params }: Props) {
   if (!page) notFound();
   const { district: d, tours, homestays, nearby } = page;
   const photos = [d.photo, ...d.places.map((x) => x.photo)].filter((u): u is string => Boolean(u));
-  const [credits, saved, options, travelerPhotos] = await Promise.all([
+  const [credits, saved, options, travelerPhotos, rates, settings] = await Promise.all([
     creditsFor(photos),
     getSavedState(),
     bookOptionsForDistrict(d.id),
     approvedPhotosForDistrict(d.id),
+    db.costRate.findMany({ where: { isActive: true }, orderBy: [{ kind: "asc" }, { sortOrder: "asc" }] }),
+    readSettings(),
   ]);
   const toSee = d.places.filter((x) => x.kind !== "FOOD");
   const food = d.places.filter((x) => x.kind === "FOOD");
@@ -213,7 +217,7 @@ export default async function DistrictPage({ params }: Props) {
         </section>
       )}
 
-      <PlanYourVisit d={d} />
+      <PlanYourVisit d={d} costs={{ rates, ...settings }} />
 
       <TravelerPhotos photos={travelerPhotos} subject={d.name} shareHref={`/share?district=${d.slug}`} districtSlug={d.slug} />
 

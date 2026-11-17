@@ -1,5 +1,6 @@
 import { Banknote, BusFront, CalendarRange, FileCheck2, ShieldAlert, Signal, BedDouble, MapPin } from "lucide-react";
 import { DHAKA, distanceKm, roughKm } from "@/lib/geo";
+import { TIER_ORDER, type Rate, bdt, perPersonPerDay, roundForDisplay, tierLabel, usd, withServiceFee } from "@/lib/costs";
 
 type District = {
   name: string;
@@ -14,14 +15,17 @@ type District = {
   connectivity: string | null;
   safetyNotes: string | null;
   permitNote: string | null;
+  costMultiplier: number;
 };
+
+type Costs = { rates: Rate[]; serviceFeePercent: number; estimateGroupSize: number };
 
 /**
  * The practical half of a district page: what someone needs in order to
  * actually go. Rows with nothing written are left out, so a district we
  * haven't documented yet shows a short panel rather than a row of blanks.
  */
-export function PlanYourVisit({ d }: { d: District }) {
+export function PlanYourVisit({ d, costs }: { d: District; costs?: Costs }) {
   const km = roughKm(distanceKm(DHAKA, d));
   const rows: { icon: typeof BusFront; label: string; value: string }[] = [
     { icon: MapPin, label: "From Dhaka", value: `about ${km} km in a straight line` },
@@ -47,6 +51,8 @@ export function PlanYourVisit({ d }: { d: District }) {
             </div>
           ))}
         </dl>
+
+        {costs && <DayCost d={d} costs={costs} />}
 
         {d.gettingThere && (
           <div className="mt-10 max-w-2xl">
@@ -79,5 +85,48 @@ export function PlanYourVisit({ d }: { d: District }) {
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * Roughly what a day here costs a traveller.
+ *
+ * Deliberately vague: rounded to the nearest ৳50, described as "around",
+ * and left out entirely if the rates it needs are missing. People plan
+ * budgets off this, so an honest range beats a precise-looking guess.
+ */
+function DayCost({ d, costs }: { d: District; costs: Costs }) {
+  const rows = TIER_ORDER.map((tier) => {
+    const base = perPersonPerDay(costs.rates, tier, {
+      groupSize: costs.estimateGroupSize,
+      multiplier: d.costMultiplier,
+    });
+    return base === null ? null : { tier, amount: roundForDisplay(withServiceFee(base, costs.serviceFeePercent)) };
+  }).filter((r): r is { tier: (typeof TIER_ORDER)[number]; amount: number } => r !== null);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mt-10 max-w-2xl">
+      <h3 className="font-display text-2xl">Roughly what a day costs</h3>
+      <p className="mt-2 text-sm text-ink-mute">
+        Per person, per day, travelling as a group of {costs.estimateGroupSize}. Everything in — where you sleep, food,
+        getting around{rows.length > 1 ? ", and a guide at the higher levels" : ""}. Travelling alone costs more, since a
+        guide and a car are shared.
+      </p>
+      <dl className="mt-4 divide-y divide-forest-900/10 border-y border-forest-900/10">
+        {rows.map((r) => (
+          <div key={r.tier} className="flex items-baseline justify-between gap-4 py-3">
+            <dt>{tierLabel(r.tier)}</dt>
+            <dd className="tabular-nums">
+              around {bdt(r.amount)} <span className="text-ink-mute">({usd(r.amount)})</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-xs text-ink-mute">
+        An estimate, not a quote. Tell us your dates and we&rsquo;ll price the actual trip.
+      </p>
+    </div>
   );
 }

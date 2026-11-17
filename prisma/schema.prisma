@@ -153,6 +153,9 @@ model District {
   safetyNotes    String? // anything specific to this district
   permitNote     String? // detail shown when permitRequired is true
 
+  /// Some districts cost more to run a trip in — boats, flights, fuel.
+  costMultiplier Float    @default(1.0)
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -981,4 +984,43 @@ model BookingTraveler {
   createdAt        DateTime  @default(now())
 
   @@index([bookingId])
+}
+
+enum CostKind {
+  LODGING
+  MEALS
+  GUIDE
+  TRANSPORT
+  PERMIT
+}
+
+enum CostUnit {
+  PER_PERSON_PER_NIGHT
+  PER_PERSON_PER_DAY
+  PER_GROUP_PER_DAY
+  PER_PERSON
+}
+
+/// What a trip costs in parts, editable from Admin > Costs.
+model CostRate {
+  id        String   @id @default(cuid())
+  kind      CostKind
+  key       String
+  label     String
+  amountBdt Int
+  unit      CostUnit
+  note      String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@unique([kind, key])
+  @@index([kind, sortOrder])
+}
+
+/// Numbers a person should be able to change without a deploy.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

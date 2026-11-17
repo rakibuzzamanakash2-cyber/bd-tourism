@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarCheck, Camera,
+  CalendarCheck,
+  Calculator, Camera,
   ClipboardList,
   Compass,
   House,
@@ -36,6 +37,7 @@ const items = [
   { href: "/admin/tours", label: "Tours", icon: Route },
   { href: "/admin/destinations", label: "Destinations", icon: MapPin },
   { href: "/admin/districts", label: "Districts", icon: MapPinned },
+  { href: "/admin/costs", label: "Costs", icon: Calculator },
   { href: "/admin/regions", label: "Regions & types", icon: Map },
   { href: "/admin/waitlist", label: "Waitlist", icon: ListChecks },
   { href: "/admin/users", label: "Users", icon: Users },
