@@ -15,6 +15,7 @@ const STATIC: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: "/homestays", priority: 0.8, changeFrequency: "daily" },
   { path: "/guides", priority: 0.8, changeFrequency: "weekly" },
   { path: "/planner", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/journal", priority: 0.8, changeFrequency: "weekly" },
   { path: "/plan", priority: 0.7, changeFrequency: "weekly" },
   { path: "/permits", priority: 0.7, changeFrequency: "monthly" },
   { path: "/share", priority: 0.6, changeFrequency: "monthly" },
@@ -32,7 +33,7 @@ const STATIC: { path: string; priority: number; changeFrequency: MetadataRoute.S
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [districts, places, destinations, packages, homestays, guides] = await Promise.all([
+  const [districts, places, destinations, packages, homestays, guides, articles] = await Promise.all([
     db.district.findMany({ select: { slug: true, updatedAt: true }, orderBy: { name: "asc" } }),
     db.districtPlace.findMany({
       where: { isPublished: true },
@@ -42,6 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db.tourPackage.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
     db.homestay.findMany({ where: { isActive: true, isListed: true }, select: { slug: true, updatedAt: true } }),
     db.guideProfile.findMany({ where: { isActive: true, isListed: true }, select: { slug: true, updatedAt: true } }),
+    db.article.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
   ]);
 
   const now = new Date();
@@ -60,5 +62,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...packages.map((p) => entry(`/packages/${p.slug}`, p.updatedAt, 0.9, "weekly" as const)),
     ...homestays.map((h) => entry(`/homestays/${h.slug}`, h.updatedAt, 0.7, "weekly" as const)),
     ...guides.map((g) => entry(`/guides/${g.slug}`, g.updatedAt, 0.6, "monthly" as const)),
+    ...articles.map((a) => entry(`/journal/${a.slug}`, a.updatedAt, 0.7, "monthly" as const)),
   ];
 }

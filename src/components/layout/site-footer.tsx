@@ -9,6 +9,7 @@ const columns = [
       { href: "/destinations", label: "Destinations" },
       { href: "/destinations?view=districts", label: "All 64 districts" },
       { href: "/planner", label: "Plan a trip" },
+      { href: "/journal", label: "Journal" },
       { href: "/share", label: "Share your photos" },
       { href: "/packages", label: "Tours" },
       { href: "/guides", label: "Local guides" },

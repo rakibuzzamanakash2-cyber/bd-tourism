@@ -20,7 +20,8 @@
     "photos:wikimedia": "tsx prisma/photos-wikimedia.ts",
     "privacy:migrate": "tsx --conditions=react-server prisma/privacy-migrate.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed:articles": "tsx prisma/seed-articles.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
