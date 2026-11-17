@@ -54,6 +54,7 @@ export default async function AdminDistrictsPage() {
                     gettingThere: d.gettingThere ?? "",
                     safetyNotes: d.safetyNotes ?? "",
                     permitNote: d.permitNote ?? "",
+                    costMultiplier: d.costMultiplier,
                   }}
                 />
               ))}

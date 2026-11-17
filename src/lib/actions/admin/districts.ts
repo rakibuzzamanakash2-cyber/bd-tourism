@@ -30,6 +30,7 @@ const schema = z.object({
   gettingThere: z.string().trim().max(1200),
   safetyNotes: z.string().trim().max(600),
   permitNote: z.string().trim().max(600),
+  costMultiplier: z.coerce.number().min(0.5, "Too low to be real.").max(5, "That would be five times the usual."),
 });
 
 const PRACTICAL = PRACTICAL_FIELDS.map((f) => f.name);
@@ -42,6 +43,7 @@ export async function saveDistrictAction(formData: FormData): Promise<AdminActio
     photo: formData.get("photo") ?? "",
     knownFor: formData.get("knownFor") ?? "",
     highlights: formData.get("highlights") ?? "",
+    costMultiplier: formData.get("costMultiplier") ?? "1",
     ...Object.fromEntries(PRACTICAL.map((k) => [k, formData.get(k) ?? ""])),
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -53,6 +55,7 @@ export async function saveDistrictAction(formData: FormData): Promise<AdminActio
         photo: d.photo || null,
         knownFor: d.knownFor,
         highlights: d.highlights,
+        costMultiplier: d.costMultiplier,
         ...Object.fromEntries(PRACTICAL.map((k) => [k, d[k] || null])),
       },
     })
