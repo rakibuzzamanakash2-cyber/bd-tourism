@@ -45,8 +45,12 @@ export type WizardData = {
 
 export type RestrictedRegion = { id: string; name: string; slug: string };
 
+/** Starting values, for a trip the traveller already sketched out elsewhere. */
+export type WizardPrefill = { days?: number; travelerCount?: number; specialRequests?: string };
+
 type Props = {
   trip: WizardTrip;
+  prefill?: WizardPrefill;
   user: { name: string | null; email: string; phone: string | null; passportNumber: string | null; nationality: string | null };
   restrictedRegions: RestrictedRegion[];
   requestedGuide?: { slug: string; displayName: string; photoUrl: string | null } | null;
@@ -60,7 +64,7 @@ const STEPS = [
 
 export const tripDays = (trip: WizardTrip, data: WizardData) => (trip.kind === "tour" ? trip.days : data.days);
 
-export function BookingWizard({ trip, user, restrictedRegions, requestedGuide }: Props) {
+export function BookingWizard({ trip, prefill, user, restrictedRegions, requestedGuide }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -68,12 +72,16 @@ export function BookingWizard({ trip, user, restrictedRegions, requestedGuide }:
 
   const [data, setData] = useState<WizardData>({
     startDate: "",
-    days: 3,
-    travelerCount: 1,
+    days: prefill?.days ?? 3,
+    travelerCount: prefill?.travelerCount ?? 1,
     contact: { email: user.email, phone: user.phone ?? "" },
-    travelers: [{ ...emptyTraveler(), name: user.name ?? "", nationality: user.nationality ?? "", passportNumber: user.passportNumber ?? "" }],
+    travelers: Array.from({ length: prefill?.travelerCount ?? 1 }, (_, i) =>
+      i === 0
+        ? { ...emptyTraveler(), name: user.name ?? "", nationality: user.nationality ?? "", passportNumber: user.passportNumber ?? "" }
+        : emptyTraveler(),
+    ),
     emergency: { name: "", phone: "" },
-    specialRequests: "",
+    specialRequests: prefill?.specialRequests ?? "",
     agreedToTerms: false,
   });
 
