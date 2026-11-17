@@ -5,6 +5,8 @@ import { cloudinary, env, features } from "@/lib/env";
 import { BDT_PER_USD } from "@/lib/booking-utils";
 import { encryptionStatus } from "@/lib/crypto";
 import { callbackUrls, paymentMode, type PaymentMode } from "@/lib/sslcommerz";
+import { LaunchModeToggle } from "@/components/admin/launch-mode-toggle";
+import { readLaunchMode } from "@/lib/launch-mode";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata = { title: "Settings" };
@@ -18,6 +20,7 @@ export default async function AdminSettingsPage() {
   await requireAdmin();
 
   const mode = paymentMode();
+  const launchMode = await readLaunchMode();
   const enc = encryptionStatus();
   const urls = callbackUrls();
   const isLocal = (u: string) => /^http:\/\/|localhost|127\.0\.0\.1/.test(u);
@@ -44,6 +47,16 @@ export default async function AdminSettingsPage() {
       detail: features.email
         ? `Sending from ${env.EMAIL_FROM ?? "onboarding@resend.dev (Resend's test sender)"}; team emails go to ${env.ADMIN_EMAIL ?? "the site email"}.`
         : "Not set up. Emails are skipped; password-reset links print in the terminal.",
+    },
+    {
+      name: "What the site does with a booking",
+      purpose: "Whether a trip is paid for online or becomes a request you quote by hand.",
+      state: launchMode === "payments" ? "on" : "off",
+      detail:
+        launchMode === "payments"
+          ? "Tours with a set price are paid for online at the time of booking. Custom trips are still quoted first."
+          : "Every trip, tour or custom, arrives as a request. You send a plan and a price, and arrange payment directly. This is the right setting until the live payment store is working.",
+      extra: <LaunchModeToggle mode={launchMode} />,
     },
     {
       name: "Payments (SSLCommerz)",

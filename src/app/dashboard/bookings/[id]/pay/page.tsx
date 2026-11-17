@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { PayForm } from "@/components/booking/pay-form";
 import { features } from "@/lib/env";
+import { readLaunchMode, takesPaymentNow } from "@/lib/launch-mode";
 import { payableAmounts } from "@/lib/payments";
 import { paymentMode } from "@/lib/sslcommerz";
 import { whatsappLink } from "@/lib/site";
@@ -36,6 +37,10 @@ export default async function PayPage({ params }: Props) {
   if (booking.status !== "PAYMENT_PENDING") {
     redirect(`/dashboard/bookings/${booking.id}`);
   }
+
+  // Until card payments are switched on, every booking is settled directly
+  // with us, so the card form is replaced by the WhatsApp route below.
+  const payOnline = takesPaymentNow(await readLaunchMode());
 
   const totalUSD = Number(booking.totalAmountUSD);
   const amounts = payableAmounts(booking);
@@ -105,7 +110,7 @@ export default async function PayPage({ params }: Props) {
 
         {/* Payment */}
         <div className="mt-8">
-          {features.payments ? (
+          {features.payments && payOnline ? (
             <>
               {mode === "sandbox" && (
                 <p role="note" className="mb-4 rounded-md border border-clay-600/30 bg-clay-500/10 px-4 py-3 text-sm text-clay-700">

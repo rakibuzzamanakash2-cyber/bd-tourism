@@ -84,7 +84,17 @@ export default async function GuidesPage({ searchParams }: Props) {
               {params.region || params.language ? (
                 <Link href="/guides" className="underline underline-offset-4">See all guides</Link>
               ) : (
-                <>Every tour still comes with a local guide.</>
+                <>
+                  Every tour still comes with a local guide, and we can arrange one for a trip you plan yourself.
+                  <span className="mt-6 block">
+                    <Link
+                      href="/book/custom"
+                      className="rounded-full bg-forest-900 px-5 py-2.5 text-sm text-paper hover:bg-forest-800"
+                    >
+                      Tell us what you need
+                    </Link>
+                  </span>
+                </>
               )}
             </p>
           </div>
