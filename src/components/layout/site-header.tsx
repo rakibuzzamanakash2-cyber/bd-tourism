@@ -1,5 +1,6 @@
 "use client";
 
+import { DeltaMark } from "@/components/brand/delta-mark";
 import Link from "next/link";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
@@ -37,7 +38,7 @@ function Wordmark() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-900 text-paper">
-        <span className="font-display text-sm leading-none">DW</span>
+        <DeltaMark className="size-5" />
       </div>
       <span className="font-display text-2xl leading-none">DeltaWay</span>
       <span className="hidden font-bengali text-lg text-forest-700 sm:inline">

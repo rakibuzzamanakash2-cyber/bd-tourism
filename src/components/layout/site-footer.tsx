@@ -1,3 +1,4 @@
+import { DeltaMark } from "@/components/brand/delta-mark";
 import Link from "next/link";
 import { site, whatsappLink } from "@/lib/site";
 
@@ -43,9 +44,7 @@ export function SiteFooter() {
           <div className="md:col-span-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper">
-                <span className="font-display text-sm leading-none text-forest-950">
-                  DW
-                </span>
+                <DeltaMark className="size-5 text-forest-950" />
               </div>
               <span className="font-display text-2xl leading-none">
                 DeltaWay

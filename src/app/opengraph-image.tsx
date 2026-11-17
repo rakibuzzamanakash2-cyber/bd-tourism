@@ -15,7 +15,7 @@ const PAPER = "#FAF8F1";
 const CLAY = "#C47B5C";
 
 // The same delta mark as icon.svg, inlined so the card needs no network.
-const MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="none" stroke="${PAPER}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M50 83V57"/><path d="M50 57Q50 42 27 26"/><path d="M50 57V20"/><path d="M50 57Q50 42 73 26"/></g></svg>`;
+const MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="none" stroke="${PAPER}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M50 83V57"/><path d="M50 57Q50 42 27 26"/><path d="M50 57V20"/><path d="M50 57Q50 42 73 26"/></g></svg>`;
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -32,7 +32,7 @@ export default function OpengraphImage() {
           color: PAPER,
         }}
       >
-        <img src={`data:image/svg+xml;base64,${Buffer.from(MARK).toString("base64")}`} width={104} height={104} alt="" />
+        <img src={`data:image/svg+xml;base64,${Buffer.from(MARK).toString("base64")}`} width={132} height={132} alt="" />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 108, letterSpacing: -2, lineHeight: 1 }}>{site.name}</div>
           <div style={{ fontSize: 44, color: "#D4E0C6", marginTop: 18 }}>{site.tagline}</div>

@@ -1,3 +1,4 @@
+import { site } from "@/lib/site";
 import "server-only";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
@@ -62,7 +63,7 @@ export async function buildReceiptPdf(r: ReceiptInput): Promise<Uint8Array> {
   text(r.site.name, L, y, { f: bold, size: 22, color: FOREST });
   text("Payment receipt", R, y + 4, { f: bold, size: 14, right: true });
   y -= 18;
-  text("Bangladesh, guided.", L, y, { size: 9, color: MUTE });
+  text(site.tagline, L, y, { size: 9, color: MUTE });
   text(`No. ${r.receiptNo}`, R, y, { size: 9, color: MUTE, right: true });
   y -= 12;
   text(`Paid ${day(r.paidAt)}`, R, y, { size: 9, color: MUTE, right: true });
