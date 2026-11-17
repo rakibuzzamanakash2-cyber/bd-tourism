@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A second push to the same branch cancels the first — no point testing a
+# commit that has already been replaced.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: deltaway
+          POSTGRES_PASSWORD: deltaway
+          POSTGRES_DB: deltaway_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://deltaway:deltaway@localhost:5432/deltaway_ci
+      # Throwaway values. Nothing here reaches a real service: payments,
+      # email and uploads are all left unconfigured so the code takes its
+      # "not set up" paths.
+      AUTH_SECRET: ci-auth-secret-not-used-anywhere-real
+      DATA_ENCRYPTION_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+      NEXT_PUBLIC_APP_URL: https://ci.invalid
+      NEXT_PUBLIC_BDT_PER_USD: "120"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply migrations
+        # Fails if a migration is malformed or out of order, which is the
+        # failure that would otherwise only show up during a deploy.
+        run: npx prisma migrate deploy
+
+      - name: Check the schema matches the migrations
+        run: node scripts/check-schema-sync.mjs
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - name: Seed, then build
+        run: |
+          npm run db:seed
+          npm run build
