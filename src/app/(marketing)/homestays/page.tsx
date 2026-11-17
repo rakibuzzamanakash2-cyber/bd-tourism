@@ -7,7 +7,7 @@ import { HomestaysComingSoon } from "@/components/homestays/coming-soon";
 import { FACILITY_OPTIONS } from "@/lib/applications";
 import { db } from "@/lib/db";
 import { nightsBetween, MAX_STAY_NIGHTS } from "@/lib/homestay-shared";
-import { homestayTakenNights, publicHomestayWhere } from "@/lib/homestays";
+import { homestaysWithConflicts, publicHomestayWhere } from "@/lib/homestays";
 import { applyText } from "@/lib/i18n/apply";
 import { cn } from "@/lib/utils";
 
@@ -45,16 +45,15 @@ export default async function HomestaysPage({ searchParams }: Props) {
     db.region.findMany({ where: { homestays: { some: publicHomestayWhere } }, orderBy: { name: "asc" } }),
   ]);
   // With dates: only homes free for every night
-  const homestays = datesValid
-    ? (
-        await Promise.all(
-          found.map(async (h) => {
-            const t = await homestayTakenNights(h.id, new Date(`${checkIn}T00:00:00Z`), new Date(`${checkOut}T00:00:00Z`));
-            return t.blocked.length || t.booked.length ? null : h;
-          }),
-        )
-      ).filter((h): h is (typeof found)[number] => h !== null)
-    : found;
+  // One pair of queries for the whole page, not a pair per homestay.
+  const unavailable = datesValid
+    ? await homestaysWithConflicts(
+        found.map((h) => h.id),
+        new Date(`${checkIn}T00:00:00Z`),
+        new Date(`${checkOut}T00:00:00Z`),
+      )
+    : new Set<string>();
+  const homestays = datesValid ? found.filter((h) => !unavailable.has(h.id)) : found;
 
   const [ratings, saved] = await Promise.all([ratingsBy("homestayId", homestays.map((h) => h.id)), getSavedState()]);
   const keep = (overrides: Record<string, string | undefined>) => {
