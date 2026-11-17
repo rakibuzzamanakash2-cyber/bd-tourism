@@ -1,3 +1,4 @@
+import { DeltaMark } from "@/components/brand/delta-mark";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -20,7 +21,7 @@ export default async function AuthLayout({
         <header className="border-b border-forest-900/10 px-6 py-5 sm:px-10">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-900 text-paper">
-              <span className="font-display text-sm leading-none">DW</span>
+              <DeltaMark className="size-5" />
             </div>
             <span className="font-display text-2xl leading-none">
               DeltaWay

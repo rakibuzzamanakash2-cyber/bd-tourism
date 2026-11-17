@@ -3,7 +3,7 @@
 
 export const site = {
   name: "DeltaWay",
-  tagline: "Bangladesh, guided.",
+  tagline: "The country nobody told you about.",
   email: "rakibuzzaman.akash2@gmail.com",
   // E.164 digits, no "+" — used to build wa.me links
   whatsappNumber: "8801986338391",
