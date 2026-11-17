@@ -76,6 +76,7 @@ export default async function AdminOverviewPage() {
 
   const quotesToSend = await db.booking.count({ where: { status: "QUOTE_REQUESTED" } });
   const photosToReview = await db.travelerPhoto.count({ where: { status: "PENDING" } });
+  const openErrors = await db.errorLog.count({ where: { resolvedAt: null } });
 
   return (
     <div>
@@ -132,6 +133,9 @@ export default async function AdminOverviewPage() {
           href="/admin/homestays"
           tone={hostsToPay > 0 ? "attention" : "default"}
         />
+        {openErrors > 0 && (
+          <StatCard label="Errors" value={openErrors} hint="Something is broken" href="/admin/errors" tone="attention" />
+        )}
         <StatCard
           label="Photos to review"
           value={photosToReview}

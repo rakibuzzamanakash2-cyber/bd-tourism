@@ -6,6 +6,7 @@ import { notifyTeam, sendPaymentReceipt } from "@/lib/email";
 import { EXPIRED_BOOKING_REASON, formatDateRange } from "@/lib/booking-utils";
 import type { Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
+import { reportError } from "@/lib/report-error";
 import { ensurePermitsForBooking } from "@/lib/permits";
 import { homestayTakenNights, onStayPaid } from "@/lib/homestays";
 import { bookingTitle } from "@/lib/homestay-shared";
@@ -201,7 +202,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[IPN] Handler error:", err);
+    // A payment that fails here has left the gateway but not reached us —
+    // the one failure we must never discover by accident.
+    await reportError(err, { where: "webhook", path: "/api/webhooks/sslcommerz" });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { reportClientErrorAction } from "@/lib/actions/report-error";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,8 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error(error);
+    // Best effort: if this fails, the visitor still sees the page below.
+    void reportClientErrorAction({ message: error.message, digest: error.digest }).catch(() => {});
   }, [error]);
 
   return (

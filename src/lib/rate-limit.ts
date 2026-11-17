@@ -22,6 +22,8 @@ export const RATE_LIMITS = {
   cancelUser: { limit: 10, windowSeconds: 60 * 60 },
   paymentUser: { limit: 10, windowSeconds: 10 * 60 },
   uploadUser: { limit: 40, windowSeconds: 60 * 60 },
+  // A broken page can loop; cap what one browser can report.
+  errorIp: { limit: 20, windowSeconds: 600 },
   photoSubmitUser: { limit: 10, windowSeconds: 60 * 60 },
 } satisfies Record<string, Rule>;
 
