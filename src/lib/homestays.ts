@@ -105,6 +105,39 @@ export async function homestayTakenNights(homestayId: string, from: Date, to: Da
   };
 }
 
+/**
+ * Which of these homestays can't take the whole stay — because a night is
+ * blocked by the host or already booked.
+ *
+ * Two queries no matter how many homestays are passed in. The search page
+ * used to call homestayTakenNights once per result, which is two queries
+ * per homestay and gets slow the moment there are more than a handful.
+ */
+export async function homestaysWithConflicts(homestayIds: string[], from: Date, to: Date): Promise<Set<string>> {
+  if (homestayIds.length === 0) return new Set();
+  const [blocked, booked] = await Promise.all([
+    db.homestayBlockedDate.findMany({
+      where: { homestayId: { in: homestayIds }, date: { gte: new Date(dayKey(from)), lt: new Date(dayKey(to)) } },
+      select: { homestayId: true },
+      distinct: ["homestayId"],
+    }),
+    db.booking.findMany({
+      where: {
+        homestayId: { in: homestayIds },
+        ...holdingBookingWhere(),
+        startDate: { lt: to },
+        endDate: { gt: from },
+      },
+      select: { homestayId: true },
+      distinct: ["homestayId"],
+    }),
+  ]);
+  return new Set([
+    ...blocked.map((b) => b.homestayId),
+    ...booked.map((b) => b.homestayId).filter((id): id is string => Boolean(id)),
+  ]);
+}
+
 // ============================================================
 // Emails to the host (in their language)
 // ============================================================

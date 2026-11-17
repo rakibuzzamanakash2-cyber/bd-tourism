@@ -118,10 +118,16 @@ export async function POST(req: NextRequest) {
         ? { refundAmountUSD: payment.booking.totalAmountUSD }
         : { status: "PAID", cancelledAt: null, cancellationReason: null };
 
-    // Payment succeeded — atomic update
-    await db.$transaction([
-      db.payment.update({
-        where: { id: payment.id },
+    // Payment succeeded.
+    //
+    // SSLCommerz retries its callback, and two retries can overlap: both
+    // would pass the "already SUCCEEDED" check above, because that was a
+    // read. So claim the payment with a conditional write instead — only
+    // one request can move it off SUCCEEDED, and only that one goes on to
+    // issue permits and email a receipt.
+    const claimed = await db.$transaction(async (tx) => {
+      const { count } = await tx.payment.updateMany({
+        where: { id: payment.id, status: { not: "SUCCEEDED" } },
         data: {
           status: "SUCCEEDED",
           paidAt: new Date(),
@@ -133,12 +139,15 @@ export async function POST(req: NextRequest) {
           bankTranId: validation.bankTranId ?? null,
           providerRaw: (validation.raw ?? raw) as Prisma.InputJsonValue,
         },
-      }),
-      db.booking.update({
-        where: { id: payment.bookingId },
-        data: bookingUpdate,
-      }),
-    ]);
+      });
+      if (count === 0) return false;
+      await tx.booking.update({ where: { id: payment.bookingId }, data: bookingUpdate });
+      return true;
+    });
+
+    if (!claimed) {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
 
     if (!wasCancelled || wasExpired) {
       await ensurePermitsForBooking(payment.bookingId);
