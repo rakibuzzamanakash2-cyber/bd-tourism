@@ -93,6 +93,75 @@ If you have been before, or you care more about how a place looks than how easy 
 
 These are seasonal patterns, not forecasts. We check the actual conditions for your dates before confirming an itinerary, and we will tell you plainly if the month you have chosen is wrong for the places you want.`,
   },
+  {
+    slug: "dhaka-airport-to-the-city",
+    title: "Landing at Dhaka airport, and getting out of it",
+    excerpt:
+      "The arrivals hall is calmer than its reputation. The pavement outside is not. Here is what the options actually are, what they cost, and the one decision worth making before you fly.",
+    districtSlug: null,
+    body: `Hazrat Shahjalal is about seventeen kilometres from the middle of Dhaka. On a good run that is forty minutes. In the wrong traffic it is two hours and more. Nothing else about your arrival matters as much as that.
+
+## Inside the terminal
+The arrivals hall itself is orderly. Only official vendors are allowed in — SIM cards, banks, currency exchange, car rental and taxi desks — so the crowd you may have read about is outside, not in here.
+Two things are worth doing before you walk out. Buy a SIM at one of the counters, because every option below works better with data. And settle your transport while you are still inside, not on the pavement.
+
+## The options
+
+- A transfer booked before you fly. Someone is waiting with your name. It costs more than anything else here and it is the right answer for a first arrival, a late-night landing, or anyone travelling alone.
+- Uber or Pathao. Both work at the airport and both quote the fare up front, which removes the argument. At the time of writing a ride to central Dhaka typically runs somewhere around 300 to 600 taka. The catch is the pickup: finding your driver in the crush outside takes patience, and numberplates are hard to read.
+- The prepaid taxi counter. Near the exit of international arrivals. You pay a set fare at the desk and get a receipt, so there is nothing to negotiate. Slower and dearer than an app, but simple.
+- A taxi off the rank. There is no published airport tariff and the meters are not reliable, so you agree the price before you get in. If you have just got off a long flight, this is the option most likely to go badly.
+- Buses. They run past the airport along the Mymensingh highway. They are cheap, slow, very crowded, and not a serious proposition with luggage.
+
+## About the train
+You will read that there is a railway station just outside the airport, and you will also read that Dhaka has no rail link to the airport. Both are sort of true. There is a station on the commuter line nearby, but it is not an airport rail service in the sense you would expect, the timetable is limited, and it will not get you to most hotels.
+Treat it as a curiosity rather than a plan.
+
+## The one decision worth making early
+If you land after dark, book the transfer. Dhaka traffic at night is easier but the arrival is harder: fewer people around, more pressure on the pavement, and no good moment to start comparing prices on your phone.
+
+## Once you are in the city
+Uber and Pathao are what most people use day to day. CNG auto-rickshaws — the green three-wheelers — are quicker for short hops and cheaper than a car, but you have to agree a price or insist on the meter, or the fare drifts up for a foreign face. The metro runs across the north of the city and is genuinely good, though it will not help you from the airport.
+
+Fares and timetables here change faster than any article can keep up with. We arrange the airport pickup as part of every trip we run, so if you are travelling with us this is one thing you do not need to work out.`,
+  },
+  {
+    slug: "bangladesh-solo-women-travellers",
+    title: "Travelling Bangladesh alone as a woman",
+    excerpt:
+      "The honest answer is that safe and comfortable are two different questions here, and most of what you will read online only answers the first one.",
+    districtSlug: null,
+    body: `We get asked this more than any other question, and the reassuring answer you will find on most travel sites is not quite the truth. So here is ours.
+
+## Two different questions
+Is it safe? Violent crime against foreign visitors is rare in Bangladesh, and that holds for women travelling alone. Women have crossed this country by bus and train on their own and come away saying they never once felt in danger. That is a real and common experience, not a lucky exception.
+Is it comfortable? Often, no. The two questions get mashed together online and they should not be.
+
+## What the attention is actually like
+You will be looked at. Not glanced at — looked at, steadily, by a lot of people, for a long time. Women travelling here describe men following them down the street to ask where they are from, crowds of thirty gathering around them, being filmed while eating, having a headscarf lifted so someone could see their hair.
+Almost all of it is curiosity. Foreign visitors are genuinely rare here and a woman travelling without a husband is rarer still, so you are the most interesting thing on the street. Travellers who have been through it are nearly unanimous that it did not feel threatening. They are also unanimous that it is exhausting.
+But not all of it is curiosity, and we are not going to pretend otherwise. Verbal harassment happens. So does the physical kind. Foreign governments warn about both in their travel advice for Bangladesh, and they are not wrong to.
+
+## The number worth paying attention to
+On the safety apps where women rate places, Bangladesh scores middling from visiting women — and noticeably lower from Bangladeshi women rating their own country.
+That gap is the most useful thing on this page. Guests get hospitality, help and the benefit of the doubt. Local women navigate something harder. If you only read the visitor reviews you will get an incomplete picture of the place you are actually in.
+
+## What actually helps
+
+- Land in daylight. Everything about a first arrival is easier before dark.
+- Sort your transport before you need it, not on the street. Settled in advance, never improvised at night.
+- Dress modestly and loosely — long sleeves, nothing close-fitting. A scarf is useful to have, though you are not obliged to cover your hair. This is not about blame; it is about how much attention you want to field.
+- Pick accommodation with women on staff. Travellers keep mentioning this and hotel listings never do. A hotel run entirely by men can be perfectly kind and still feel odd, because nobody there is sure how to deal with a woman arriving alone.
+- Get dropped at the door. Not the end of the lane.
+- Sit with other women. On buses and trains this is the norm, and women will make room for you.
+- "Where is your husband?" is small talk, not a threat. Answer however you like. Plenty of travellers invent one for simplicity and feel no guilt about it.
+
+## What this does not mean
+It does not mean do not come. Women who have travelled Bangladesh alone are, as a group, strikingly positive about it — the tea invitations, the strangers who organise themselves into a rescue party when you look lost, the fact that almost nobody else has been where you are standing.
+It means come with your eyes open, and do not let anyone — including a tour company — tell you it is effortless.
+
+Travelling with a guide takes most of the friction out of this, which is the honest commercial note at the bottom of an honest page. It is not the only way to do it, and we would rather you came on your own terms than not at all.`,
+  },
 ];
 
 async function main() {
