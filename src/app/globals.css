@@ -99,3 +99,11 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Loading placeholders pulse. Someone who has asked their system to reduce
+   motion gets the shapes without the throb. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+}
