@@ -235,6 +235,16 @@ const tones = {
   red: "border-clay-700/40 bg-clay-600/15 text-clay-700",
 };
 
+/** Whether a cost line is a real price or still the number we invented. */
+export const PriceCheckBadge = ({ verifiedAt }: { verifiedAt: Date | null }) =>
+  verifiedAt ? (
+    <span className={`${badge} ${tones.green}`}>
+      Checked {verifiedAt.toISOString().slice(0, 10)}
+    </span>
+  ) : (
+    <span className={`${badge} ${tones.amber}`}>Placeholder</span>
+  );
+
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   DRAFT: "Draft",
   QUOTE_REQUESTED: "Quote requested",

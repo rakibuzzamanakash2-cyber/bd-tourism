@@ -14,6 +14,7 @@ const rateSchema = z.object({
   amountBdt: z.coerce.number().int().min(0, "Can't be negative.").max(10_000_000),
   note: z.string().trim().max(200),
   isActive: z.coerce.boolean(),
+  verified: z.coerce.boolean(),
 });
 
 export async function saveCostRateAction(formData: FormData): Promise<AdminActionResult> {
@@ -26,12 +27,24 @@ export async function saveCostRateAction(formData: FormData): Promise<AdminActio
     amountBdt: formData.get("amountBdt") ?? "",
     note: formData.get("note") ?? "",
     isActive: formData.get("isActive") === "on",
+    verified: formData.get("verified") === "on",
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const r = parsed.data;
 
+  const current = await db.costRate.findUnique({ where: { id: r.id }, select: { verifiedAt: true } });
+  if (!current) return { ok: false, error: "Rate not found." };
+
+  // Keep the original date when a checked price is edited again — re-saving a
+  // note should not claim the price was re-checked today. Clearing the box
+  // drops the line back out of every public estimate.
+  const verifiedAt = r.verified ? (current.verifiedAt ?? new Date()) : null;
+
   const saved = await db.costRate
-    .update({ where: { id: r.id }, data: { label: r.label, amountBdt: r.amountBdt, note: r.note || null, isActive: r.isActive } })
+    .update({
+      where: { id: r.id },
+      data: { label: r.label, amountBdt: r.amountBdt, note: r.note || null, isActive: r.isActive, verifiedAt },
+    })
     .catch(() => null);
   if (!saved) return { ok: false, error: "Rate not found." };
 
@@ -40,7 +53,7 @@ export async function saveCostRateAction(formData: FormData): Promise<AdminActio
     action: "content.cost.update",
     targetType: "CostRate",
     targetId: r.id,
-    details: { key: saved.key, amountBdt: saved.amountBdt },
+    details: { key: saved.key, amountBdt: saved.amountBdt, verified: saved.verifiedAt !== null },
   });
   refresh();
   return { ok: true, message: `${saved.label} saved.` };
@@ -76,4 +89,5 @@ function refresh() {
   revalidatePath("/admin/costs");
   // Every district page prints an estimate built from these numbers.
   revalidatePath("/districts", "layout");
+  revalidatePath("/planner");
 }

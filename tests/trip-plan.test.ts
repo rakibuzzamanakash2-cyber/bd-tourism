@@ -66,15 +66,18 @@ describe("reading a plan out of a URL", () => {
   });
 });
 
+// Every fixture price counts as checked; the unchecked case is tested on its own.
+const CHECKED = new Date("2026-01-01T00:00:00.000Z");
+
 const rates: Rate[] = [
-  { kind: "LODGING", key: "budget", label: "Room", amountBdt: 1200, unit: "PER_PERSON_PER_NIGHT", note: null },
-  { kind: "LODGING", key: "comfortable", label: "Room", amountBdt: 3000, unit: "PER_PERSON_PER_NIGHT", note: null },
-  { kind: "LODGING", key: "fine", label: "Room", amountBdt: 7500, unit: "PER_PERSON_PER_NIGHT", note: null },
-  { kind: "MEALS", key: "simple", label: "Food", amountBdt: 600, unit: "PER_PERSON_PER_DAY", note: null },
-  { kind: "MEALS", key: "mixed", label: "Food", amountBdt: 1200, unit: "PER_PERSON_PER_DAY", note: null },
-  { kind: "GUIDE", key: "standard", label: "Guide", amountBdt: 3500, unit: "PER_GROUP_PER_DAY", note: null },
-  { kind: "TRANSPORT", key: "public", label: "Bus", amountBdt: 800, unit: "PER_PERSON_PER_DAY", note: null },
-  { kind: "TRANSPORT", key: "car", label: "Car", amountBdt: 5000, unit: "PER_GROUP_PER_DAY", note: null },
+  { kind: "LODGING", key: "budget", label: "Room", amountBdt: 1200, unit: "PER_PERSON_PER_NIGHT", note: null, verifiedAt: CHECKED },
+  { kind: "LODGING", key: "comfortable", label: "Room", amountBdt: 3000, unit: "PER_PERSON_PER_NIGHT", note: null, verifiedAt: CHECKED },
+  { kind: "LODGING", key: "fine", label: "Room", amountBdt: 7500, unit: "PER_PERSON_PER_NIGHT", note: null, verifiedAt: CHECKED },
+  { kind: "MEALS", key: "simple", label: "Food", amountBdt: 600, unit: "PER_PERSON_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "MEALS", key: "mixed", label: "Food", amountBdt: 1200, unit: "PER_PERSON_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "GUIDE", key: "standard", label: "Guide", amountBdt: 3500, unit: "PER_GROUP_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "TRANSPORT", key: "public", label: "Bus", amountBdt: 800, unit: "PER_PERSON_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "TRANSPORT", key: "car", label: "Car", amountBdt: 5000, unit: "PER_GROUP_PER_DAY", note: null, verifiedAt: CHECKED },
 ];
 
 const districts = [
@@ -157,4 +160,14 @@ describe("describing a plan in words", () => {
   });
 
   it("is empty for an empty plan", () => expect(describePlan([])).toBe(""));
+});
+
+describe("pricing a plan with unchecked rates", () => {
+  it("refuses to price the trip rather than quote a placeholder", () => {
+    const unchecked = rates.map((r) => (r.key === "car" ? { ...r, verifiedAt: null } : r));
+    const stops = [{ slug: "sylhet", nights: 2 }];
+    expect(
+      pricePlan(stops, districts, unchecked, { tier: "comfortable", travellers: 2, serviceFeePercent: 15 }),
+    ).toBeNull();
+  });
 });

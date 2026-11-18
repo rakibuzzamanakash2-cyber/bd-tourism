@@ -4,7 +4,16 @@ import { AdminPageHeader } from "@/components/admin/ui";
 import { CostRateForm, CostSettingsForm } from "@/components/admin/cost-rate-form";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { KIND_LABEL, TIER_ORDER, bdt, perPersonPerDay, tierLabel, usd, withServiceFee } from "@/lib/costs";
+import {
+  KIND_LABEL,
+  TIER_ORDER,
+  bdt,
+  perPersonPerDay,
+  tierLabel,
+  usd,
+  verificationProgress,
+  withServiceFee,
+} from "@/lib/costs";
 import { readSettings } from "@/lib/settings";
 
 export const metadata = { title: "Costs" };
@@ -18,13 +27,28 @@ export default async function AdminCostsPage() {
     readSettings(),
     db.district.findMany({ where: { costMultiplier: { not: 1 } }, select: { name: true, slug: true, costMultiplier: true }, orderBy: { name: "asc" } }),
   ]);
+  const progress = verificationProgress(rates.filter((r) => r.isActive));
 
   return (
     <div className="max-w-4xl">
       <AdminPageHeader
         title="Costs"
-        description="What a trip costs us, in parts. These numbers drive the rough daily figure on every district page, so keep them close to what you actually pay. They started as placeholders — replace them with real supplier prices."
+        description="What a trip costs us, in parts. These numbers drive the rough daily figure on every district page and the planner, so keep them close to what you actually pay."
       />
+
+      {!progress.complete && (
+        <div className="mb-10 rounded-lg border border-clay-600/30 bg-clay-500/10 p-5">
+          <h2 className="font-display text-lg text-clay-700">
+            {progress.total - progress.done} of {progress.total} prices are still placeholders
+          </h2>
+          <p className="mt-2 text-sm text-clay-700">
+            Nobody has checked these against a real supplier, so travellers are shown no cost estimate at all — the
+            district pages and the planner leave it out rather than quote a number we invented. Tick{" "}
+            <strong>Real price</strong> on a line once you have confirmed it. The figures below are a preview for you
+            only.
+          </p>
+        </div>
+      )}
 
       <section className="mb-10 rounded-lg border border-forest-900/10 bg-paper-warm p-5">
         <h2 className="mb-4 font-display text-xl">Applies to everything</h2>
@@ -47,11 +71,16 @@ export default async function AdminCostsPage() {
       <section className="mb-10 rounded-lg border border-forest-900/10 p-5">
         <h2 className="font-display text-xl">What that works out to</h2>
         <p className="mt-1 text-sm text-ink-mute">
-          Per person per day in an ordinary district, for a group of {settings.estimateGroupSize}, with the {settings.serviceFeePercent}% fee on top.
+          Per person per day in an ordinary district, for a group of {settings.estimateGroupSize}, with the{" "}
+          {settings.serviceFeePercent}% fee on top.
+          {!progress.complete && " Includes unchecked placeholder prices, so this is not what travellers see."}
         </p>
         <ul className="mt-4 space-y-2 text-sm">
           {TIER_ORDER.map((tier) => {
-            const base = perPersonPerDay(rates, tier, { groupSize: settings.estimateGroupSize });
+            const base = perPersonPerDay(rates, tier, {
+              groupSize: settings.estimateGroupSize,
+              allowUnverified: true,
+            });
             if (base === null) return null;
             const charged = withServiceFee(base, settings.serviceFeePercent);
             return (

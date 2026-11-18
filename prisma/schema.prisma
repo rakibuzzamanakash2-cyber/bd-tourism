@@ -1013,6 +1013,9 @@ model CostRate {
   note      String?
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
+  /// Set when someone confirms this is a real price, not a placeholder.
+  /// Public estimates ignore unconfirmed lines entirely.
+  verifiedAt DateTime?
   updatedAt DateTime @updatedAt
 
   @@unique([kind, key])
