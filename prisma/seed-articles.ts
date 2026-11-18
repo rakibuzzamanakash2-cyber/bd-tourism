@@ -17,7 +17,7 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is not set.");
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-const articles = [
+const articles: { slug: string; title: string; excerpt: string; districtSlug: string | null; body: string }[] = [
   {
     slug: "chittagong-hill-tracts-permit",
     title: "Do you need a permit for the Chittagong Hill Tracts?",
@@ -54,6 +54,44 @@ That is the real reason not to plan a hill trip from a blog post. A route that w
 ## What we do about it
 We apply for the permit as part of your trip, using the passport details you give us when you book, and we confirm which routes are actually open for your dates before we promise you an itinerary. If a route closes between booking and travel, we change the plan rather than letting you find out at a checkpoint.
 One thing we cannot change: Rangamati's published conditions state that Israeli citizens cannot apply.`,
+  },
+  {
+    slug: "when-to-visit-bangladesh",
+    title: "When to come to Bangladesh",
+    excerpt:
+      "Almost everyone will tell you November to February, and for most of the country they are right. But the monsoon is the best time to see some of the best things here, and nobody mentions that.",
+    districtSlug: null,
+    body: `Bangladesh has three seasons rather than four, and which one you pick changes the trip more than where you go.
+
+## The short answer
+Come between November and February. The air is dry, the days are sunny, daytime temperatures sit in the twenties, and every part of the country is reachable. Cox's Bazar, the Sundarbans and the hill districts are all at their easiest.
+If those months do not work, October and March are the shoulders and still good. April and May are hot and heavy. June to September is the monsoon.
+
+## Winter, November to February
+This is the dry season and the reason most people come now. Expect warm, clear days and genuinely cool mornings in the north. Humidity drops away, which matters more than the temperature does — the same 28 degrees feels very different in January than in May.
+It is also peak season. Hotels in Cox's Bazar and Srimangal fill up, especially around Bengali holidays, so book earlier than you think you need to.
+
+## Hot season, March to May
+April and May are the hottest months of the year, with afternoons above thirty and humidity climbing ahead of the rains. It is not unbearable, but walking around Old Dhaka at two in the afternoon in May is a different experience from doing it in January.
+The upside is price. This is the cheapest time to travel here, and the places that are shoulder to shoulder in December are quiet.
+
+## Monsoon, June to October
+The rains arrive from the south-east around late May or early June and the country turns a green you will not see at any other time of year. Rainfall through these months is heavy — well over a metre across the season.
+Here is the part most guides skip: the monsoon is not a season to avoid. It is the season for the wetlands. Ratargul, the freshwater swamp forest near Sylhet, is only properly a swamp forest when the water is high; in winter you walk through it, in monsoon you row through it. The haors, the vast seasonal wetlands of the north-east, are a landscape of water and tiny island villages in the rains and flat farmland in the dry months.
+What you trade is certainty. Roads flood, ferries stop, and a day can disappear to weather. If your trip has to run to a fixed plan, come in winter. If you have slack in it, the monsoon rewards you.
+
+## By place
+- The Sundarbans: winter. The boats run, the weather is settled, and wildlife is easier to see.
+- Cox's Bazar and the beaches: November to February.
+- The hill districts: the dry months, when the roads are safest and permits are more straightforward.
+- Sylhet's tea gardens: winter for walking, though the gardens are greenest after rain.
+- Ratargul and the haors: the monsoon, which is the whole point of them.
+
+## What we would tell a friend
+If this is your only trip and you want everything to work, come in December or January.
+If you have been before, or you care more about how a place looks than how easy it is, come in the rains and plan fewer things.
+
+These are seasonal patterns, not forecasts. We check the actual conditions for your dates before confirming an itinerary, and we will tell you plainly if the month you have chosen is wrong for the places you want.`,
   },
 ];
 
