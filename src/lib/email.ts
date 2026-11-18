@@ -336,19 +336,42 @@ export async function sendEmail(data: {
   }
 }
 
-/** Notifies the DeltaWay team (ADMIN_EMAIL, or the public site email). */
+/**
+ * Notifies the DeltaWay team (ADMIN_EMAIL, or the public site email).
+ *
+ * Every caller fires this and moves on, because the work it announces has
+ * already been saved. That makes a silent failure the dangerous case: a trip
+ * request sits in the database with nobody told, while the traveller has been
+ * promised an answer within 24 hours. So a notification that does not go out
+ * is recorded as an error, which puts it in Admin > Errors and on the
+ * dashboard even when email is the thing that broke.
+ */
 export async function notifyTeam(data: {
   subject: string;
   /** Plain-text lines; each becomes a paragraph. */
   lines: string[];
   replyTo?: string;
+  /** Set false by the error reporter itself, so a broken mailer cannot loop. */
+  recordFailure?: boolean;
 }) {
-  return sendEmail({
+  const sent = await sendEmail({
     to: env.ADMIN_EMAIL ?? site.email,
     subject: `[${site.name}] ${data.subject}`,
     replyTo: data.replyTo,
     html: simpleEmail(data.subject, data.lines),
   });
+
+  if (!sent.success && data.recordFailure !== false) {
+    // Imported here rather than at the top: report-error depends on this
+    // module, and a cycle between them would be a boot-order problem.
+    const { reportError } = await import("@/lib/report-error");
+    await reportError(
+      new Error(`Team notification not delivered: ${data.subject} — ${sent.error ?? "unknown reason"}`),
+      { where: "email" },
+    );
+  }
+
+  return sent;
 }
 
 /** A minimal branded email: heading plus paragraphs (escaped). */

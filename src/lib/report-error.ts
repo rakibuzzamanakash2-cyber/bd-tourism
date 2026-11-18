@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { notifyTeam } from "@/lib/email";
 import { env } from "@/lib/env";
 
-export type ErrorSource = "page" | "action" | "route" | "webhook" | "cron";
+export type ErrorSource = "page" | "action" | "route" | "webhook" | "cron" | "email";
 
 /** Don't email about the same bug more than once a day. */
 const NOTIFY_EVERY_MS = 24 * 60 * 60 * 1000;
@@ -77,6 +77,8 @@ export async function reportError(
 
     await db.errorLog.update({ where: { id: row.id }, data: { notifiedAt: new Date() } });
     await notifyTeam({
+      // Reporting a failure to send this very email would recurse.
+      recordFailure: false,
       subject: `${row.count === 1 ? "New error" : `Error seen ${row.count} times`}: ${message.slice(0, 80)}`,
       lines: [
         message,

@@ -74,7 +74,19 @@ export default async function AdminOverviewPage() {
     }),
   ]);
 
-  const quotesToSend = await db.booking.count({ where: { status: "QUOTE_REQUESTED" } });
+  // A count alone hides the thing that matters: the confirmation email promises
+  // a price within 24 hours, so a request sitting three days needs to look
+  // different from one that arrived five minutes ago.
+  const quoteDeadline = new Date(now.getTime() - DAY);
+  const [quotesToSend, oldestQuote, overdueQuotes] = await Promise.all([
+    db.booking.count({ where: { status: "QUOTE_REQUESTED" } }),
+    db.booking.findFirst({
+      where: { status: "QUOTE_REQUESTED" },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+    db.booking.count({ where: { status: "QUOTE_REQUESTED", createdAt: { lt: quoteDeadline } } }),
+  ]);
   const photosToReview = await db.travelerPhoto.count({ where: { status: "PENDING" } });
   const openErrors = await db.errorLog.count({ where: { resolvedAt: null } });
 
@@ -146,7 +158,13 @@ export default async function AdminOverviewPage() {
         <StatCard
           label="Quotes to send"
           value={quotesToSend}
-          hint="Custom trips waiting for a price"
+          hint={
+            oldestQuote
+              ? overdueQuotes > 0
+                ? `${overdueQuotes} past the 24 hours we promised · oldest ${timeAgo(oldestQuote.createdAt)}`
+                : `Oldest arrived ${timeAgo(oldestQuote.createdAt)}`
+              : "Custom trips waiting for a price"
+          }
           href="/admin/bookings?status=QUOTE_REQUESTED"
           tone={quotesToSend > 0 ? "attention" : "default"}
         />
