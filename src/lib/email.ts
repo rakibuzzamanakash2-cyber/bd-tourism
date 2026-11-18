@@ -52,7 +52,9 @@ export async function sendPaymentReceipt(
       };
     }
 
-    console.log(`[email] Receipt sent to ${data.to} (id: ${result.data?.id})`);
+    // The provider's id is enough to trace a delivery. Logging the address
+    // would put a customer's email into every log aggregator we ever use.
+    console.log(`[email] sent (id: ${result.data?.id})`);
     return { success: true };
   } catch (err) {
     console.error("[email] Exception:", err);
