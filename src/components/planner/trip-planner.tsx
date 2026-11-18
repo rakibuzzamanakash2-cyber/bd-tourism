@@ -240,32 +240,45 @@ export function TripPlanner({ districts, rates, serviceFeePercent, initialPlan, 
                 </div>
               </fieldset>
 
-              {priced && (
-                <div className="mt-6 border-t border-forest-900/10 pt-5">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-ink-soft">
-                      {priced.nights} night{priced.nights === 1 ? "" : "s"}, {travellers === 1 ? "1 person" : `${travellers} people`}
-                    </span>
-                    <span className="font-display text-3xl tabular-nums">{bdt(priced.total)}</span>
-                  </div>
-                  <p className="mt-1 text-right text-sm text-ink-mute tabular-nums">
-                    about {usd(priced.total)} · {bdt(priced.perPerson)} each
-                  </p>
-                  <p className="mt-4 text-xs leading-relaxed text-ink-mute">
-                    A rough estimate, not a quote. Flights and anything you buy on the way are not included.
+              {/* The estimate can be unavailable — a price we have not confirmed is
+                  left out rather than guessed at — but the plan must still be
+                  sendable, so only the money lines depend on it. */}
+              <div className="mt-6 border-t border-forest-900/10 pt-5">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-ink-soft">
+                    {nights} night{nights === 1 ? "" : "s"}, {travellers === 1 ? "1 person" : `${travellers} people`}
+                  </span>
+                  {priced && <span className="font-display text-3xl tabular-nums">{bdt(priced.total)}</span>}
+                </div>
+
+                {priced ? (
+                  <>
+                    <p className="mt-1 text-right text-sm text-ink-mute tabular-nums">
+                      about {usd(priced.total)} · {bdt(priced.perPerson)} each
+                    </p>
+                    <p className="mt-4 text-xs leading-relaxed text-ink-mute">
+                      A rough estimate, not a quote. Flights and anything you buy on the way are not included.
+                      {needsPermit && " One of these districts needs a government permit — we arrange it."}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                    We&rsquo;re still confirming prices with the people we work with, so we would rather not put a
+                    number on this than show you a guess. Send us the plan and we&rsquo;ll come back with a real one.
                     {needsPermit && " One of these districts needs a government permit — we arrange it."}
                   </p>
-                  <Link
-                    href={bookHref}
-                    className="mt-5 block rounded-full bg-forest-900 px-6 py-3 text-center text-paper transition-colors hover:bg-forest-800"
-                  >
-                    Send this plan to us
-                  </Link>
-                  <p className="mt-2 text-center text-xs text-ink-mute">
-                    We&rsquo;ll come back with a real itinerary and price. Nothing is charged now.
-                  </p>
-                </div>
-              )}
+                )}
+
+                <Link
+                  href={bookHref}
+                  className="mt-5 block rounded-full bg-forest-900 px-6 py-3 text-center text-paper transition-colors hover:bg-forest-800"
+                >
+                  Send this plan to us
+                </Link>
+                <p className="mt-2 text-center text-xs text-ink-mute">
+                  We&rsquo;ll come back with a real itinerary and price. Nothing is charged now.
+                </p>
+              </div>
             </>
           )}
         </div>

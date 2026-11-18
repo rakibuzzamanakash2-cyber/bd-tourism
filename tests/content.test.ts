@@ -1,17 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TIER_ORDER, perPersonPerDay, roundForDisplay, withServiceFee, type Rate } from "@/lib/costs";
+import {
+  TIER_ORDER,
+  perPersonPerDay,
+  roundForDisplay,
+  verificationProgress,
+  withServiceFee,
+  type Rate,
+} from "@/lib/costs";
 import { DHAKA, distanceKm, roughKm } from "@/lib/geo";
 import { takesPaymentNow } from "@/lib/launch-mode";
 
+// Every fixture price counts as checked; the unchecked case is tested on its own.
+const CHECKED = new Date("2026-01-01T00:00:00.000Z");
+
 const rates: Rate[] = [
-  { kind: "LODGING", key: "budget", label: "Simple room", amountBdt: 1200, unit: "PER_PERSON_PER_NIGHT", note: null },
-  { kind: "LODGING", key: "comfortable", label: "Comfortable", amountBdt: 3000, unit: "PER_PERSON_PER_NIGHT", note: null },
-  { kind: "LODGING", key: "fine", label: "Best", amountBdt: 7500, unit: "PER_PERSON_PER_NIGHT", note: null },
-  { kind: "MEALS", key: "simple", label: "Local", amountBdt: 600, unit: "PER_PERSON_PER_DAY", note: null },
-  { kind: "MEALS", key: "mixed", label: "Mixed", amountBdt: 1200, unit: "PER_PERSON_PER_DAY", note: null },
-  { kind: "GUIDE", key: "standard", label: "Guide", amountBdt: 3500, unit: "PER_GROUP_PER_DAY", note: null },
-  { kind: "TRANSPORT", key: "public", label: "Bus", amountBdt: 800, unit: "PER_PERSON_PER_DAY", note: null },
-  { kind: "TRANSPORT", key: "car", label: "Car", amountBdt: 5000, unit: "PER_GROUP_PER_DAY", note: null },
+  { kind: "LODGING", key: "budget", label: "Simple room", amountBdt: 1200, unit: "PER_PERSON_PER_NIGHT", note: null, verifiedAt: CHECKED },
+  { kind: "LODGING", key: "comfortable", label: "Comfortable", amountBdt: 3000, unit: "PER_PERSON_PER_NIGHT", note: null, verifiedAt: CHECKED },
+  { kind: "LODGING", key: "fine", label: "Best", amountBdt: 7500, unit: "PER_PERSON_PER_NIGHT", note: null, verifiedAt: CHECKED },
+  { kind: "MEALS", key: "simple", label: "Local", amountBdt: 600, unit: "PER_PERSON_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "MEALS", key: "mixed", label: "Mixed", amountBdt: 1200, unit: "PER_PERSON_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "GUIDE", key: "standard", label: "Guide", amountBdt: 3500, unit: "PER_GROUP_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "TRANSPORT", key: "public", label: "Bus", amountBdt: 800, unit: "PER_PERSON_PER_DAY", note: null, verifiedAt: CHECKED },
+  { kind: "TRANSPORT", key: "car", label: "Car", amountBdt: 5000, unit: "PER_GROUP_PER_DAY", note: null, verifiedAt: CHECKED },
 ];
 
 describe("what a day costs", () => {
@@ -51,6 +61,43 @@ describe("what a day costs", () => {
   it("says nothing rather than guessing when a rate is missing", () => {
     const missing = rates.filter((r) => r.key !== "car");
     expect(perPersonPerDay(missing, "comfortable", { groupSize: 2 })).toBeNull();
+  });
+
+  // A placeholder price is worse than no price: people budget off these.
+  it("shows nothing publicly while a price it needs is unchecked", () => {
+    const unchecked = rates.map((r) => (r.key === "car" ? { ...r, verifiedAt: null } : r));
+    expect(perPersonPerDay(unchecked, "comfortable", { groupSize: 2 })).toBeNull();
+  });
+
+  it("still works it out for admin, who asked to see the placeholders", () => {
+    const unchecked = rates.map((r) => ({ ...r, verifiedAt: null }));
+    expect(perPersonPerDay(unchecked, "comfortable", { groupSize: 2, allowUnverified: true })).toBe(
+      perPersonPerDay(rates, "comfortable", { groupSize: 2 }),
+    );
+  });
+
+  it("does not quietly leave the guide out of a level that includes one", () => {
+    // Skipping a missing guide would understate the day by the biggest line on it.
+    const noGuide = rates.filter((r) => r.kind !== "GUIDE");
+    expect(perPersonPerDay(noGuide, "comfortable", { groupSize: 2 })).toBeNull();
+    expect(perPersonPerDay(noGuide, "fine", { groupSize: 2 })).toBeNull();
+    // The simplest level never had a guide, so it is unaffected.
+    expect(perPersonPerDay(noGuide, "budget", { groupSize: 2 })).toBe(2600);
+  });
+
+  it("will not price a guided level from an unchecked guide rate", () => {
+    const unchecked = rates.map((r) => (r.kind === "GUIDE" ? { ...r, verifiedAt: null } : r));
+    expect(perPersonPerDay(unchecked, "comfortable", { groupSize: 2 })).toBeNull();
+  });
+
+  it("counts how far through checking the prices we are", () => {
+    expect(verificationProgress(rates)).toEqual({ done: 8, total: 8, complete: true });
+
+    const half = rates.map((r, i) => (i < 3 ? { ...r, verifiedAt: null } : r));
+    expect(verificationProgress(half)).toEqual({ done: 5, total: 8, complete: false });
+
+    // Nothing to check is not the same as everything checked.
+    expect(verificationProgress([])).toEqual({ done: 0, total: 0, complete: false });
   });
 
   it("adds the service fee on top", () => {

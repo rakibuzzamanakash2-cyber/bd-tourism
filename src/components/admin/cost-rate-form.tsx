@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveCostRateAction, saveCostSettingsAction } from "@/lib/actions/admin/costs";
 import { UNIT_LABEL, bdt, usd } from "@/lib/costs";
+import { PriceCheckBadge } from "@/components/admin/ui";
 import type { CostUnit } from "@prisma/client";
 
 const input = "w-full rounded-md border border-forest-900/15 bg-paper px-3 py-2 text-sm";
@@ -31,7 +32,15 @@ function useSave() {
 export function CostRateForm({
   rate,
 }: {
-  rate: { id: string; label: string; amountBdt: number; unit: CostUnit; note: string | null; isActive: boolean };
+  rate: {
+    id: string;
+    label: string;
+    amountBdt: number;
+    unit: CostUnit;
+    note: string | null;
+    isActive: boolean;
+    verifiedAt: Date | null;
+  };
 }) {
   const { pending, run } = useSave();
   return (
@@ -52,11 +61,16 @@ export function CostRateForm({
         <span className="text-xs text-ink-mute">Note (optional)</span>
         <input name="note" defaultValue={rate.note ?? ""} className={`${input} mt-1`} />
       </label>
-      <div className="flex items-center gap-3 sm:pt-6">
+      <div className="flex flex-wrap items-center gap-3 sm:pt-6">
         <label className="flex items-center gap-2 text-xs">
           <input type="checkbox" name="isActive" defaultChecked={rate.isActive} className="size-4" />
           In use
         </label>
+        <label className="flex items-center gap-2 text-xs" title="Tick this once you have a real supplier price. Travellers only see estimates built from checked prices.">
+          <input type="checkbox" name="verified" defaultChecked={rate.verifiedAt !== null} className="size-4" />
+          Real price
+        </label>
+        <PriceCheckBadge verifiedAt={rate.verifiedAt} />
         <button type="submit" disabled={pending} className={btn}>Save</button>
       </div>
     </form>
