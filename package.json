@@ -60,7 +60,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "prisma": "^7.10.1",
-    "shadcn": "^4.16.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.8",
     "typescript": "^5",
